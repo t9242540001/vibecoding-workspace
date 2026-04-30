@@ -4,7 +4,7 @@
   @file:        workspace-index.md
   @description: Root navigation file for the Vibe Coding workspace infrastructure
   @updated:     2026-04-30
-  @version:     0.1
+  @version:     0.2
 -->
 
 ## Purpose
@@ -38,7 +38,7 @@ Planned contents:
 | Path | Role | Status |
 |---|---|---|
 | `standards/` | Shared development standards | Pending setup |
-| `skills/` | Reusable working procedures | Pending universality audit |
+| `skills/` | Reusable working procedures | Active: first skill migrated |
 | `templates/` | Starter templates for product repositories | Pending setup |
 | `rules/` | Shared rules that are not product-specific | Pending setup |
 | `tools/` | External tools and MCP-related notes | Pending setup |
@@ -67,33 +67,45 @@ Shared standards and skills are not duplicated inside product repositories unles
 
 ## Current Setup Stage
 
-Current stage: initial workspace setup.
+Current stage: skills universality migration.
 
 Immediate next steps:
 
-1. Create the minimal repository structure.
-2. Audit existing skills for universal wording.
-3. Replace platform-specific wording where needed:
+1. Audit existing skills for universal wording.
+2. Replace platform-specific wording where needed:
    - `Claude` → `AI model` where the role is universal
    - `Claude Code` → `Code Agent` where the executor is universal
    - `CLAUDE.md` → `CLAUDE.md or equivalent main project context file` where appropriate
-4. Preserve the meaning, structure, and rules of every skill.
-5. Move approved universal skills into `skills/`.
-6. Move the universal standard into `standards/`.
-7. Create templates for product repositories.
+3. Preserve the meaning, structure, and rules of every skill.
+4. Move approved universal skills into `skills/`.
+5. Move the universal standard into `standards/`.
+6. Create templates for product repositories.
 
 ## Skills Migration Status
 
-The following skills are uploaded in the current ChatGPT project context but are not yet finalized in this repository.
+| Skill | Priority | Status | Repository file |
+|---|---:|---|---|
+| `prompt-writing-standard` | 1 | Migrated to universal Code Agent wording | `skills/prompt-writing-standard-universal.md` |
+| `knowledge-structure` | 2 | Pending universality audit | — |
+| `code-markup-standard` | 3 | Pending universality audit | — |
+| `bug-hunting` | 4 | Pending universality audit | — |
+| `research-protocol` | 5 | Pending universality audit | — |
+| `skill-writing-standard` | 6 | Pending universality audit | — |
 
-| Skill | Priority | Status |
-|---|---:|---|
-| `prompt-writing-standard` | 1 | Pending universality audit |
-| `knowledge-structure` | 2 | Pending universality audit |
-| `code-markup-standard` | 3 | Pending universality audit |
-| `bug-hunting` | 4 | Pending universality audit |
-| `research-protocol` | 5 | Pending universality audit |
-| `skill-writing-standard` | 6 | Pending universality audit |
+## Skill Triggering Logic
+
+Skills are applied by trigger, not by manual memory.
+
+Current trigger map:
+
+| Trigger | Skill |
+|---|---|
+| Writing any prompt for a Code Agent | `prompt-writing-standard` |
+| Creating or updating project knowledge files | `knowledge-structure` |
+| Creating or editing code files, file headers, RULE comments, or markup | `code-markup-standard` |
+| Two failed fixes, recurring bug, or production incident | `bug-hunting` |
+| T3 task, strategic decision, high reversal cost, or external facts | `research-protocol` |
+| Creating or editing skills | `skill-writing-standard` |
 
 ## Non-Negotiable Rules
 
@@ -107,7 +119,7 @@ The following skills are uploaded in the current ChatGPT project context but are
 ## Open Decisions
 
 - Final folder structure of this workspace repository.
-- Exact universal wording for AI model / Code Agent roles inside skills.
+- Exact universal wording for AI model / Code Agent roles inside remaining skills.
 - Whether skill files are stored as flat markdown files or as `skills/<skill-name>/SKILL.md` folders.
 - Template structure for new product repositories.
 - Branch protection and PR workflow for this workspace repository.
