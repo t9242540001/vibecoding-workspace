@@ -1,0 +1,113 @@
+# Vibecoding Workspace Index
+
+<!--
+  @file:        workspace-index.md
+  @description: Root navigation file for the Vibe Coding workspace infrastructure
+  @updated:     2026-04-30
+  @version:     0.1
+-->
+
+## Purpose
+
+This repository is the infrastructure center for Vibe Coding.
+
+It stores the shared working system: standards, skills, templates, rules, tools, scripts, documentation, and the registry of product repositories.
+
+Product repositories remain separate. Each product repository stores only its own project-specific context, code, infrastructure notes, and knowledge files.
+
+## Architecture
+
+Vasily
+→ ChatGPT project / AI orchestrator
+→ Code Agent
+→ GitHub repositories
+→ VDS / production server
+→ project knowledge
+→ shared skills
+→ external tools / MCP
+→ future multi-agent development system
+
+## Repository Roles
+
+### This repository: `vibecoding-workspace`
+
+Role: shared infrastructure and operating system for Vibe Coding.
+
+Planned contents:
+
+| Path | Role | Status |
+|---|---|---|
+| `standards/` | Shared development standards | Pending setup |
+| `skills/` | Reusable working procedures | Pending universality audit |
+| `templates/` | Starter templates for product repositories | Pending setup |
+| `rules/` | Shared rules that are not product-specific | Pending setup |
+| `tools/` | External tools and MCP-related notes | Pending setup |
+| `scripts/` | Utility scripts for workspace operations | Pending setup |
+| `docs/` | Supporting documentation | Pending setup |
+| `workspace-index.md` | Root navigation file | Active |
+
+### Product repositories
+
+Role: concrete applications, bots, websites, services, and other build targets.
+
+Each product repository should contain only its own local context:
+
+- `AGENTS.md` — rules for the Code Agent in this repository
+- `CLAUDE.md` or equivalent main context file — compact project constitution
+- `knowledge/INDEX.md`
+- `knowledge/infrastructure.md`
+- `knowledge/architecture.md`
+- `knowledge/rules.md`
+- `knowledge/decisions.md`
+- `knowledge/roadmap.md`
+- `.env.example`
+- `.gitignore`
+
+Shared standards and skills are not duplicated inside product repositories unless a specific local copy is explicitly required.
+
+## Current Setup Stage
+
+Current stage: initial workspace setup.
+
+Immediate next steps:
+
+1. Create the minimal repository structure.
+2. Audit existing skills for universal wording.
+3. Replace platform-specific wording where needed:
+   - `Claude` → `AI model` where the role is universal
+   - `Claude Code` → `Code Agent` where the executor is universal
+   - `CLAUDE.md` → `CLAUDE.md or equivalent main project context file` where appropriate
+4. Preserve the meaning, structure, and rules of every skill.
+5. Move approved universal skills into `skills/`.
+6. Move the universal standard into `standards/`.
+7. Create templates for product repositories.
+
+## Skills Migration Status
+
+The following skills are uploaded in the current ChatGPT project context but are not yet finalized in this repository.
+
+| Skill | Priority | Status |
+|---|---:|---|
+| `prompt-writing-standard` | 1 | Pending universality audit |
+| `knowledge-structure` | 2 | Pending universality audit |
+| `code-markup-standard` | 3 | Pending universality audit |
+| `bug-hunting` | 4 | Pending universality audit |
+| `research-protocol` | 5 | Pending universality audit |
+| `skill-writing-standard` | 6 | Pending universality audit |
+
+## Non-Negotiable Rules
+
+- GitHub is the source of truth. VDS is an execution environment, not a source of truth.
+- Product-specific knowledge lives in the product repository, not in this workspace repository.
+- Shared standards and skills live in this workspace repository, not duplicated across every product.
+- No secrets, tokens, passwords, `.env` files, or private credentials are committed to GitHub.
+- Existing documents and skills are edited only inside explicitly approved change scope.
+- No style cleanup, simplification, restructuring, or meaning changes without explicit approval.
+
+## Open Decisions
+
+- Final folder structure of this workspace repository.
+- Exact universal wording for AI model / Code Agent roles inside skills.
+- Whether skill files are stored as flat markdown files or as `skills/<skill-name>/SKILL.md` folders.
+- Template structure for new product repositories.
+- Branch protection and PR workflow for this workspace repository.
