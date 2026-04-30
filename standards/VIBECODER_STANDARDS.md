@@ -82,6 +82,16 @@ T3 — Стратегическая.
 
 Подробная инструкция по написанию промптов — в skill «prompt-writing-standard». Перед написанием любого промпта — прочитать этот skill.
 
+Prompt Readiness Gate — видимое подтверждение качества перед передачей серьёзного промпта в Code Agent. Он нужен, чтобы Василий видел, что перед финальным промптом действительно были проверены knowledge, затронутый код, multi-perspective review и финальная самопроверка промпта. Gate короткий и фактический: уровень T2/T3, использованный режим (`prompt-writing-standard` или `research-protocol + prompt-writing-standard`), проверенные knowledge/code файлы, завершённые stakeholder/technical-security/domain/scope integrity reviews, найденные и исправленные ошибки/замечания, статус prompt ready/not ready. Это не полный transcript reasoning; внутренние рассуждения и полный review не выводятся, если Василий явно не просит детали.
+
+Gate обязателен для:
+— T2-промптов, которые затрагивают код, логику, UX, product rules или knowledge;
+— всех T3-промптов;
+— повторных исправлений багов;
+— production, auth, payments, PII/ПДн, legal, deploy и security задач.
+
+T1 может пропускать видимый gate, если не обнаружен риск регрессии, безопасности, product rules или knowledge drift.
+
 Ключевые правила (всегда в памяти):
 — Архитектура: Василий (задача) → AI-модель (стратегия + промпт) → Code Agent (реализация; например Claude Code) → Git (автомерж agent-веток, текущий пример claude/** → main) → Василий (деплой). Code Agent работает только с репозиторием. Доступа к серверу у него нет.
 — Каждый промпт содержит 4 обязательных блока: Context, Task, Regression Shield, Acceptance Criteria. Неполный промпт не отправляется.

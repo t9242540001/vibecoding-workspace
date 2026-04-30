@@ -198,7 +198,38 @@ The summary is mandatory. **Without this summary, Step 9 is considered incomplet
 
 5. **Output the COMPLETE final prompt as a downloadable plain text file.** Do not output the prompt inline in chat mixed with commentary. Create a plain text file (`.txt`) containing only the prompt — title header (`# Prompt NN — [short title]`) and all 4 blocks (CONTEXT, TASK, REGRESSION SHIELD, ACCEPTANCE CRITERIA). No preamble, no review summary, no explanations inside the file — only the prompt text ready to paste into the Code Agent. No extra formatting: no bold markers (`**`), no bullet decorations, no horizontal rules, no code fences around the prompt itself. Plain readable text. The review summary and any commentary stay in the chat message; the file contains the clean prompt and nothing else.
 
-The prompt is ready for the Code Agent only after Step 10 is complete and the full final version is presented.
+**Step 11 — Prompt Readiness Gate.**
+For T2/T3 Code Agent prompts, before presenting the final prompt file, show Vasily a short factual readiness confirmation. This is a visible quality gate, not a full reasoning transcript. Do not expose hidden chain-of-thought. Do not output the full internal review unless Vasily explicitly asks for details.
+
+Use this template:
+
+```
+### Prompt Readiness Gate
+
+- Level: T2 / T3
+- Mode used: prompt-writing-standard / research-protocol + prompt-writing-standard
+- Knowledge checked:
+  - [ ] CLAUDE.md or equivalent
+  - [ ] knowledge/INDEX.md
+  - [ ] relevant knowledge files
+  - [ ] knowledge/decisions.md, if present
+- Code checked:
+  - [ ] affected files read in full
+  - [ ] related files inspected when needed
+- Review completed:
+  - [ ] stakeholder review
+  - [ ] technical/security review
+  - [ ] domain review
+  - [ ] scope integrity check
+- Review result:
+  - Errors: 0 after fixes
+  - Warnings: 0 after fixes / explicitly accepted
+- Status: prompt ready / not ready
+```
+
+The final prompt must not be presented if the readiness gate is not passed.
+
+The prompt is ready for the Code Agent only after Step 10 is complete, the Prompt Readiness Gate is passed, and the full final version is presented.
 
 ---
 
