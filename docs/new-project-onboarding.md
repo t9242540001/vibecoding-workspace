@@ -89,6 +89,33 @@ Do not modify code during the inventory pass. Record durable findings in project
 
 Use `templates/product-repo/` from this workspace as the structure reference.
 
+### Audit-First Rule
+
+If the target product repository already has any of these:
+
+- `CLAUDE.md`;
+- `AGENTS.md`;
+- `knowledge/`;
+- `.codex/`;
+- docs with project rules.
+
+Then do not initialize or overwrite knowledge immediately.
+
+Instead:
+
+1. Run inventory/audit only.
+2. List existing files.
+3. Compare existing structure with `templates/product-repo/`.
+4. Identify gaps.
+5. Propose a migration plan.
+6. Only after approval or explicit task scope, perform targeted changes.
+
+Never rely only on GitHub search to decide whether files exist. Check paths directly through the local filesystem or Git.
+
+Existing knowledge must be preserved unless migration is explicitly approved.
+
+If existing docs contain secrets, sanitize only the sensitive values while preserving useful knowledge.
+
 Create or update these product repository files:
 
 - `AGENTS.md`;

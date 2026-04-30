@@ -40,12 +40,18 @@ Tools, rules, and docs:
 - `tools/plugins.md`
 - `tools/MCP_AND_PLUGINS_ROADMAP.md`
 - `rules/README.md`
+- `docs/work-tracks.md`
 - `docs/new-project-onboarding.md`
 - `docs/repository-structure.md`
 - `docs/codex-workflow.md`
 - `docs/git-workflow.md`
 - `docs/deploy-rollback-pattern.md`
 - `docs/next-steps.md`
+
+Prompt templates:
+
+- `prompts/project-inventory-audit.md`
+- `prompts/knowledge-repair.md`
 
 Operational backlog:
 

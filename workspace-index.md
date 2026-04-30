@@ -43,6 +43,7 @@ Planned contents:
 | `examples/` | Sample artifacts for validating workspace templates | Active: sample product repository template test present |
 | `rules/` | Shared rules that are not product-specific | Active: root rules note present |
 | `tools/` | External tools and MCP-related notes | Active: plugin registry present |
+| `prompts/` | Reusable prompt templates for workspace and product workflows | Active: project audit and knowledge repair prompts present |
 | `scripts/` | Utility scripts for workspace operations | Pending setup |
 | `docs/` | Supporting documentation | Active: repository and Codex workflow docs present |
 | `.codex/` | Codex-specific repository instructions | Active |
@@ -73,6 +74,7 @@ Active tools, rules, and docs:
 - `tools/plugins.md`
 - `tools/MCP_AND_PLUGINS_ROADMAP.md`
 - `rules/README.md`
+- `docs/work-tracks.md`
 - `docs/new-project-onboarding.md`
 - `docs/repository-structure.md`
 - `docs/codex-workflow.md`
@@ -83,6 +85,11 @@ Active tools, rules, and docs:
 Active operational backlog:
 
 - `skills/BACKLOG.md`
+
+Active prompt templates:
+
+- `prompts/project-inventory-audit.md`
+- `prompts/knowledge-repair.md`
 
 ### Product repositories
 
