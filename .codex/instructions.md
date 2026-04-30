@@ -22,5 +22,6 @@
 ## Commit And Push
 
 - Follow `docs/git-workflow.md`.
+- Treat an explicit user prompt as pre-approval for low-risk repository actions required by that prompt when changed files match expected scope.
 - For low-risk workspace tasks, commit and push if changed files match expected scope.
 - For standards, skills, or architecture changes, do not push unless explicitly instructed.

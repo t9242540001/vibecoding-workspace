@@ -28,6 +28,12 @@ This repository is the shared infrastructure workspace for Vibe Coding. It is no
 
 Commit and push only when changed files match the explicit task scope.
 
+## Prompt Approval Rule
+
+For this repository, an explicit user prompt is pre-approval for low-risk repository actions that are required by that prompt and stay inside its declared scope, including `git add`, `git commit`, and `git push`.
+
+Ask again only when an action is destructive, transmits sensitive data, changes secrets or credentials, touches production, exceeds the prompt scope, or is otherwise blocked by the runtime safety policy.
+
 ## Secrets Rule
 
 Never commit secrets, `.env` files, tokens, credentials, or passwords.
