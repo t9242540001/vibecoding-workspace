@@ -38,7 +38,7 @@ Planned contents:
 | Path | Role | Status |
 |---|---|---|
 | `standards/` | Shared development standards | Pending setup |
-| `skills/` | Reusable working procedures | Active: first skill migrated |
+| `skills/` | Reusable working procedures | Active: six universal skills migrated |
 | `templates/` | Starter templates for product repositories | Pending setup |
 | `rules/` | Shared rules that are not product-specific | Pending setup |
 | `tools/` | External tools and MCP-related notes | Pending setup |
@@ -86,11 +86,11 @@ Immediate next steps:
 | Skill | Priority | Status | Repository file |
 |---|---:|---|---|
 | `prompt-writing-standard` | 1 | Migrated to universal Code Agent wording | `skills/prompt-writing-standard-universal.md` |
-| `knowledge-structure` | 2 | Pending universality audit | — |
-| `code-markup-standard` | 3 | Pending universality audit | — |
-| `bug-hunting` | 4 | Pending universality audit | — |
-| `research-protocol` | 5 | Pending universality audit | — |
-| `skill-writing-standard` | 6 | Pending universality audit | — |
+| `knowledge-structure` | 2 | Migrated to universal Code Agent wording | `skills/knowledge-structure-universal.md` |
+| `code-markup-standard` | 3 | Migrated to universal Code Agent wording | `skills/code-markup-standard-universal.md` |
+| `bug-hunting` | 4 | Migrated to universal Code Agent wording | `skills/bug-hunting-universal.md` |
+| `research-protocol` | 5 | Migrated to universal Code Agent wording | `skills/research-protocol-universal.md` |
+| `skill-writing-standard` | 6 | Migrated to universal Code Agent wording | `skills/skill-writing-standard-universal.md` |
 
 ## Skill Triggering Logic
 

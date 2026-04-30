@@ -19,14 +19,15 @@ Active navigation file:
 Migrated skills:
 
 - `skills/prompt-writing-standard-universal.md` — universal Code Agent prompt workflow, approved and uploaded.
+- `skills/knowledge-structure-universal.md`
+- `skills/code-markup-standard-universal.md`
+- `skills/bug-hunting-universal.md`
+- `skills/research-protocol-universal.md`
+- `skills/skill-writing-standard-universal.md`
 
 Skills pending universality audit:
 
-- `knowledge-structure`
-- `code-markup-standard`
-- `bug-hunting`
-- `research-protocol`
-- `skill-writing-standard`
+- None.
 
 ## Operating rule
 
