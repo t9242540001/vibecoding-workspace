@@ -1,0 +1,66 @@
+# @file        .github/workflows/assemble-upload.yml
+# @description Assemble staged upload chunks into final repository files
+# @rule        Workflow writes only assembled target files and staging cleanup commits
+
+name: Assemble staged upload
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'staging/uploads/**'
+      - 'scripts/assemble-upload.py'
+      - '.github/workflows/assemble-upload.yml'
+
+permissions:
+  contents: write
+
+actions:
+  disabled: true
+
+jobs:
+  assemble-upload:
+    name: Assemble upload chunks
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check manifest exists
+        id: manifest
+        shell: bash
+        run: |
+          if [ -f staging/uploads/upload-manifest.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Assemble staged upload
+        if: steps.manifest.outputs.exists == 'true'
+        run: python3 scripts/assemble-upload.py
+
+      - name: Cleanup staging files
+        if: steps.manifest.outputs.exists == 'true'
+        shell: bash
+        run: |
+          find staging/uploads -type f ! -name '.gitkeep' -delete
+
+      - name: Commit assembled upload
+        if: steps.manifest.outputs.exists == 'true'
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Assemble staged upload"
+          git push
