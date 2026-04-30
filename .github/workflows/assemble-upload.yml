@@ -16,9 +16,6 @@ on:
 permissions:
   contents: write
 
-actions:
-  disabled: true
-
 jobs:
   assemble-upload:
     name: Assemble upload chunks
