@@ -16,6 +16,12 @@ Active navigation file:
 
 - `workspace-index.md`
 
+Root agent layer:
+
+- `AGENTS.md`
+- `.codex/instructions.md`
+- `.codex/skills/README.md`
+
 Core standards:
 
 - `standards/VIBECODER_STANDARDS.md`
@@ -24,6 +30,13 @@ Core standards:
 Templates:
 
 - `templates/product-repo/`
+
+Tools, rules, and docs:
+
+- `tools/plugins.md`
+- `rules/README.md`
+- `docs/repository-structure.md`
+- `docs/codex-workflow.md`
 
 Migrated skills:
 

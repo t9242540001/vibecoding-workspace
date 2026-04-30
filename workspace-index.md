@@ -40,10 +40,12 @@ Planned contents:
 | `standards/` | Shared development standards | Active: core standards present |
 | `skills/` | Reusable working procedures | Active: six universal skills migrated |
 | `templates/` | Starter templates for product repositories | Active: product repository template present |
-| `rules/` | Shared rules that are not product-specific | Pending setup |
-| `tools/` | External tools and MCP-related notes | Pending setup |
+| `rules/` | Shared rules that are not product-specific | Active: root rules note present |
+| `tools/` | External tools and MCP-related notes | Active: plugin registry present |
 | `scripts/` | Utility scripts for workspace operations | Pending setup |
-| `docs/` | Supporting documentation | Pending setup |
+| `docs/` | Supporting documentation | Active: repository and Codex workflow docs present |
+| `.codex/` | Codex-specific repository instructions | Active |
+| `AGENTS.md` | Root Code Agent instructions | Active |
 | `workspace-index.md` | Root navigation file | Active |
 
 Active standards files:
@@ -54,6 +56,19 @@ Active standards files:
 Active templates:
 
 - `templates/product-repo/`
+
+Active root agent layer:
+
+- `AGENTS.md`
+- `.codex/instructions.md`
+- `.codex/skills/README.md`
+
+Active tools, rules, and docs:
+
+- `tools/plugins.md`
+- `rules/README.md`
+- `docs/repository-structure.md`
+- `docs/codex-workflow.md`
 
 ### Product repositories
 
