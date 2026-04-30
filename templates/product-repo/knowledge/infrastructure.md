@@ -5,7 +5,7 @@
   @description: Environments, services, deployment, and environment variables
   @updated:     YYYY-MM-DD
   @version:     0.1
-  @lines:       22
+  @lines:       27
 -->
 
 ## Environments
@@ -21,8 +21,13 @@
 ## Deployment
 
 - Target: `<deployment target>`
+- Source branch: `<deployment source branch>`
+- Pre-deploy check: `<pre-deploy verification command>`
 - Command: `<deployment command>`
-- Rollback: `<rollback note>`
+- Post-deploy check: `<post-deploy verification command>`
+- Rollback trigger: `<rollback trigger>`
+- Rollback command: `<rollback command>`
+- Post-rollback check: `<post-rollback verification command>`
 
 ## Environment Variables
 
