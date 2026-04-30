@@ -79,6 +79,7 @@ Active tools, rules, and docs:
 - `docs/repository-structure.md`
 - `docs/codex-workflow.md`
 - `docs/git-workflow.md`
+- `docs/branch-protection-plan.md`
 - `docs/deploy-rollback-pattern.md`
 - `docs/next-steps.md`
 

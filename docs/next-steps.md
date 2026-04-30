@@ -4,6 +4,7 @@
 
 - Finish workspace repository hygiene.
 - Bootstrap Git workflow is documented in `docs/git-workflow.md`; branch protection and PR-only workflow remain pending.
+- Branch protection plan is documented in `docs/branch-protection-plan.md`; enabling remains pending.
 - Product template test artifact created at `examples/sample-product-repo/`.
 - VDS deploy and rollback pattern documented in `docs/deploy-rollback-pattern.md`.
 - New project onboarding is documented in `docs/new-project-onboarding.md`.

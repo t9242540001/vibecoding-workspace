@@ -16,6 +16,8 @@
 - No force push to `main`.
 - Deployment happens only from `main`.
 
+Target workflow details are documented in `docs/branch-protection-plan.md`.
+
 ## Transition Trigger
 
 Enable branch protection after the first successful product-repo test cycle.
