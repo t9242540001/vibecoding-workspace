@@ -34,9 +34,15 @@ Templates:
 Tools, rules, and docs:
 
 - `tools/plugins.md`
+- `tools/MCP_AND_PLUGINS_ROADMAP.md`
 - `rules/README.md`
 - `docs/repository-structure.md`
 - `docs/codex-workflow.md`
+- `docs/next-steps.md`
+
+Operational backlog:
+
+- `skills/BACKLOG.md`
 
 Migrated skills:
 
