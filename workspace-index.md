@@ -37,7 +37,7 @@ Planned contents:
 
 | Path | Role | Status |
 |---|---|---|
-| `standards/` | Shared development standards | Pending setup |
+| `standards/` | Shared development standards | Active: core standards present |
 | `skills/` | Reusable working procedures | Active: six universal skills migrated |
 | `templates/` | Starter templates for product repositories | Pending setup |
 | `rules/` | Shared rules that are not product-specific | Pending setup |
@@ -45,6 +45,11 @@ Planned contents:
 | `scripts/` | Utility scripts for workspace operations | Pending setup |
 | `docs/` | Supporting documentation | Pending setup |
 | `workspace-index.md` | Root navigation file | Active |
+
+Active standards files:
+
+- `standards/VIBECODER_STANDARDS.md`
+- `standards/VIBECODER_SYSTEM_INSTRUCTION.md`
 
 ### Product repositories
 

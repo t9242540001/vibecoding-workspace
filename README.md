@@ -16,6 +16,11 @@ Active navigation file:
 
 - `workspace-index.md`
 
+Core standards:
+
+- `standards/VIBECODER_STANDARDS.md`
+- `standards/VIBECODER_SYSTEM_INSTRUCTION.md`
+
 Migrated skills:
 
 - `skills/prompt-writing-standard-universal.md` — universal Code Agent prompt workflow, approved and uploaded.
