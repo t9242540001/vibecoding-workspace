@@ -21,5 +21,6 @@
 
 ## Commit And Push
 
+- Follow `docs/git-workflow.md`.
 - For low-risk workspace tasks, commit and push if changed files match expected scope.
 - For standards, skills, or architecture changes, do not push unless explicitly instructed.

@@ -70,6 +70,7 @@ Active tools, rules, and docs:
 - `rules/README.md`
 - `docs/repository-structure.md`
 - `docs/codex-workflow.md`
+- `docs/git-workflow.md`
 - `docs/next-steps.md`
 
 Active operational backlog:
