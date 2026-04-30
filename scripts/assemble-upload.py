@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import sys
@@ -72,7 +73,36 @@ def load_manifest(path: Path) -> dict[str, Any]:
     if not isinstance(data["parts"], list) or not data["parts"]:
         fail("Manifest parts must be a non-empty list")
 
+    encoding = str(data.get("encoding", "utf-8"))
+    if encoding not in {"utf-8", "base64"}:
+        fail("Manifest encoding must be utf-8 or base64")
+
     return data
+
+
+def read_part_bytes(manifest: dict[str, Any]) -> bytes:
+    """Read staged parts and return assembled bytes.
+
+    @section assembly
+    @important base64 mode exists to make large text uploads safe through APIs that may alter Unicode text payloads.
+    """
+    encoding = str(manifest.get("encoding", "utf-8"))
+    chunks: list[bytes] = []
+
+    for raw_part in manifest["parts"]:
+        part_path = safe_repo_path(str(raw_part), must_be_under="staging/uploads")
+        if not part_path.exists():
+            fail(f"Part file not found: {part_path}")
+        chunks.append(part_path.read_bytes())
+
+    raw = b"".join(chunks)
+    if encoding == "base64":
+        try:
+            return base64.b64decode(raw, validate=True)
+        except Exception as exc:
+            fail(f"Invalid base64 upload parts: {exc}")
+
+    return raw
 
 
 def assemble(manifest: dict[str, Any]) -> Path:
@@ -85,22 +115,13 @@ def assemble(manifest: dict[str, Any]) -> Path:
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
 
-    digest = hashlib.sha256()
+    data = read_part_bytes(manifest)
+    actual_sha256 = hashlib.sha256(data).hexdigest()
 
-    with target_path.open("wb") as target_file:
-        for raw_part in manifest["parts"]:
-            part_path = safe_repo_path(str(raw_part), must_be_under="staging/uploads")
-            if not part_path.exists():
-                fail(f"Part file not found: {part_path}")
-
-            data = part_path.read_bytes()
-            digest.update(data)
-            target_file.write(data)
-
-    actual_sha256 = digest.hexdigest()
     if actual_sha256 != expected_sha256:
-        target_path.unlink(missing_ok=True)
         fail(f"sha256 mismatch: expected {expected_sha256}, got {actual_sha256}")
+
+    target_path.write_bytes(data)
 
     print(f"Assembled {target_path.relative_to(REPO_ROOT)}")
     print(f"sha256 {actual_sha256}")
