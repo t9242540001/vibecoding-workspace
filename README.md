@@ -31,6 +31,10 @@ Templates:
 
 - `templates/product-repo/` — product repository template with Codex instructions and knowledge-structure-compliant starter files.
 
+Examples:
+
+- `examples/sample-product-repo/` — sample product repository instantiated from the template.
+
 Tools, rules, and docs:
 
 - `tools/plugins.md`
