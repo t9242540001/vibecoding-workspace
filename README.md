@@ -29,7 +29,7 @@ Core standards:
 
 Templates:
 
-- `templates/product-repo/`
+- `templates/product-repo/` — product repository template with Codex instructions and knowledge-structure-compliant starter files.
 
 Tools, rules, and docs:
 

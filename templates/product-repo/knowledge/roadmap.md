@@ -1,15 +1,34 @@
 # Roadmap
+<!--
+  @file:        knowledge/roadmap.md
+  @project:     <project-name>
+  @description: Active tasks, progress, recent activity, completed work, and debt
+  @updated:     YYYY-MM-DD
+  @version:     0.1
+  @lines:       23
+-->
 
-Project: `<project-name>`
+## Open Tasks
 
-## Now
+- `<open task>` - priority: `<priority>`
 
-- `<current priority>`
+## In Progress
 
-## Next
+- `<in-progress task>` - next step: `<next step>`
 
-- `<next priority>`
+## Recent Activity
 
-## Later
+### YYYY-MM-DD - `<session summary>`
 
-- `<later priority>`
+- Changed: `<what changed>`
+- Stopped at: `<where work stopped>`
+- Next step: `<next step>`
+- Links: `<optional knowledge or commit references>`
+
+## Completed
+
+- YYYY-MM-DD - `<completed task>`
+
+## Technical Debt
+
+- `<debt item>` - priority: `<priority>`

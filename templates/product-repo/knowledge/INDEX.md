@@ -1,11 +1,21 @@
-# Knowledge Index
+# `<project-name>` Knowledge Index
+<!--
+  @file:        knowledge/INDEX.md
+  @project:     <project-name>
+  @description: Registry of project knowledge files and section headers
+  @updated:     YYYY-MM-DD
+  @version:     0.1
+  @lines:       18
+-->
 
-Project: `<project-name>`
+Reading rule: read `CLAUDE.md` or equivalent main context file, then this index, then only files relevant to the current task.
 
-## Files
+## Registry
 
-- `infrastructure.md` - environments, deployment, external services.
-- `architecture.md` - system structure and module boundaries.
-- `rules.md` - project-specific operating rules.
-- `decisions.md` - accepted decisions and rationale.
-- `roadmap.md` - planned work and priorities.
+| File | Section Headers | Updated |
+|---|---|---|
+| `infrastructure.md` | `## Environments`, `## External Services`, `## Deployment`, `## Environment Variables` | YYYY-MM-DD |
+| `architecture.md` | `## Overview`, `## File Structure`, `## Modules`, `## Data Flow`, `## Key Patterns` | YYYY-MM-DD |
+| `rules.md` | `## Critical Rules`, `## Operational Rules`, `## Constraints` | YYYY-MM-DD |
+| `decisions.md` | `## Active iterations (WIP)`, `## Accepted decisions` | YYYY-MM-DD |
+| `roadmap.md` | `## Open Tasks`, `## In Progress`, `## Recent Activity`, `## Completed`, `## Technical Debt` | YYYY-MM-DD |
