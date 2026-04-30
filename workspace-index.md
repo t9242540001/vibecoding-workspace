@@ -39,7 +39,7 @@ Planned contents:
 |---|---|---|
 | `standards/` | Shared development standards | Active: core standards present |
 | `skills/` | Reusable working procedures | Active: six universal skills migrated |
-| `templates/` | Starter templates for product repositories | Pending setup |
+| `templates/` | Starter templates for product repositories | Active: product repository template present |
 | `rules/` | Shared rules that are not product-specific | Pending setup |
 | `tools/` | External tools and MCP-related notes | Pending setup |
 | `scripts/` | Utility scripts for workspace operations | Pending setup |
@@ -50,6 +50,10 @@ Active standards files:
 
 - `standards/VIBECODER_STANDARDS.md`
 - `standards/VIBECODER_SYSTEM_INSTRUCTION.md`
+
+Active templates:
+
+- `templates/product-repo/`
 
 ### Product repositories
 
