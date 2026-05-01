@@ -45,7 +45,7 @@ git status --short
 
 Confirm Git is available and the repository status is understood before making changes.
 
-## 4. Local `_inbox/` Workflow
+## 4. Local `_inbox/` And `_local/` Workflow
 
 Use `_inbox/` only as a local temporary input buffer.
 
@@ -55,9 +55,21 @@ Allowed use:
 - place source documents, exported notes, screenshots, or temporary handoff files there;
 - read from `_inbox/` while converting facts into structured project knowledge.
 
+Use `_local/` for local-only project materials that should not be committed to GitHub.
+
+Recommended `_local/` subfolders:
+
+- `_local/inbox/`;
+- `_local/research/`;
+- `_local/exports/`;
+- `_local/screenshots/`;
+- `_local/drafts/`.
+
 Required safeguards:
 
 - `_inbox/` must be ignored by Git;
+- `_local/` must be ignored by Git;
+- Codex must not inspect `_local/` unless explicitly instructed;
 - never commit raw source notes if they contain operational details or sensitive values;
 - never commit secrets, tokens, real passwords, private keys, `.env` files, or credentials.
 

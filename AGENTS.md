@@ -18,6 +18,10 @@ This repository is the shared infrastructure workspace for Vibe Coding. It is no
 - Make the smallest correct change.
 - Do not touch unrelated files.
 
+## Local-Only Files
+
+Do not read, modify, stage, commit, summarize, or use files under `_local/` unless the task explicitly names a file inside `_local/`.
+
 ## Scope Rule
 
 - No style cleanup.

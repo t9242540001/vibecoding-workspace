@@ -8,6 +8,8 @@ This repository is the shared infrastructure center for Vibe Coding.
 
 It stores universal working procedures and templates. Product repositories remain separate and contain only their own project-specific code, context, infrastructure notes, and knowledge files.
 
+`_local/` is the standard ignored local-only project folder for temporary source materials, research, exports, screenshots, and drafts.
+
 ## Current status
 
 Initial setup is in progress.

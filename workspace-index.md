@@ -15,6 +15,8 @@ It stores the shared working system: standards, skills, templates, rules, tools,
 
 Product repositories remain separate. Each product repository stores only its own project-specific context, code, infrastructure notes, and knowledge files.
 
+`_local/` is the standard ignored local-only folder for temporary project materials and is not part of GitHub source of truth.
+
 ## Architecture
 
 Vasily

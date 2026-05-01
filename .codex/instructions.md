@@ -13,6 +13,7 @@
 
 - Edit only affected files.
 - Keep changes inside the explicit task scope.
+- `_local/` is local-only. Ignore it by default. Use it only when the prompt explicitly names a file inside `_local/`.
 
 ## After Work
 
