@@ -3,11 +3,9 @@
 ## Workspace Setup
 
 - Finish workspace repository hygiene.
-- Bootstrap Git workflow is documented in `docs/git-workflow.md`; branch protection and PR-only workflow remain pending.
-- Branch protection plan is documented in `docs/branch-protection-plan.md`; enabling remains pending.
-- Product template test artifact created at `examples/sample-product-repo/`.
-- VDS deploy and rollback pattern documented in `docs/deploy-rollback-pattern.md`.
-- New project onboarding is documented in `docs/new-project-onboarding.md`.
-- Work tracks and audit-first project prompts are documented.
-- Define the first real task cycle.
-- Postpone multi-agent expansion until the baseline loop works.
+- Roadmap decomposition is complete; navigation points to `docs/roadmap.md` and the extracted roadmap documents.
+- Local-only ignore rules are in place for `_local/`, `_inbox/`, and `.codex/config.toml`.
+- Code Agent task completion now requires push and GitHub visibility verification per `skills/prompt-writing-standard-universal.md`.
+- Plan and test the isolated Agent Execution Environment as the next operational capability.
+- Branch protection and PR-only workflow remain pending.
+- Postpone multi-agent expansion until the baseline and autonomous execution loops are stable.
