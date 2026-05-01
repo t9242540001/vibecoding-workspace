@@ -52,6 +52,59 @@ The long-term system needs autonomy for ordinary technical execution while still
 - Secrets are not exposed.
 - Vasily is not asked to approve routine technical git operations.
 
+## Setup Plan
+
+This is a staged setup plan, not completed work.
+
+1. Choose the execution environment.
+2. Create an isolated workspace without personal files.
+3. Add only selected trusted repositories.
+4. Configure Git identity and push flow.
+5. Define autonomy and approval boundaries.
+6. Define local-only `_local/` and secrets access boundaries.
+7. Run a safe documentation-only autonomous test cycle.
+8. Review the GitHub commit after execution.
+9. Decide whether to expand autonomy or keep restrictions.
+
+## Safe Test Cycle
+
+The first test should be a low-risk documentation-only task.
+
+It should verify that Code Agent can:
+
+- edit one allowed file;
+- run validation commands;
+- commit;
+- push;
+- report branch, commit SHA, push result, final `git status -sb`, and `git log --oneline -3`;
+- stop after push.
+
+The test must not involve production, secrets, deploy, payments, auth, personal data, or broad filesystem access.
+
+## Stop Conditions
+
+Autonomous execution must stop and ask for direction when any of these appear:
+
+- scope drift;
+- unexpected changed files;
+- secrets detected;
+- production/deploy impact;
+- auth/payments/PII impact;
+- failed checks that require a strategic choice;
+- unclear repository or branch;
+- need to access `_local/` or secrets not explicitly named.
+
+## Open Decisions
+
+These decisions still require Vasily or later workspace planning:
+
+- which execution environment to use first;
+- whether to use Codex web, CLI, IDE, WSL, container, or cloud runner;
+- how much filesystem access is acceptable;
+- how GitHub authentication should be handled;
+- whether test credentials are enough or real temporary dev credentials are needed;
+- when branch protection / PR-only workflow should be enabled.
+
 ## Current Status
 
 Pending.
