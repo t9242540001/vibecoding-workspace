@@ -84,6 +84,12 @@ Active tools, rules, and docs:
 - `docs/branch-protection-plan.md`
 - `docs/deploy-rollback-pattern.md`
 - `docs/next-steps.md`
+- `docs/roadmap.md`
+- `docs/product-factory.md`
+- `docs/research-and-specification-pipeline.md`
+- `docs/secure-development-access.md`
+- `docs/agent-development-loop.md`
+- `docs/agent-execution-environment.md`
 
 Active operational backlog:
 
