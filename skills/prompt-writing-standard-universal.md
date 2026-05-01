@@ -8,7 +8,7 @@ description: Complete workflow and template for writing Code Agent prompts. Use 
   @file:        skills/prompt-writing-standard/SKILL.md
   @description: Complete workflow for writing Code Agent prompts
   @version:     3.5
-  @updated:     2026-04-30
+  @updated:     2026-05-01
 -->
 
 ---
@@ -399,6 +399,16 @@ Request a written plan from the Code Agent first (no implementation) → review 
 
 ### Commits
 Code Agent commits after each completed prompt, not at the end. Meaningful messages. Creates rollback points.
+
+A Code Agent task is not complete after a local commit only. After every completed prompt:
+1. Run `git status -sb`.
+2. If the local branch is ahead of origin, push to origin.
+3. Run `git log --oneline -3`.
+4. Verify the commit is visible in GitHub, or explicitly report that verification is blocked.
+5. Report branch, commit SHA, push result, and final `git status -sb`.
+6. Do not start a new task after push.
+
+A task is complete only when the commit is pushed and visible in GitHub, or the push/verification failure is explicitly reported.
 
 ---
 
