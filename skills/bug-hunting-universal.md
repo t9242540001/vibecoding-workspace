@@ -8,7 +8,7 @@ description: Systematic protocol for finding and fixing bugs through hypothesis-
   @file:        skills/bug-hunting/SKILL.md
   @description: Systematic protocol for finding and fixing bugs
   @version:     2.1
-  @updated:     2026-04-30
+  @updated:     2026-05-02
 -->
 
 ---
@@ -240,6 +240,20 @@ In observability mode, "reproduction" means having enough captured evidence to w
 ### Blocking rule
 
 Without reproduction (deterministic, statistical, or observability-based) — **do not proceed to Phase 3**. Fixing without reproduction is gambling.
+
+### Engine / pipeline observability check
+
+If the bug affects an existing complex engine, pipeline, prompt orchestration, AI-call chain, OCR/upload flow, generation/evaluation flow, storage/logging/admin flow, or recurring bug path, apply the diagnostics parts of `docs/engine-change-workflow.md`.
+
+The investigation must answer: "How will we later see in logs/debug/admin surfaces that the suspected layer actually worked or failed?"
+
+If existing logs/debug/admin surfaces cannot show the relevant layer, treat missing diagnostic trace as a bug-hunting finding. The fix sequence must include one of:
+
+1. add safe diagnostic trace;
+2. explain why existing diagnostics are enough;
+3. create a separate follow-up prompt for diagnostics.
+
+Safe trace means metadata such as counts, flags, source labels, fields present/missing, truncation status, selected mode, source counts, step names, or non-sensitive IDs. Do not add raw personal data, full user documents, full prompt dumps, secrets, credentials, or unredacted sensitive content by default.
 
 ---
 
