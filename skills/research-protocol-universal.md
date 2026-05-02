@@ -8,7 +8,7 @@ description: Deep investigation protocol using the virtual team roster, with a d
   @file:        skills/research-protocol/SKILL.md
   @description: Deep investigation by the virtual team for decisions with long-term consequences
   @version:     1.1
-  @updated:     2026-04-30
+  @updated:     2026-05-02
 -->
 
 ---
@@ -94,6 +94,12 @@ From the answer, AI model / orchestrator picks sources — **in this order of pr
 1. **Past chats first** — run `conversation_search` before any other source when the question looks like it may have been discussed in earlier sessions, when Vasily references prior decisions, or when a similar task exists in another project. Accumulated history frequently already contains the answer or half of it, and starting here prevents redoing research we've already done. This is the single most under-used source across past cases.
 2. **Project knowledge** — read `knowledge/INDEX.md` + the relevant files when the question touches existing project state, architecture, or past decisions recorded in `decisions.md`.
 3. **External sources** — use `web_search` when the answer depends on facts about the outside world.
+
+**Existing complex system rule.** If the research supports a T3 change to an existing complex engine, pipeline, prompt orchestration, AI-call chain, OCR/upload flow, generation/evaluation flow, storage/logging/admin flow, or recurring bug path, Phase 1 must include Current Engine Audit from `docs/engine-change-workflow.md`.
+
+This audit identifies what already exists in code, what exists only as prompt-level intention, what works partially, which layers are disconnected, where the real failure point is, and what must not be changed.
+
+This rule does not apply to T3 decisions about new systems, vendor choices, monetization, legal strategy, or other decisions where no existing mechanism is being changed.
 
 **Hard rule — web search for external facts.** Any fact about the outside world that the recommendation rests on is verified via web search, not taken from training data. This applies to: laws and regulations (152-ФЗ, ГК, GDPR, product liability, advertising law), commercial service terms (API tariffs, payment commissions, affiliate rates), current state of fast-moving technologies (LLM models, framework versions, SDK capabilities), market numbers behind the decision (conversion rates, average revenue, audience size). Not every fact — only those the recommendation rests on.
 
