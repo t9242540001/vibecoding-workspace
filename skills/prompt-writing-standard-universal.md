@@ -8,7 +8,7 @@ description: Complete workflow and template for writing Code Agent prompts. Use 
   @file:        skills/prompt-writing-standard/SKILL.md
   @description: Complete workflow for writing Code Agent prompts
   @version:     3.5
-  @updated:     2026-05-01
+  @updated:     2026-05-02
 -->
 
 ---
@@ -53,6 +53,15 @@ If during work the task expands from T2 to T3 — stop, return to `research-prot
 
 **Step 3 — Diagnostics (for bug fixes and refactoring only).**
 Apply the diagnostics protocol from system instructions. No fix prompt without diagnostics data.
+
+**Step 3a — Existing engine / pipeline gate.**
+If the task changes an existing complex engine, pipeline, prompt orchestration, AI-call chain, OCR/upload flow, generation/evaluation flow, storage/logging/admin flow, or recurring bug path, apply `docs/engine-change-workflow.md` before writing an implementation prompt.
+
+Implementation prompts are blocked until the current mechanism is understood. The audit must identify what already exists in code, what exists only as prompt-level intention, what works partially, which layers are disconnected, where the real failure point is, and what must not be changed.
+
+For engine/pipeline changes, the prompt must also answer: "How will we later see in logs/debug/admin surfaces that the new layer actually worked?" It must either update safe diagnostics/log metadata, explain why existing diagnostics are enough, or create a separate follow-up prompt for diagnostics.
+
+The prompt must also assess whether AI-assisted E2E validation is required. If required but not included in the same prompt, create a follow-up prompt or explicit follow-up item.
 
 **Step 4 — Socratic questions.**
 Mandatory before writing prompts when the task is ambiguous or affects UX/business logic. Apply the Socratic method from system instructions.
@@ -361,6 +370,7 @@ Select applicable checks based on task type:
 | Backend / API | endpoint responds with expected status and payload |
 | Documentation only | all modified files have updated @updated date; INDEX.md updated |
 | Any task with code change | no TypeScript/lint errors; regression shield respected |
+| Engine / pipeline change | current engine audited; failure point mapped; diagnostics/log/admin visibility addressed or explicitly deferred; E2E validation need assessed |
 
 ---
 
