@@ -102,6 +102,7 @@ These decisions still require Vasily or later workspace planning:
 - whether to use Codex web, CLI, IDE, WSL, container, or cloud runner;
 - how much filesystem access is acceptable;
 - how GitHub authentication should be handled;
+- whether the current WSL DNS/GitHub access workaround is acceptable for the first autonomous test or must be replaced before broader use;
 - whether test credentials are enough or real temporary dev credentials are needed;
 - when branch protection / PR-only workflow should be enabled.
 
