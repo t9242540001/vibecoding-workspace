@@ -81,6 +81,40 @@ It should verify that Code Agent can:
 
 The test must not involve production, secrets, deploy, payments, auth, personal data, or broad filesystem access.
 
+## Local WSL Runner Test Result
+
+A first local WSL + Codex CLI test was run as a transitional proof-of-concept.
+
+What worked:
+
+- Codex CLI launched inside the isolated WSL workspace.
+- `approval: never` removed routine confirmation prompts.
+- `read-only` sandbox could inspect repository state and run safe git read commands.
+- `workspace-write` sandbox could edit the declared documentation file.
+- The scoped edit stayed within the requested file.
+- `git diff --check` passed.
+
+What did not work:
+
+- Local `git add` / commit failed inside the Codex sandbox because `.git/index.lock` could not be created.
+- The sandbox allowed working-tree file edits but did not provide a complete local edit → commit → push loop.
+- WSL networking required temporary DNS/GitHub/OpenAI API workarounds.
+- The successful commit/push was completed manually outside the Codex sandbox.
+
+Conclusion: local WSL runner is useful for proving no-approval execution and scoped edits, but it is a transitional mode, not the final autonomous execution environment.
+
+## Next Architecture Options
+
+The next planning step is to choose how autonomous commit/push should work.
+
+Options:
+
+1. Allow Git operations through a broader local sandbox only if the workspace is externally isolated enough.
+2. Split roles: Codex CLI performs scoped edit/test work, while a separate trusted runner performs commit/push.
+3. Move toward a GitHub/cloud runner where commit, push, logs, and verification are visible through GitHub.
+
+Preferred direction: treat local WSL as a proof-of-concept and evaluate GitHub/cloud runner or a dedicated isolated runner as the long-term path.
+
 ## Stop Conditions
 
 Autonomous execution must stop and ask for direction when any of these appear:
@@ -103,6 +137,8 @@ These decisions still require Vasily or later workspace planning:
 - how much filesystem access is acceptable;
 - how GitHub authentication should be handled;
 - whether the current WSL DNS/GitHub access workaround is acceptable for the first autonomous test or must be replaced before broader use;
+- whether Git operations should be allowed inside a broader local sandbox or handled by a separate runner;
+- whether the long-term target should be GitHub/cloud runner rather than local WSL runner;
 - whether test credentials are enough or real temporary dev credentials are needed;
 - when branch protection / PR-only workflow should be enabled.
 
