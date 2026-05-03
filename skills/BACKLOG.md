@@ -34,6 +34,13 @@ Rule: do not create new skills until the need is recurring and not already cover
 - Status: candidate, not created.
 - Creation condition: create only after repeated real use or explicit decision.
 
+### e2e-testing-loop
+
+- Trigger: recurring AI-assisted end-to-end validation for product flows where real UI behavior, uploads, OCR, model output, admin/debug logs, or post-deploy smoke checks must be verified.
+- Why useful: standardize fixture, scenario, expected checks, actual result, screenshots/logs, pass/fail, and next-action reporting for AI-assisted product testing.
+- Status: candidate, not created.
+- Creation condition: create only after repeated real use or explicit decision, starting from `docs/engine-change-workflow.md`.
+
 ### release-notes
 
 - Trigger: repeated need to summarize shipped changes.
