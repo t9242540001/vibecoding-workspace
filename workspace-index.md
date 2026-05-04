@@ -3,7 +3,7 @@
 <!--
   @file:        workspace-index.md
   @description: Root navigation file for the Vibe Coding workspace infrastructure
-  @updated:     2026-04-30
+  @updated:     2026-05-04
   @version:     0.2
 -->
 
@@ -90,6 +90,7 @@ Active tools, rules, and docs:
 - `docs/secure-development-access.md`
 - `docs/agent-development-loop.md`
 - `docs/agent-execution-environment.md`
+- `docs/agent-runner-github-actions.md`
 
 Active operational backlog:
 
