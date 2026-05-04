@@ -61,11 +61,12 @@ jobs:
           payload = {
               "model": os.environ["MODEL"],
               "messages": [
-                  {"role": "system", "content": "Return exactly the word OK."},
-                  {"role": "user", "content": "Smoke test."},
+                  {"role": "system", "content": "You are a smoke test responder."},
+                  {"role": "user", "content": "Reply with exactly: OK"},
               ],
+              "thinking": {"type": "disabled"},
               "temperature": 0,
-              "max_tokens": 8,
+              "max_tokens": 32,
           }
           print(json.dumps(payload))
           PY
@@ -102,26 +103,44 @@ jobs:
         run: |
           set -euo pipefail
 
-          parsed_content="$(
-            python - <<'PY'
+          python - <<'PY'
           import json
+          import os
+          import sys
 
           with open("/tmp/deepseek-response.json", "r", encoding="utf-8") as f:
               data = json.load(f)
 
-          content = data["choices"][0]["message"]["content"]
-          print(content.strip())
+          choice = data["choices"][0]
+          message = choice.get("message", {})
+          content = (message.get("content") or "").strip()
+          reasoning_content = message.get("reasoning_content")
+          finish_reason = choice.get("finish_reason")
+          response_model = data.get("model")
+          usage = data.get("usage")
+
+          if not content:
+              print("Parsed content is empty.")
+              print(f"Top-level keys: {sorted(data.keys())}")
+              print(f"Response model: {response_model}")
+              print(f"Finish reason: {finish_reason}")
+              print(f"Message keys: {sorted(message.keys())}")
+              print(f"Reasoning content present: {reasoning_content is not None}")
+              if usage is not None:
+                  print(f"Usage: {json.dumps(usage, sort_keys=True)}")
+              sys.exit(1)
+
+          with open("/tmp/deepseek-http-status.txt", "r", encoding="utf-8") as f:
+              http_status = f.read().strip()
+
+          print(f"HTTP status: {http_status}")
+          print(f"Requested model: {os.environ['MODEL']}")
+          print(f"Response model: {response_model}")
+          print(f"Finish reason: {finish_reason}")
+          print(f"Parsed content: {content}")
+          if usage is not None:
+              print(f"Usage: {json.dumps(usage, sort_keys=True)}")
           PY
-          )"
-
-          if [ -z "$parsed_content" ]; then
-            echo "Parsed content is empty."
-            exit 1
-          fi
-
-          echo "HTTP status: $(cat /tmp/deepseek-http-status.txt)"
-          echo "Model: $MODEL"
-          echo "Parsed content: $parsed_content"
 
       - name: Upload smoke response
         if: always()
