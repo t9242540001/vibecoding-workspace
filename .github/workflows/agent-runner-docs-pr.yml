@@ -1,0 +1,128 @@
+name: Agent Runner Docs PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_prompt:
+        description: Docs-only task for Codex. Must not request code, workflow, secrets, or non-doc changes.
+        required: true
+        type: string
+      allowed_path_prefix:
+        description: "Allowed changed file prefix. Default: docs/"
+        required: true
+        default: docs/
+        type: string
+      branch_suffix:
+        description: "Short safe branch suffix, for example docs-test"
+        required: true
+        default: docs-test
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  docs-agent:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Codex docs task
+        uses: openai/codex-action@main
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          sandbox: workspace-write
+          safety-strategy: drop-sudo
+          output-file: agent-runner-report.md
+          prompt: |
+            This is a docs-only runner for the vibecoding-workspace repository.
+
+            User-provided task:
+            ${{ inputs.task_prompt }}
+
+            Allowed changed file prefix:
+            ${{ inputs.allowed_path_prefix }}
+
+            You may modify files only under the allowed changed file prefix.
+            Do not read, modify, stage, commit, summarize, or use files under `_local/`.
+            Do not read, modify, stage, commit, summarize, or use `.codex/config.toml`.
+            Do not create, read, or modify secrets, credentials, tokens, private keys, `.env` files, staging URLs, or local-only materials.
+            Do not modify code, workflows, `.github/`, `.codex/`, `_local/`, README, standards, skills, templates, prompts, tools, rules, scripts, or non-doc files.
+            Do not commit or push.
+            Stop after editing allowed docs files and writing the report.
+
+      - name: Check changed files
+        id: changed
+        env:
+          ALLOWED_PATH_PREFIX: ${{ inputs.allowed_path_prefix }}
+        run: |
+          set -euo pipefail
+
+          git diff --name-only > /tmp/changed-files.txt
+
+          if [ ! -s /tmp/changed-files.txt ]; then
+            echo "No files changed."
+            exit 1
+          fi
+
+          while IFS= read -r file; do
+            case "$file" in
+              "$ALLOWED_PATH_PREFIX"*) ;;
+              *)
+                echo "Changed file is outside allowed path prefix: $file"
+                exit 1
+                ;;
+            esac
+
+            case "$file" in
+              .github/*|_local/*|.codex/*|*.env|*.env.*|*/.env|*/.env.*)
+                echo "Changed file is blocked by safety rules: $file"
+                exit 1
+                ;;
+            esac
+          done < /tmp/changed-files.txt
+
+          echo "Changed files:"
+          cat /tmp/changed-files.txt
+
+          {
+            echo "changed_files<<EOF"
+            cat /tmp/changed-files.txt
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create docs pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: Agent docs update
+          branch: agent/docs-${{ github.run_id }}-${{ inputs.branch_suffix }}
+          title: Agent docs update
+          body: |
+            ## Task Prompt
+
+            ${{ inputs.task_prompt }}
+
+            ## Allowed Path Prefix
+
+            `${{ inputs.allowed_path_prefix }}`
+
+            ## Changed Files
+
+            ```
+            ${{ steps.changed.outputs.changed_files }}
+            ```
+
+            ## Agent Report
+
+            See `agent-runner-report.md` if present in the workflow run.
+
+            This is a docs-only prototype.
+          labels: agent-runner, docs
+          delete-branch: true
