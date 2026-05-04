@@ -1,0 +1,133 @@
+name: Provider Smoke DeepSeek
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: DeepSeek model to test
+        required: true
+        default: deepseek-v4-flash
+        type: string
+      base_url:
+        description: DeepSeek OpenAI-compatible base URL
+        required: true
+        default: https://api.deepseek.com
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deepseek-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate inputs
+        env:
+          MODEL: ${{ inputs.model }}
+          BASE_URL: ${{ inputs.base_url }}
+        run: |
+          set -euo pipefail
+
+          if [ "$BASE_URL" != "https://api.deepseek.com" ]; then
+            echo "Invalid base_url. Expected https://api.deepseek.com."
+            exit 1
+          fi
+
+          if [ -z "$MODEL" ]; then
+            echo "Model input must not be empty."
+            exit 1
+          fi
+
+          echo "Inputs validated."
+
+      - name: Call DeepSeek chat completions
+        env:
+          MODEL: ${{ inputs.model }}
+          BASE_URL: ${{ inputs.base_url }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$DEEPSEEK_API_KEY" ]; then
+            echo "DEEPSEEK_API_KEY secret is not available."
+            exit 1
+          fi
+
+          python - <<'PY' > /tmp/deepseek-payload.json
+          import json
+          import os
+
+          payload = {
+              "model": os.environ["MODEL"],
+              "messages": [
+                  {"role": "system", "content": "Return exactly the word OK."},
+                  {"role": "user", "content": "Smoke test."},
+              ],
+              "temperature": 0,
+              "max_tokens": 8,
+          }
+          print(json.dumps(payload))
+          PY
+
+          http_status="$(
+            curl -sS \
+              -o /tmp/deepseek-response.json \
+              -w "%{http_code}" \
+              -X POST "$BASE_URL/chat/completions" \
+              -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
+              -H "Content-Type: application/json" \
+              --data @/tmp/deepseek-payload.json
+          )"
+
+          echo "$http_status" > /tmp/deepseek-http-status.txt
+          echo "HTTP status: $http_status"
+          echo "Model: $MODEL"
+
+          case "$http_status" in
+            2*) ;;
+            *)
+              echo "DeepSeek request failed."
+              if [ -s /tmp/deepseek-response.json ]; then
+                echo "Response body:"
+                cat /tmp/deepseek-response.json
+              fi
+              exit 1
+              ;;
+          esac
+
+      - name: Parse DeepSeek response
+        env:
+          MODEL: ${{ inputs.model }}
+        run: |
+          set -euo pipefail
+
+          parsed_content="$(
+            python - <<'PY'
+          import json
+
+          with open("/tmp/deepseek-response.json", "r", encoding="utf-8") as f:
+              data = json.load(f)
+
+          content = data["choices"][0]["message"]["content"]
+          print(content.strip())
+          PY
+          )"
+
+          if [ -z "$parsed_content" ]; then
+            echo "Parsed content is empty."
+            exit 1
+          fi
+
+          echo "HTTP status: $(cat /tmp/deepseek-http-status.txt)"
+          echo "Model: $MODEL"
+          echo "Parsed content: $parsed_content"
+
+      - name: Upload smoke response
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deepseek-smoke-response
+          path: /tmp/deepseek-response.json
+          if-no-files-found: ignore
+          retention-days: 3
