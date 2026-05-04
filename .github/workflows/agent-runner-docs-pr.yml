@@ -40,7 +40,7 @@ jobs:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           sandbox: workspace-write
           safety-strategy: drop-sudo
-          output-file: agent-runner-report.md
+          output-file: /tmp/agent-runner-report.md
           prompt: |
             This is a docs-only runner for the vibecoding-workspace repository.
 
@@ -98,6 +98,15 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Upload agent report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-runner-report
+          path: /tmp/agent-runner-report.md
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Create docs pull request
         uses: peter-evans/create-pull-request@v7
         with:
@@ -121,7 +130,7 @@ jobs:
 
             ## Agent Report
 
-            See `agent-runner-report.md` if present in the workflow run.
+            See the `agent-runner-report` workflow artifact if present.
 
             This is a docs-only prototype.
           labels: agent-runner, docs
