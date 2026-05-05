@@ -41,6 +41,7 @@ Use direct DeepSeek API first, not a router.
 - Do not assume parity with GPT-5.5 for complex product decisions.
 - Current status: provider smoke passed with `deepseek-v4-flash` after disabling thinking mode and using robust response parsing.
 - Current runner status: docs-only PR runner passed end-to-end with `deepseek-v4-flash`: generation, exact changed-file scope check, PR creation, and merge to `main`.
+- Current model matrix status: `deepseek-v4-flash` and `deepseek-v4-pro` passed the `core-text` smoke package.
 
 ## Qwen / Alibaba Model Studio
 
@@ -70,7 +71,8 @@ Use direct DeepSeek API first, not a router.
   - `gemini-2.5-pro` for stronger/reference experiments when limits allow.
 - Gemini is especially relevant for image/photo, audio, video, and multimodal document experiments.
 - Free-tier limits vary by model and tier and must not be assumed stable.
-- Current status: candidate, not yet smoke-tested in this workspace.
+- Current text status: `gemini-2.5-flash` and `gemini-2.5-flash-lite` passed the `core-text` smoke package.
+- Current media status: image, audio, video, and multimodal document use still require synthetic fixtures and modality-specific smoke tests.
 
 ## Security Rules
 
@@ -113,7 +115,7 @@ Use direct DeepSeek API first, not a router.
 7. Run docs-only smoke PR using the selected low-cost provider. Done with DeepSeek `deepseek-v4-flash`.
 8. Create universal model profiles config. Done.
 9. Add provider model smoke matrix workflow. Done.
-10. Run `core-text` smoke package including Gemini candidates.
+10. Run `core-text` smoke package including Gemini candidates. Done.
 11. Add E2E staging smoke provider selection.
 12. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
 

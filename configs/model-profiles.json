@@ -62,8 +62,8 @@
       "purpose": "Harder code and reasoning experiments after model smoke.",
       "default_model": "deepseek/deepseek-v4-pro",
       "backup_model": "openai/reference",
-      "status": "candidate_requires_smoke",
-      "notes": "DeepSeek pro is not yet smoke-tested in this workspace."
+      "status": "candidate_after_core_text_smoke",
+      "notes": "DeepSeek pro passed core-text smoke; still validate on real code fixtures before default use."
     },
     "e2e-text": {
       "purpose": "Browser/E2E staging text analysis and acceptance-criteria comparison.",
@@ -77,21 +77,21 @@
       "default_model": "gemini/gemini-2.5-flash",
       "backup_model": "qwen/qwen-vl-candidate",
       "status": "candidate_requires_synthetic_fixtures",
-      "notes": "Do not use real personal data by default."
+      "notes": "Gemini 2.5 Flash passed text smoke; media smoke still requires synthetic fixtures."
     },
     "video-understanding": {
       "purpose": "Video understanding for synthetic fixtures and future product flows.",
       "default_model": "gemini/gemini-2.5-flash",
       "backup_model": "qwen/qwen-video-candidate",
       "status": "candidate_requires_synthetic_fixtures",
-      "notes": "Requires dedicated media fixture rules."
+      "notes": "Gemini 2.5 Flash passed text smoke; video smoke still requires synthetic fixtures."
     },
     "audio-understanding": {
       "purpose": "Audio understanding for synthetic fixtures and future product flows.",
       "default_model": "gemini/gemini-2.5-flash",
       "backup_model": "qwen/qwen-audio-candidate",
       "status": "candidate_requires_synthetic_fixtures",
-      "notes": "Requires dedicated media fixture rules."
+      "notes": "Gemini 2.5 Flash passed text smoke; audio smoke still requires synthetic fixtures."
     },
     "image-generation": {
       "purpose": "Image generation experiments after policy and fixture design.",
@@ -105,7 +105,7 @@
       "default_model": "gemini/gemini-2.5-flash",
       "backup_model": "qwen/qwen-vl-candidate",
       "status": "candidate_requires_synthetic_fixtures",
-      "notes": "Use only after artifact safety rules exist."
+      "notes": "Gemini 2.5 Flash passed text smoke; document/media smoke still requires synthetic fixtures."
     },
     "reference-review": {
       "purpose": "High-quality reference review and comparison.",
@@ -147,10 +147,10 @@
         "strong-code",
         "reference-review"
       ],
-      "status": "candidate",
-      "smoke_status": "not_tested",
+      "status": "active_for_stronger_text_experiments",
+      "smoke_status": "core_text_smoke_passed",
       "modality": "text",
-      "notes": "Stronger candidate for harder text/code checks."
+      "notes": "Stronger candidate for harder text/code checks; core-text smoke passed."
     },
     "qwen/qwen-plus": {
       "provider": "qwen",
@@ -232,10 +232,10 @@
         "multimodal-document-analysis",
         "e2e-text"
       ],
-      "status": "candidate",
-      "smoke_status": "not_tested",
+      "status": "active_for_text_and_multimodal_experiments",
+      "smoke_status": "core_text_smoke_passed",
       "modality": "text,image,audio,video",
-      "notes": "Initial text/multimodal candidate."
+      "notes": "Core-text smoke passed. Initial text/multimodal candidate; media use still requires synthetic fixtures."
     },
     "gemini/gemini-2.5-flash-lite": {
       "provider": "gemini",
@@ -244,10 +244,10 @@
         "cheap-docs",
         "cheap-code"
       ],
-      "status": "candidate",
-      "smoke_status": "not_tested",
+      "status": "active_for_small_text_experiments",
+      "smoke_status": "core_text_smoke_passed",
       "modality": "text",
-      "notes": "Cheap/small task candidate."
+      "notes": "Core-text smoke passed. Cheap/small text task candidate; free-tier limits must be checked before routine use."
     },
     "gemini/gemini-2.5-pro": {
       "provider": "gemini",
@@ -297,6 +297,8 @@
   },
   "smoke_packages": {
     "core-text": {
+      "status": "passed",
+      "last_result": "passed with candidate models enabled",
       "models": [
         "deepseek/deepseek-v4-flash",
         "deepseek/deepseek-v4-pro",
