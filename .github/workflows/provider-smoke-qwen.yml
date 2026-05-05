@@ -1,0 +1,152 @@
+name: Provider Smoke Qwen
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Qwen model to test
+        required: true
+        default: qwen-plus
+        type: string
+      base_url:
+        description: Qwen OpenAI-compatible base URL
+        required: true
+        default: https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  qwen-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate inputs
+        env:
+          MODEL: ${{ inputs.model }}
+          BASE_URL: ${{ inputs.base_url }}
+        run: |
+          set -euo pipefail
+
+          case "$BASE_URL" in
+            https://dashscope-intl.aliyuncs.com/compatible-mode/v1|https://dashscope-us.aliyuncs.com/compatible-mode/v1|https://dashscope.aliyuncs.com/compatible-mode/v1) ;;
+            *)
+              echo "Invalid base_url. Use one of the allowed Qwen regional endpoints."
+              exit 1
+              ;;
+          esac
+
+          if [ -z "$MODEL" ]; then
+            echo "Model input must not be empty."
+            exit 1
+          fi
+
+          echo "Inputs validated."
+
+      - name: Call Qwen chat completions
+        env:
+          MODEL: ${{ inputs.model }}
+          BASE_URL: ${{ inputs.base_url }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$DASHSCOPE_API_KEY" ]; then
+            echo "DASHSCOPE_API_KEY secret is not available."
+            exit 1
+          fi
+
+          python - <<'PY' > /tmp/qwen-payload.json
+          import json
+          import os
+
+          payload = {
+              "model": os.environ["MODEL"],
+              "messages": [
+                  {"role": "system", "content": "You are a smoke test responder."},
+                  {"role": "user", "content": "Reply with exactly: OK"},
+              ],
+              "temperature": 0,
+              "max_tokens": 32,
+          }
+          print(json.dumps(payload))
+          PY
+
+          http_status="$(
+            curl -sS \
+              -o /tmp/qwen-response.json \
+              -w "%{http_code}" \
+              -X POST "$BASE_URL/chat/completions" \
+              -H "Authorization: Bearer $DASHSCOPE_API_KEY" \
+              -H "Content-Type: application/json" \
+              --data @/tmp/qwen-payload.json
+          )"
+
+          echo "$http_status" > /tmp/qwen-http-status.txt
+          echo "HTTP status: $http_status"
+          echo "Model: $MODEL"
+
+          case "$http_status" in
+            2*) ;;
+            *)
+              echo "Qwen request failed."
+              if [ -s /tmp/qwen-response.json ]; then
+                echo "Response body:"
+                cat /tmp/qwen-response.json
+              fi
+              exit 1
+              ;;
+          esac
+
+      - name: Parse Qwen response
+        env:
+          MODEL: ${{ inputs.model }}
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          import json
+          import os
+          import sys
+
+          with open("/tmp/qwen-response.json", "r", encoding="utf-8") as f:
+              data = json.load(f)
+
+          choice = data["choices"][0]
+          message = choice.get("message", {})
+          content = (message.get("content") or "").strip()
+          finish_reason = choice.get("finish_reason")
+          response_model = data.get("model")
+          usage = data.get("usage")
+
+          if not content:
+              print("Parsed content is empty.")
+              print(f"Top-level keys: {sorted(data.keys())}")
+              print(f"Response model: {response_model}")
+              print(f"Finish reason: {finish_reason}")
+              print(f"Message keys: {sorted(message.keys())}")
+              if usage is not None:
+                  print(f"Usage: {json.dumps(usage, sort_keys=True)}")
+              sys.exit(1)
+
+          with open("/tmp/qwen-http-status.txt", "r", encoding="utf-8") as f:
+              http_status = f.read().strip()
+
+          print(f"HTTP status: {http_status}")
+          print(f"Requested model: {os.environ['MODEL']}")
+          print(f"Response model: {response_model}")
+          print(f"Finish reason: {finish_reason}")
+          print(f"Parsed content: {content}")
+          if usage is not None:
+              print(f"Usage: {json.dumps(usage, sort_keys=True)}")
+          PY
+
+      - name: Upload smoke response
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qwen-smoke-response
+          path: /tmp/qwen-response.json
+          if-no-files-found: ignore
+          retention-days: 3
