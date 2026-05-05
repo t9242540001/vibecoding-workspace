@@ -92,6 +92,7 @@ Active tools, rules, and docs:
 - `docs/agent-execution-environment.md`
 - `docs/agent-runner-github-actions.md`
 - `docs/agent-runner-model-providers.md`
+- `docs/model-capability-matrix.md`
 
 Active operational backlog:
 
