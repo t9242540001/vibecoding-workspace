@@ -37,6 +37,7 @@ Use direct DeepSeek API first, not a router.
   - low-risk text/code validation;
   - provider compatibility testing.
 - Do not assume parity with GPT-5.5 for complex product decisions.
+- Current status: provider smoke passed with `deepseek-v4-flash` after disabling thinking mode and using robust response parsing.
 
 ## Qwen / Alibaba Model Studio
 
@@ -49,6 +50,11 @@ Use direct DeepSeek API first, not a router.
 - Qwen should be connected after DeepSeek.
 - Qwen is important not only for text, but also for code, vision/multimodal, audio/video/omni, math, and other specialized workflows where available.
 - Use Qwen text/code first; multimodal/E2E usage requires separate safety and fixture design.
+- Default working region: Singapore / international.
+- Current smoke endpoint: `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`.
+- Current smoke model: `qwen-plus`.
+- Current status: provider smoke passed with `qwen-plus` on the Singapore / international endpoint.
+- Qwen model families are broad, and some specialized models may require separate activation before workflow use.
 
 ## Security Rules
 
@@ -82,18 +88,20 @@ Use direct DeepSeek API first, not a router.
 
 ## Runner Integration Plan
 
-1. Document provider policy.
-2. Add DeepSeek smoke workflow or provider profile.
-3. Run docs-only smoke PR using DeepSeek.
-4. Add Qwen text/code smoke workflow or provider profile.
-5. Add E2E staging smoke provider selection.
-6. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
+1. Document provider policy. Done.
+2. Add DeepSeek smoke workflow or provider profile. Done.
+3. Run DeepSeek provider smoke. Done.
+4. Add Qwen text/code smoke workflow or provider profile. Done.
+5. Run Qwen provider smoke on Singapore / international endpoint. Done.
+6. Create a model capability matrix for provider/model selection.
+7. Run docs-only smoke PR using the selected low-cost provider.
+8. Add E2E staging smoke provider selection.
+9. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
 
 ## Open Decisions
 
 - whether to modify `openai/codex-action` configuration directly or use direct provider-specific smoke scripts first;
-- exact DeepSeek model for first smoke run;
-- Qwen region/account endpoint to use first;
+- which models belong in the first model capability matrix;
 - Qwen first text model and first multimodal model;
 - whether provider selection should be workflow input or separate workflows;
 - budget limits per provider;
