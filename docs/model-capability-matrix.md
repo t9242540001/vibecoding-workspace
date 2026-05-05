@@ -19,7 +19,7 @@ It is a working matrix for runner decisions, not a complete model catalog.
 | Provider | Secret | Region / Base URL | Smoke status | Notes |
 |---|---|---|---|---|
 | OpenAI | `OPENAI_API_KEY` | OpenAI Platform API | Blocked by API quota/billing in current runner test | Reference/high-quality provider; billing separate from ChatGPT subscription. |
-| DeepSeek | `DEEPSEEK_API_KEY` | `https://api.deepseek.com` | Passed | First cheap smoke provider; `deepseek-v4-flash` passed with thinking disabled. |
+| DeepSeek | `DEEPSEEK_API_KEY` | `https://api.deepseek.com` | Passed | First cheap smoke provider; `deepseek-v4-flash` passed with thinking disabled and docs-only PR runner passed end-to-end. |
 | Qwen / Alibaba Model Studio | `DASHSCOPE_API_KEY` | Singapore / international: `https://dashscope-intl.aliyuncs.com/compatible-mode/v1` | Passed | `qwen-plus` passed; many model families exist and some may require activation. |
 
 ## Initial Model Matrix
@@ -27,7 +27,7 @@ It is a working matrix for runner decisions, not a complete model catalog.
 | Provider | Model | Status | Best initial use | Avoid / not yet for | Notes |
 |---|---|---|---|---|---|
 | OpenAI | GPT-5.5 or current reference model | Reference, API quota not yet available | final review, high-risk reasoning, reference comparisons | cheap smoke loops until API billing is configured | ChatGPT subscription does not provide API quota. |
-| DeepSeek | `deepseek-v4-flash` | Smoke passed | cheap provider smoke, docs-only runner tests, low-risk text/code checks | final strategic/product decisions without review | Use non-thinking mode for deterministic smoke. |
+| DeepSeek | `deepseek-v4-flash` | Smoke and docs-only PR runner passed | cheap provider smoke, docs-only runner tests, low-risk text/code checks | final strategic/product decisions without review | Use non-thinking mode for deterministic smoke and docs runner loops. |
 | DeepSeek | `deepseek-v4-pro` | Candidate, not yet smoke-tested in workspace | harder text/code checks, stronger reasoning experiments | default cheap smoke until cost/latency are measured | Test after `deepseek-v4-flash` runner path works. |
 | Qwen | `qwen-plus` | Smoke passed | text/code smoke, general docs/text tasks, comparison against DeepSeek | multimodal tasks without separate fixtures | Singapore / international endpoint is the current working default. |
 | Qwen | Qwen Coder family | Candidate, activation/model choice pending | future code-focused runner checks | immediate default runner before smoke test | Needs exact model name and activation check. |
@@ -40,7 +40,7 @@ It is a working matrix for runner decisions, not a complete model catalog.
 | Task type | Default model now | Backup / comparison | Reason |
 |---|---|---|---|
 | Provider connectivity smoke | DeepSeek `deepseek-v4-flash` and Qwen `qwen-plus` | none | Both already passed provider smoke. |
-| Docs-only runner smoke | DeepSeek `deepseek-v4-flash` | Qwen `qwen-plus` | cheap, fast, already connected. |
+| Docs-only runner smoke | DeepSeek `deepseek-v4-flash` | Qwen `qwen-plus` | cheap, fast, already connected, and passed end-to-end PR loop. |
 | Low-risk text/code validation | DeepSeek `deepseek-v4-flash` | Qwen `qwen-plus` | enough for runner mechanics. |
 | Harder code/reasoning experiment | DeepSeek `deepseek-v4-pro` after smoke | OpenAI reference when API quota exists | stronger candidate, not default. |
 | Browser/E2E staging text analysis | Qwen `qwen-plus` or DeepSeek `deepseek-v4-flash` after runner tests | OpenAI reference when available | start with text-only checks before multimodal. |
@@ -63,8 +63,8 @@ It is a working matrix for runner decisions, not a complete model catalog.
 
 ## Near-Term Next Steps
 
-1. Add this matrix to workspace navigation.
-2. Build docs-only PR runner using selected low-cost provider.
+1. Add this matrix to workspace navigation. Done.
+2. Build docs-only PR runner using selected low-cost provider. Done with DeepSeek `deepseek-v4-flash`.
 3. Smoke-test `deepseek-v4-pro`.
 4. Add Qwen Coder candidate after selecting exact Singapore-available model.
 5. Design Browser/E2E staging text-analysis fixture.

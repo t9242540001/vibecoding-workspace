@@ -38,6 +38,7 @@ Use direct DeepSeek API first, not a router.
   - provider compatibility testing.
 - Do not assume parity with GPT-5.5 for complex product decisions.
 - Current status: provider smoke passed with `deepseek-v4-flash` after disabling thinking mode and using robust response parsing.
+- Current runner status: docs-only PR runner passed end-to-end with `deepseek-v4-flash`: generation, exact changed-file scope check, PR creation, and merge to `main`.
 
 ## Qwen / Alibaba Model Studio
 
@@ -93,8 +94,8 @@ Use direct DeepSeek API first, not a router.
 3. Run DeepSeek provider smoke. Done.
 4. Add Qwen text/code smoke workflow or provider profile. Done.
 5. Run Qwen provider smoke on Singapore / international endpoint. Done.
-6. Create a model capability matrix for provider/model selection.
-7. Run docs-only smoke PR using the selected low-cost provider.
+6. Create a model capability matrix for provider/model selection. Done.
+7. Run docs-only smoke PR using the selected low-cost provider. Done with DeepSeek `deepseek-v4-flash`.
 8. Add E2E staging smoke provider selection.
 9. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
 
