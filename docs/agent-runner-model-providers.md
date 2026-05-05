@@ -116,8 +116,9 @@ Use direct DeepSeek API first, not a router.
 8. Create universal model profiles config. Done.
 9. Add provider model smoke matrix workflow. Done.
 10. Run `core-text` smoke package including Gemini candidates. Done.
-11. Add E2E staging smoke provider selection.
-12. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
+11. Add Browser/E2E text fixture layer. Done.
+12. Run Browser/E2E text fixture smoke across selected models.
+13. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
 
 ## Open Decisions
 
@@ -126,6 +127,7 @@ Use direct DeepSeek API first, not a router.
 - Qwen first text model and first multimodal model;
 - which Gemini models should become default for image, audio, and video workflows;
 - whether Gemini free-tier limits are sufficient for routine small smoke tasks;
+- when sanitized real staging text summaries may replace synthetic Browser/E2E fixtures;
 - whether provider selection should be workflow input or separate workflows;
 - budget limits per provider;
 - artifact and prompt retention rules for provider comparisons.

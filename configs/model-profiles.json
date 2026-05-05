@@ -69,8 +69,8 @@
       "purpose": "Browser/E2E staging text analysis and acceptance-criteria comparison.",
       "default_model": "qwen/qwen-plus",
       "backup_model": "deepseek/deepseek-v4-flash",
-      "status": "candidate_after_runner_tests",
-      "notes": "Start with text-only checks before multimodal workflows."
+      "status": "fixture_layer_added",
+      "notes": "Synthetic Browser/E2E text fixture layer added; fixture smoke must pass before real staging text analysis."
     },
     "image-understanding": {
       "purpose": "Image/photo understanding for synthetic fixtures and safe artifacts.",
@@ -334,6 +334,20 @@
       ],
       "notes": [
         "image generation requires separate policy and fixture design"
+      ]
+    },
+    "e2e-text-fixtures": {
+      "status": "fixture_layer_added",
+      "models": [
+        "qwen/qwen-plus",
+        "deepseek/deepseek-v4-flash",
+        "deepseek/deepseek-v4-pro",
+        "gemini/gemini-2.5-flash"
+      ],
+      "notes": [
+        "uses synthetic Browser/E2E text fixtures",
+        "does not access real staging",
+        "does not run browser automation"
       ]
     }
   },

@@ -95,6 +95,8 @@ Active tools, rules, and docs:
 - `docs/agent-runner-model-providers.md`
 - `docs/model-capability-matrix.md`
 - `configs/model-profiles.json`
+- `configs/e2e-text-fixtures.json`
+- `docs/browser-e2e-text-fixtures.md`
 
 Active operational backlog:
 

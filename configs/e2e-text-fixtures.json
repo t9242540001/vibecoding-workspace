@@ -1,0 +1,96 @@
+{
+  "version": "0.1",
+  "updated": "2026-05-05",
+  "purpose": "Synthetic Browser/E2E text fixtures for validating model-based staging analysis before real staging access is connected.",
+  "rules": [
+    "fixtures are synthetic by default",
+    "do not include real personal data",
+    "do not include real staging URLs",
+    "do not include secrets, cookies, tokens, credentials, or session dumps",
+    "real staging runs must use sanitized text summaries unless explicitly approved",
+    "model output must be strict JSON matching the report schema",
+    "fixture smoke success does not mean browser automation is complete"
+  ],
+  "report_schema": {
+    "passed": "boolean",
+    "score": "number from 0 to 1",
+    "summary": "string",
+    "matched_criteria": [
+      "string"
+    ],
+    "missing_criteria": [
+      "string"
+    ],
+    "issues": [
+      {
+        "severity": "low | medium | high",
+        "description": "string",
+        "evidence": "string"
+      }
+    ],
+    "recommendation": "string"
+  },
+  "fixtures": {
+    "basic-success": {
+      "title": "Basic successful landing flow",
+      "status": "synthetic",
+      "task_type": "browser-e2e-text",
+      "browser_summary": {
+        "page_title": "Sample Product Landing",
+        "url_label": "synthetic-staging-url",
+        "visible_text": [
+          "Welcome to Sample Product",
+          "Create your first document",
+          "Start now",
+          "Privacy notice"
+        ],
+        "interactions": [
+          "Opened landing page",
+          "Clicked Start now",
+          "Document setup screen opened"
+        ],
+        "console_errors": [],
+        "network_errors": []
+      },
+      "acceptance_criteria": [
+        "Landing page is visible.",
+        "Primary call-to-action is visible.",
+        "Clicking the primary call-to-action opens the next setup step.",
+        "No console errors are present.",
+        "No network errors are present."
+      ],
+      "expected_result": {
+        "passed": true
+      }
+    },
+    "missing-cta": {
+      "title": "Landing flow with missing CTA",
+      "status": "synthetic",
+      "task_type": "browser-e2e-text",
+      "browser_summary": {
+        "page_title": "Sample Product Landing",
+        "url_label": "synthetic-staging-url",
+        "visible_text": [
+          "Welcome to Sample Product",
+          "Privacy notice"
+        ],
+        "interactions": [
+          "Opened landing page",
+          "Could not click Start now because no primary call-to-action was visible"
+        ],
+        "console_errors": [],
+        "network_errors": []
+      },
+      "acceptance_criteria": [
+        "Landing page is visible.",
+        "Primary call-to-action is visible.",
+        "Clicking the primary call-to-action opens the next setup step.",
+        "No console errors are present.",
+        "No network errors are present."
+      ],
+      "expected_result": {
+        "passed": false
+      }
+    }
+  }
+}

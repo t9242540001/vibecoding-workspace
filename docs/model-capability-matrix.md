@@ -50,7 +50,7 @@ It is a working matrix for runner decisions, not a complete model catalog.
 | Docs-only runner smoke | DeepSeek `deepseek-v4-flash` | Qwen `qwen-plus` | cheap, fast, already connected, and passed end-to-end PR loop. |
 | Low-risk text/code validation | DeepSeek `deepseek-v4-flash` | Qwen `qwen-plus` | enough for runner mechanics. |
 | Harder code/reasoning experiment | DeepSeek `deepseek-v4-pro` after code fixtures | OpenAI reference when API quota exists | core-text smoke passed, but real code fixtures are still required before default use. |
-| Browser/E2E staging text analysis | Qwen `qwen-plus` or DeepSeek `deepseek-v4-flash` after runner tests | OpenAI reference when available | start with text-only checks before multimodal. |
+| Browser/E2E staging text analysis | Qwen `qwen-plus` after fixture smoke | DeepSeek `deepseek-v4-flash` / `deepseek-v4-pro`, Gemini `gemini-2.5-flash` | fixture layer added; real staging requires sanitized text summaries. |
 | Image/document/multimodal checks | Gemini `gemini-2.5-flash` after media fixture smoke | Qwen VL family after activation and fixture design | Gemini text smoke passed, but media fixture smoke is still required. |
 | Audio understanding | Gemini `gemini-2.5-flash` after audio fixture smoke | Qwen audio family after activation | Gemini text smoke passed, but audio fixture smoke is still required. |
 | Video understanding | Gemini `gemini-2.5-flash` after video fixture smoke | Qwen video family after activation | Gemini text smoke passed, but video fixture smoke is still required. |
@@ -64,6 +64,7 @@ It is a working matrix for runner decisions, not a complete model catalog.
 - For multimodal models, smoke must use synthetic fixtures only.
 - Media models must pass fixture-based smoke for their modality before use in product or staging workflows.
 - Text smoke success for a multimodal model does not approve image, audio, or video use.
+- Browser/E2E text analysis must pass synthetic fixture smoke before real staging summaries are analyzed.
 - Smoke success does not mean the model is approved for high-risk decisions.
 
 ## Model Comparison Rules
@@ -81,6 +82,7 @@ It is a working matrix for runner decisions, not a complete model catalog.
 4. Add provider model smoke matrix workflow. Done.
 5. Run `core-text` smoke package. Done.
 6. Select exact Qwen Coder model available in Singapore / international region.
-7. Design Browser/E2E staging text-analysis fixture.
-8. Design synthetic fixtures for image, audio, video, and multimodal document workflows.
-9. Add media smoke workflows only after fixture rules are ready.
+7. Design Browser/E2E staging text-analysis fixture. Done.
+8. Run Browser/E2E text fixture smoke for `basic-success` and `missing-cta`.
+9. Design synthetic fixtures for image, audio, video, and multimodal document workflows.
+10. Add media smoke workflows only after fixture rules are ready.

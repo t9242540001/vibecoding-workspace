@@ -1,0 +1,308 @@
+name: E2E Text Fixture Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      fixture:
+        description: Fixture id from configs/e2e-text-fixtures.json
+        required: true
+        default: basic-success
+        type: choice
+        options:
+          - basic-success
+          - missing-cta
+      model_id:
+        description: Model id from configs/model-profiles.json
+        required: true
+        default: qwen/qwen-plus
+        type: choice
+        options:
+          - qwen/qwen-plus
+          - deepseek/deepseek-v4-flash
+          - deepseek/deepseek-v4-pro
+          - gemini/gemini-2.5-flash
+      strict_expected_result:
+        description: Fail if model pass/fail does not match fixture expected_result
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-text-fixture-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run E2E text fixture smoke
+        env:
+          FIXTURE_ID: ${{ inputs.fixture }}
+          MODEL_ID: ${{ inputs.model_id }}
+          STRICT_EXPECTED_RESULT: ${{ inputs.strict_expected_result }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p /tmp/e2e-text-fixture-smoke
+
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+          import urllib.error
+          import urllib.request
+
+          artifact_dir = pathlib.Path("/tmp/e2e-text-fixture-smoke")
+
+          with open("configs/e2e-text-fixtures.json", "r", encoding="utf-8") as f:
+              fixture_config = json.load(f)
+          with open("configs/model-profiles.json", "r", encoding="utf-8") as f:
+              model_config = json.load(f)
+
+          fixture_id = os.environ["FIXTURE_ID"]
+          model_id = os.environ["MODEL_ID"]
+          strict_expected = os.environ["STRICT_EXPECTED_RESULT"].lower() == "true"
+
+          fixtures = fixture_config["fixtures"]
+          models = model_config["models"]
+
+          if fixture_id not in fixtures:
+              print(f"Unknown fixture: {fixture_id}")
+              sys.exit(1)
+          if model_id not in models:
+              print(f"Unknown model: {model_id}")
+              sys.exit(1)
+
+          fixture = fixtures[fixture_id]
+          model_entry = models[model_id]
+          provider = model_entry["provider"]
+          model = model_entry["model"]
+          modality = model_entry["modality"]
+          smoke_status = model_entry["smoke_status"]
+
+          if provider not in {"qwen", "deepseek", "gemini"}:
+              print(f"Unsupported provider for E2E text fixture smoke: {provider}")
+              sys.exit(1)
+          if "text" not in modality:
+              print(f"Selected model is not text-capable: {model_id}")
+              sys.exit(1)
+          if smoke_status == "not_tested":
+              print(f"Selected model has not passed text smoke yet: {model_id}")
+              sys.exit(1)
+
+          report_schema = fixture_config["report_schema"]
+          system_prompt = (
+              "You evaluate synthetic Browser/E2E text output. "
+              "Return strict JSON only, no markdown fences, no prose outside JSON. "
+              "The JSON must match the supplied report schema."
+          )
+          user_payload = {
+              "fixture_title": fixture["title"],
+              "browser_summary": fixture["browser_summary"],
+              "acceptance_criteria": fixture["acceptance_criteria"],
+              "report_schema": report_schema,
+              "instructions": [
+                  "Assess whether the browser summary satisfies the acceptance criteria.",
+                  "Return only strict JSON with the required fields.",
+                  "Use issue severity low, medium, or high.",
+              ],
+          }
+
+          request_record = {
+              "fixture_id": fixture_id,
+              "model_id": model_id,
+              "provider": provider,
+              "system": system_prompt,
+              "user_payload": user_payload,
+          }
+          (artifact_dir / "request.json").write_text(
+              json.dumps(request_record, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+
+          def post_json(url, payload, headers):
+              body = json.dumps(payload).encode("utf-8")
+              request = urllib.request.Request(
+                  url,
+                  data=body,
+                  headers={**headers, "Content-Type": "application/json"},
+                  method="POST",
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=90) as response:
+                      text = response.read().decode("utf-8")
+                      return response.status, json.loads(text)
+              except urllib.error.HTTPError as exc:
+                  text = exc.read().decode("utf-8", errors="replace")
+                  try:
+                      parsed = json.loads(text)
+                  except json.JSONDecodeError:
+                      parsed = {"error": text}
+                  return exc.code, parsed
+
+          if provider == "deepseek":
+              key = os.environ.get("DEEPSEEK_API_KEY", "")
+              if not key:
+                  print("DEEPSEEK_API_KEY secret is not available.")
+                  sys.exit(1)
+              payload = {
+                  "model": model,
+                  "messages": [
+                      {"role": "system", "content": system_prompt},
+                      {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+                  ],
+                  "thinking": {"type": "disabled"},
+                  "temperature": 0,
+                  "max_tokens": 900,
+              }
+              http_status, raw_response = post_json(
+                  "https://api.deepseek.com/chat/completions",
+                  payload,
+                  {"Authorization": f"Bearer {key}"},
+              )
+              choices = raw_response.get("choices") or []
+              model_text = ""
+              if choices:
+                  model_text = ((choices[0].get("message") or {}).get("content") or "").strip()
+          elif provider == "qwen":
+              key = os.environ.get("DASHSCOPE_API_KEY", "")
+              if not key:
+                  print("DASHSCOPE_API_KEY secret is not available.")
+                  sys.exit(1)
+              payload = {
+                  "model": model,
+                  "messages": [
+                      {"role": "system", "content": system_prompt},
+                      {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+                  ],
+                  "temperature": 0,
+                  "max_tokens": 900,
+              }
+              http_status, raw_response = post_json(
+                  "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+                  payload,
+                  {"Authorization": f"Bearer {key}"},
+              )
+              choices = raw_response.get("choices") or []
+              model_text = ""
+              if choices:
+                  model_text = ((choices[0].get("message") or {}).get("content") or "").strip()
+          else:
+              key = os.environ.get("GEMINI_API_KEY", "")
+              if not key:
+                  print("GEMINI_API_KEY secret is not available.")
+                  sys.exit(1)
+              payload = {
+                  "contents": [
+                      {
+                          "role": "user",
+                          "parts": [
+                              {
+                                  "text": system_prompt
+                                  + "\n\nPayload:\n"
+                                  + json.dumps(user_payload, ensure_ascii=False)
+                              }
+                          ],
+                      }
+                  ],
+                  "generationConfig": {
+                      "temperature": 0,
+                      "maxOutputTokens": 900,
+                  },
+              }
+              http_status, raw_response = post_json(
+                  f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                  payload,
+                  {"x-goog-api-key": key},
+              )
+              candidates = raw_response.get("candidates") or []
+              model_text = ""
+              if candidates:
+                  parts = ((candidates[0].get("content") or {}).get("parts") or [])
+                  model_text = "".join(part.get("text", "") for part in parts).strip()
+
+          (artifact_dir / "raw-response.json").write_text(
+              json.dumps(raw_response, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+
+          if not (200 <= http_status < 300):
+              print(f"Provider request failed with HTTP status {http_status}.")
+              sys.exit(1)
+          if not model_text:
+              print("Model output text is empty.")
+              sys.exit(1)
+
+          try:
+              report = json.loads(model_text)
+          except json.JSONDecodeError as exc:
+              print(f"Model output was not strict JSON: {exc}")
+              sys.exit(1)
+
+          def require(condition, message):
+              if not condition:
+                  print(message)
+                  sys.exit(1)
+
+          require(isinstance(report.get("passed"), bool), "`passed` must be boolean.")
+          require(isinstance(report.get("score"), (int, float)), "`score` must be numeric.")
+          require(0 <= report["score"] <= 1, "`score` must be from 0 to 1.")
+          require(isinstance(report.get("summary"), str), "`summary` must be string.")
+          require(isinstance(report.get("matched_criteria"), list), "`matched_criteria` must be array.")
+          require(isinstance(report.get("missing_criteria"), list), "`missing_criteria` must be array.")
+          require(isinstance(report.get("issues"), list), "`issues` must be array.")
+          require(isinstance(report.get("recommendation"), str), "`recommendation` must be string.")
+          for field in ("matched_criteria", "missing_criteria"):
+              require(all(isinstance(item, str) for item in report[field]), f"`{field}` must contain strings.")
+          for issue in report["issues"]:
+              require(isinstance(issue, dict), "Each issue must be an object.")
+              require(issue.get("severity") in {"low", "medium", "high"}, "Issue severity must be low, medium, or high.")
+              require(isinstance(issue.get("description"), str), "Issue description must be string.")
+              require(isinstance(issue.get("evidence"), str), "Issue evidence must be string.")
+
+          expected_passed = fixture["expected_result"]["passed"]
+          if strict_expected and report["passed"] != expected_passed:
+              print(f"Expected passed={expected_passed}, got passed={report['passed']}.")
+              sys.exit(1)
+
+          (artifact_dir / "parsed-report.json").write_text(
+              json.dumps(report, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+          summary = "\n".join([
+              "# E2E Text Fixture Smoke",
+              "",
+              f"- Fixture: `{fixture_id}`",
+              f"- Model: `{model_id}`",
+              f"- Provider: `{provider}`",
+              f"- HTTP status: `{http_status}`",
+              f"- Passed: `{report['passed']}`",
+              f"- Score: `{report['score']}`",
+              f"- Recommendation: {report['recommendation']}",
+              "",
+          ])
+          (artifact_dir / "summary.md").write_text(summary, encoding="utf-8")
+
+          print(f"Fixture: {fixture_id}")
+          print(f"Model: {model_id}")
+          print(f"Provider: {provider}")
+          print(f"Passed: {report['passed']}")
+          print(f"Score: {report['score']}")
+          print(f"Recommendation: {report['recommendation']}")
+          PY
+
+      - name: Upload E2E text fixture smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-text-fixture-smoke
+          path: /tmp/e2e-text-fixture-smoke/
+          if-no-files-found: ignore
+          retention-days: 3
