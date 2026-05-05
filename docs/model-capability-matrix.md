@@ -1,0 +1,71 @@
+# Model Capability Matrix
+
+## Purpose
+
+This matrix helps choose the right provider/model for agent runner tasks based on cost, quality, speed, context, modality, compatibility, and current smoke status.
+
+It is a working matrix for runner decisions, not a complete model catalog.
+
+## Selection Principle
+
+- Use the cheapest adequate model for repeatable smoke tests.
+- Use stronger models only when acceptance criteria require quality or reasoning.
+- Do not treat all OpenAI-compatible APIs as behaviorally identical.
+- Do not use untested models in production-like workflows.
+- Keep model choice explicit in workflow inputs or documented runner profiles.
+
+## Current Provider Status
+
+| Provider | Secret | Region / Base URL | Smoke status | Notes |
+|---|---|---|---|---|
+| OpenAI | `OPENAI_API_KEY` | OpenAI Platform API | Blocked by API quota/billing in current runner test | Reference/high-quality provider; billing separate from ChatGPT subscription. |
+| DeepSeek | `DEEPSEEK_API_KEY` | `https://api.deepseek.com` | Passed | First cheap smoke provider; `deepseek-v4-flash` passed with thinking disabled. |
+| Qwen / Alibaba Model Studio | `DASHSCOPE_API_KEY` | Singapore / international: `https://dashscope-intl.aliyuncs.com/compatible-mode/v1` | Passed | `qwen-plus` passed; many model families exist and some may require activation. |
+
+## Initial Model Matrix
+
+| Provider | Model | Status | Best initial use | Avoid / not yet for | Notes |
+|---|---|---|---|---|---|
+| OpenAI | GPT-5.5 or current reference model | Reference, API quota not yet available | final review, high-risk reasoning, reference comparisons | cheap smoke loops until API billing is configured | ChatGPT subscription does not provide API quota. |
+| DeepSeek | `deepseek-v4-flash` | Smoke passed | cheap provider smoke, docs-only runner tests, low-risk text/code checks | final strategic/product decisions without review | Use non-thinking mode for deterministic smoke. |
+| DeepSeek | `deepseek-v4-pro` | Candidate, not yet smoke-tested in workspace | harder text/code checks, stronger reasoning experiments | default cheap smoke until cost/latency are measured | Test after `deepseek-v4-flash` runner path works. |
+| Qwen | `qwen-plus` | Smoke passed | text/code smoke, general docs/text tasks, comparison against DeepSeek | multimodal tasks without separate fixtures | Singapore / international endpoint is the current working default. |
+| Qwen | Qwen Coder family | Candidate, activation/model choice pending | future code-focused runner checks | immediate default runner before smoke test | Needs exact model name and activation check. |
+| Qwen | Qwen VL / vision family | Candidate, activation/model choice pending | future image/document/UI artifact interpretation | use with real personal data or unreviewed screenshots | Needs synthetic fixtures and artifact rules. |
+| Qwen | Qwen Omni / audio-video family | Future candidate | future audio/video workflows if needed | current docs/code runner | Defer until product need exists. |
+| Qwen | Qwen Math / specialized families | Future candidate | specialized evals if product needs them | general runner default | Activate/test only when needed. |
+
+## Task-To-Model Defaults
+
+| Task type | Default model now | Backup / comparison | Reason |
+|---|---|---|---|
+| Provider connectivity smoke | DeepSeek `deepseek-v4-flash` and Qwen `qwen-plus` | none | Both already passed provider smoke. |
+| Docs-only runner smoke | DeepSeek `deepseek-v4-flash` | Qwen `qwen-plus` | cheap, fast, already connected. |
+| Low-risk text/code validation | DeepSeek `deepseek-v4-flash` | Qwen `qwen-plus` | enough for runner mechanics. |
+| Harder code/reasoning experiment | DeepSeek `deepseek-v4-pro` after smoke | OpenAI reference when API quota exists | stronger candidate, not default. |
+| Browser/E2E staging text analysis | Qwen `qwen-plus` or DeepSeek `deepseek-v4-flash` after runner tests | OpenAI reference when available | start with text-only checks before multimodal. |
+| Image/document/multimodal checks | Qwen VL family after activation and fixture design | OpenAI multimodal reference when available | do not start before synthetic fixtures. |
+| Final high-risk product decision | OpenAI reference or human/orchestrator review | DeepSeek/Qwen as comparison only | quality and accountability matter more than token cost. |
+
+## Required Smoke Before Use
+
+- Every new model must pass provider/model smoke before use in a runner.
+- Smoke must verify auth, endpoint, model name, response parser, usage metadata if available, and artifact behavior.
+- For multimodal models, smoke must use synthetic fixtures only.
+- Smoke success does not mean the model is approved for high-risk decisions.
+
+## Model Comparison Rules
+
+- Compare models on task acceptance criteria, not vibes.
+- Track at least: pass/fail, cost, latency, output parseability, context limits, tool compatibility, and artifact safety.
+- Prefer small deterministic test prompts first.
+- Do not expand model matrix faster than tests can validate.
+
+## Near-Term Next Steps
+
+1. Add this matrix to workspace navigation.
+2. Build docs-only PR runner using selected low-cost provider.
+3. Smoke-test `deepseek-v4-pro`.
+4. Add Qwen Coder candidate after selecting exact Singapore-available model.
+5. Design Browser/E2E staging text-analysis fixture.
+6. Design multimodal fixture rules before any Qwen VL/Omni workflow.
