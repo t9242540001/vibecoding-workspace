@@ -38,6 +38,23 @@ This layer validates model-based Browser/E2E text analysis before real staging a
 - `qwen/qwen-plus` passed both current synthetic fixtures:
   - `basic-success`: expected `passed: true`, model returned `passed: true`, score `1.0`;
   - `missing-cta`: expected `passed: false`, model returned `passed: false`, score `0.6`.
+- `deepseek/deepseek-v4-flash` passed both current synthetic fixtures:
+  - `basic-success`: expected `passed: true`, model returned `passed: true`, score `1.0`;
+  - `missing-cta`: expected `passed: false`, model returned `passed: false`, score `0.6`.
+- `deepseek/deepseek-v4-pro` passed both current synthetic fixtures:
+  - `basic-success`: expected `passed: true`, model returned `passed: true`, score `1.0`;
+  - `missing-cta`: expected `passed: false`, model returned `passed: false`, score `0.6`.
+- `gemini/gemini-2.5-flash` failed as an experimental comparison model:
+  - `basic-success`: provider request failed with HTTP `503`;
+  - `missing-cta`: output was empty or not strict JSON.
+
+## Failure Policy
+
+The matrix uses `required-only` by default:
+
+- required models must pass for the workflow to pass;
+- experimental model failures are recorded but do not block the workflow;
+- `strict-all` can be used when every selected model must pass.
 
 ## Batch Matrix Workflow
 
@@ -45,6 +62,8 @@ This layer validates model-based Browser/E2E text analysis before real staging a
 - manual only
 - runs all current fixtures against the `e2e-text-fixtures` model package
 - intended to compare Qwen, DeepSeek, and Gemini without one-by-one manual runs
+- supports `failure_policy`
+- uses retry for transient provider errors
 - does not access real staging or run browser automation
 
 ## Report Contract
@@ -69,8 +88,9 @@ This layer validates model-based Browser/E2E text analysis before real staging a
 
 1. Run fixture smoke for `basic-success`. Done with `qwen/qwen-plus`.
 2. Run fixture smoke for `missing-cta`. Done with `qwen/qwen-plus`.
-3. Run E2E text fixture matrix across Qwen, DeepSeek, and Gemini.
-4. Compare Qwen, DeepSeek, and Gemini outputs.
-5. Add real staging text-summary fixture only after sanitization rules exist.
-6. Add browser automation later.
-7. Add screenshot/image/video fixtures only after media fixture rules exist.
+3. Run E2E text fixture matrix across Qwen, DeepSeek, and Gemini. Done for Qwen and DeepSeek; Gemini remains experimental.
+4. Rerun matrix with `failure_policy: required-only`.
+5. Keep Gemini as experimental until it passes both fixtures.
+6. Add sanitized real staging summary only after required fixture matrix is stable.
+7. Add browser automation later.
+8. Add screenshot/image/video fixtures only after media fixture rules exist.

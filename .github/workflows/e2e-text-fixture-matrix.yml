@@ -22,6 +22,14 @@ on:
         required: true
         default: true
         type: boolean
+      failure_policy:
+        description: Failure policy for selected model package
+        required: true
+        default: required-only
+        type: choice
+        options:
+          - required-only
+          - strict-all
 
 permissions:
   contents: read
@@ -39,6 +47,7 @@ jobs:
           MODEL_PACKAGE: ${{ inputs.model_package }}
           FIXTURE_PACKAGE: ${{ inputs.fixture_package }}
           STRICT_EXPECTED_RESULT: ${{ inputs.strict_expected_result }}
+          FAILURE_POLICY: ${{ inputs.failure_policy }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -52,6 +61,7 @@ jobs:
           import os
           import pathlib
           import sys
+          import time
           import urllib.error
           import urllib.request
 
@@ -65,6 +75,7 @@ jobs:
           model_package = os.environ["MODEL_PACKAGE"]
           fixture_package = os.environ["FIXTURE_PACKAGE"]
           strict_expected = os.environ["STRICT_EXPECTED_RESULT"].lower() == "true"
+          failure_policy = os.environ["FAILURE_POLICY"]
 
           fixtures = fixture_config["fixtures"]
           models = model_config["models"]
@@ -79,6 +90,17 @@ jobs:
 
           fixture_ids = sorted(fixtures.keys())
           model_ids = smoke_packages[model_package]["models"]
+          required_models = {
+              "qwen/qwen-plus",
+              "deepseek/deepseek-v4-flash",
+              "deepseek/deepseek-v4-pro",
+          }
+          experimental_models = {
+              "gemini/gemini-2.5-flash",
+          }
+          if model_package != "e2e-text-fixtures":
+              required_models = set(model_ids)
+              experimental_models = set()
           report_schema = fixture_config["report_schema"]
           system_prompt = (
               "You evaluate synthetic Browser/E2E text output. "
@@ -198,6 +220,35 @@ jobs:
 
               raise RuntimeError(f"Unsupported provider: {provider}")
 
+          def call_provider_with_retry(provider, model, user_payload):
+              transient_statuses = {429, 500, 502, 503, 504}
+              delays = [0, 3, 6]
+              last_status = None
+              last_response = {}
+              last_text = ""
+              for index, delay in enumerate(delays, start=1):
+                  if delay:
+                      time.sleep(delay)
+                  http_status, raw_response, model_text = call_provider(provider, model, user_payload)
+                  last_status = http_status
+                  last_response = raw_response
+                  last_text = model_text
+                  if http_status not in transient_statuses:
+                      return http_status, raw_response, model_text, index
+              return last_status, last_response, last_text, len(delays)
+
+          def gemini_diagnostics(raw_response):
+              diagnostics = []
+              diagnostics.append(f"top-level keys: {sorted(raw_response.keys())}")
+              candidates = raw_response.get("candidates")
+              diagnostics.append(f"candidates present: {candidates is not None}")
+              if candidates:
+                  first = candidates[0]
+                  diagnostics.append(f"first candidate keys: {sorted(first.keys())}")
+                  diagnostics.append(f"finish reason: {first.get('finishReason')}")
+                  diagnostics.append(f"safety ratings present: {first.get('safetyRatings') is not None}")
+              return "; ".join(diagnostics)
+
           def validate_report(report):
               errors = []
               if not isinstance(report.get("passed"), bool):
@@ -232,6 +283,7 @@ jobs:
 
           results = []
           failures = 0
+          blocking_failures = 0
 
           for fixture_id in fixture_ids:
               if fixture_id not in fixtures:
@@ -254,11 +306,14 @@ jobs:
                       "fixture_id": fixture_id,
                       "model_id": model_id,
                       "provider": provider,
+                      "required": model_id in required_models,
                       "expected_passed": expected_passed,
                       "actual_passed": None,
                       "score": None,
                       "status": "failed",
                       "http_status": None,
+                      "attempts": 0,
+                      "blocking_failure": False,
                       "error": "",
                   }
 
@@ -290,18 +345,23 @@ jobs:
                       }
                       write_json(combo_dir / "request.json", request_record)
 
-                      http_status, raw_response, model_text = call_provider(provider, model, user_payload)
+                      http_status, raw_response, model_text, attempts = call_provider_with_retry(provider, model, user_payload)
                       result["http_status"] = http_status
+                      result["attempts"] = attempts
                       write_json(combo_dir / "raw-response.json", raw_response)
 
                       if not (200 <= http_status < 300):
                           raise RuntimeError(f"Provider request failed with HTTP status {http_status}.")
                       if not model_text:
+                          if provider == "gemini":
+                              raise RuntimeError("Model output text is empty. " + gemini_diagnostics(raw_response))
                           raise RuntimeError("Model output text is empty.")
 
                       try:
                           report = json.loads(model_text)
                       except json.JSONDecodeError as exc:
+                          if provider == "gemini":
+                              raise RuntimeError(f"Model output was not strict JSON: {exc}. " + gemini_diagnostics(raw_response)) from exc
                           raise RuntimeError(f"Model output was not strict JSON: {exc}") from exc
 
                       schema_errors = validate_report(report)
@@ -315,21 +375,28 @@ jobs:
                       result["actual_passed"] = report["passed"]
                       result["score"] = report["score"]
                       result["status"] = "passed"
+                      result["blocking_failure"] = False
                       summary = "\n".join([
                           "# E2E Text Fixture Matrix Combination",
                           "",
                           f"- Fixture: `{fixture_id}`",
                           f"- Model: `{model_id}`",
                           f"- Provider: `{provider}`",
+                          f"- Required: `{result['required']}`",
                           f"- Expected passed: `{expected_passed}`",
                           f"- Actual passed: `{report['passed']}`",
                           f"- Score: `{report['score']}`",
+                          f"- Attempts: `{attempts}`",
+                          f"- Blocking failure: `{result['blocking_failure']}`",
                           f"- Recommendation: {report['recommendation']}",
                           "",
                       ])
                       (combo_dir / "summary.md").write_text(summary, encoding="utf-8")
                   except Exception as exc:
                       failures += 1
+                      result["blocking_failure"] = failure_policy == "strict-all" or result["required"]
+                      if result["blocking_failure"]:
+                          blocking_failures += 1
                       result["error"] = str(exc)
                       (combo_dir / "summary.md").write_text(
                           "\n".join([
@@ -338,8 +405,11 @@ jobs:
                               f"- Fixture: `{fixture_id}`",
                               f"- Model: `{model_id}`",
                               f"- Provider: `{provider}`",
+                              f"- Required: `{result['required']}`",
                               f"- Expected passed: `{expected_passed}`",
                               f"- Status: `failed`",
+                              f"- Attempts: `{result['attempts']}`",
+                              f"- Blocking failure: `{result['blocking_failure']}`",
                               f"- Error: {exc}",
                               "",
                           ]),
@@ -351,15 +421,16 @@ jobs:
           summary_lines = [
               "# E2E Text Fixture Matrix",
               "",
-              "| fixture id | model id | provider | expected passed | actual passed | score | status |",
-              "|---|---|---|---|---|---|---|",
+              "| fixture id | model id | provider | required | expected passed | actual passed | score | status | blocking failure | attempts |",
+              "|---|---|---|---|---|---|---|---|---|---|",
           ]
-          print("| fixture id | model id | provider | expected passed | actual passed | score | status |")
-          print("|---|---|---|---|---|---|---|")
+          print("| fixture id | model id | provider | required | expected passed | actual passed | score | status | blocking failure | attempts |")
+          print("|---|---|---|---|---|---|---|---|---|---|")
           for item in results:
               row = (
-                  f"| {item['fixture_id']} | {item['model_id']} | {item['provider']} | "
-                  f"{item['expected_passed']} | {item['actual_passed']} | {item['score']} | {item['status']} |"
+                  f"| {item['fixture_id']} | {item['model_id']} | {item['provider']} | {item['required']} | "
+                  f"{item['expected_passed']} | {item['actual_passed']} | {item['score']} | {item['status']} | "
+                  f"{item['blocking_failure']} | {item['attempts']} |"
               )
               print(row)
               summary_lines.append(row)
@@ -369,8 +440,9 @@ jobs:
           summary_lines.append("")
           (artifact_root / "summary.md").write_text("\n".join(summary_lines), encoding="utf-8")
 
-          if failures:
-              print(f"E2E text fixture matrix failures: {failures}")
+          print(f"E2E text fixture matrix total failures: {failures}")
+          print(f"E2E text fixture matrix blocking failures: {blocking_failures}")
+          if blocking_failures:
               sys.exit(1)
           PY
 

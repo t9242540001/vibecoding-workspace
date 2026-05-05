@@ -337,9 +337,18 @@
       ]
     },
     "e2e-text-fixtures": {
-      "status": "qwen_fixture_smoke_passed",
-      "last_result": "qwen/qwen-plus passed basic-success and missing-cta synthetic fixtures",
-      "next_result_needed": "run matrix across qwen, deepseek, and gemini models",
+      "status": "required_models_passed_gemini_experimental_failed",
+      "last_result": "qwen/qwen-plus, deepseek/deepseek-v4-flash, and deepseek/deepseek-v4-pro passed all current synthetic E2E text fixtures; gemini/gemini-2.5-flash failed and remains experimental",
+      "failure_policy": "required-only",
+      "required_models": [
+        "qwen/qwen-plus",
+        "deepseek/deepseek-v4-flash",
+        "deepseek/deepseek-v4-pro"
+      ],
+      "experimental_models": [
+        "gemini/gemini-2.5-flash"
+      ],
+      "next_result_needed": "rerun matrix with required-only policy after retry/diagnostics update",
       "models": [
         "qwen/qwen-plus",
         "deepseek/deepseek-v4-flash",
@@ -362,6 +371,43 @@
             "missing-cta": {
               "passed": false,
               "score": 0.6
+            }
+          }
+        },
+        "deepseek/deepseek-v4-flash": {
+          "status": "passed",
+          "fixtures": {
+            "basic-success": {
+              "passed": true,
+              "score": 1.0
+            },
+            "missing-cta": {
+              "passed": false,
+              "score": 0.6
+            }
+          }
+        },
+        "deepseek/deepseek-v4-pro": {
+          "status": "passed",
+          "fixtures": {
+            "basic-success": {
+              "passed": true,
+              "score": 1.0
+            },
+            "missing-cta": {
+              "passed": false,
+              "score": 0.6
+            }
+          }
+        },
+        "gemini/gemini-2.5-flash": {
+          "status": "failed_experimental",
+          "fixtures": {
+            "basic-success": {
+              "error": "HTTP 503"
+            },
+            "missing-cta": {
+              "error": "empty_or_non_strict_json_output"
             }
           }
         }
