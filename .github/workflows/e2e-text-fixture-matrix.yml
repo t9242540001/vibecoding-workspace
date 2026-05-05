@@ -1,0 +1,384 @@
+name: E2E Text Fixture Matrix
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_package:
+        description: Model package to run
+        required: true
+        default: e2e-text-fixtures
+        type: choice
+        options:
+          - e2e-text-fixtures
+      fixture_package:
+        description: Fixture package to run
+        required: true
+        default: all-current
+        type: choice
+        options:
+          - all-current
+      strict_expected_result:
+        description: Fail if model pass/fail does not match fixture expected_result
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-text-fixture-matrix:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run E2E text fixture matrix
+        env:
+          MODEL_PACKAGE: ${{ inputs.model_package }}
+          FIXTURE_PACKAGE: ${{ inputs.fixture_package }}
+          STRICT_EXPECTED_RESULT: ${{ inputs.strict_expected_result }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p /tmp/e2e-text-fixture-matrix
+
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+          import urllib.error
+          import urllib.request
+
+          artifact_root = pathlib.Path("/tmp/e2e-text-fixture-matrix")
+
+          with open("configs/e2e-text-fixtures.json", "r", encoding="utf-8") as f:
+              fixture_config = json.load(f)
+          with open("configs/model-profiles.json", "r", encoding="utf-8") as f:
+              model_config = json.load(f)
+
+          model_package = os.environ["MODEL_PACKAGE"]
+          fixture_package = os.environ["FIXTURE_PACKAGE"]
+          strict_expected = os.environ["STRICT_EXPECTED_RESULT"].lower() == "true"
+
+          fixtures = fixture_config["fixtures"]
+          models = model_config["models"]
+          smoke_packages = model_config["smoke_packages"]
+
+          if fixture_package != "all-current":
+              print(f"Unknown fixture package: {fixture_package}")
+              sys.exit(1)
+          if model_package not in smoke_packages:
+              print(f"Unknown model package: {model_package}")
+              sys.exit(1)
+
+          fixture_ids = sorted(fixtures.keys())
+          model_ids = smoke_packages[model_package]["models"]
+          report_schema = fixture_config["report_schema"]
+          system_prompt = (
+              "You evaluate synthetic Browser/E2E text output. "
+              "Return strict JSON only, no markdown fences, no prose outside JSON. "
+              "The JSON must match the supplied report schema."
+          )
+
+          def safe_model_id(model_id):
+              return model_id.replace("/", "__")
+
+          def write_json(path, data):
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+          def post_json(url, payload, headers):
+              body = json.dumps(payload).encode("utf-8")
+              request = urllib.request.Request(
+                  url,
+                  data=body,
+                  headers={**headers, "Content-Type": "application/json"},
+                  method="POST",
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=90) as response:
+                      text = response.read().decode("utf-8")
+                      return response.status, json.loads(text)
+              except urllib.error.HTTPError as exc:
+                  text = exc.read().decode("utf-8", errors="replace")
+                  try:
+                      parsed = json.loads(text)
+                  except json.JSONDecodeError:
+                      parsed = {"error": text}
+                  return exc.code, parsed
+
+          def call_provider(provider, model, user_payload):
+              if provider == "deepseek":
+                  key = os.environ.get("DEEPSEEK_API_KEY", "")
+                  if not key:
+                      raise RuntimeError("DEEPSEEK_API_KEY secret is not available.")
+                  payload = {
+                      "model": model,
+                      "messages": [
+                          {"role": "system", "content": system_prompt},
+                          {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+                      ],
+                      "thinking": {"type": "disabled"},
+                      "temperature": 0,
+                      "max_tokens": 900,
+                  }
+                  http_status, raw_response = post_json(
+                      "https://api.deepseek.com/chat/completions",
+                      payload,
+                      {"Authorization": f"Bearer {key}"},
+                  )
+                  choices = raw_response.get("choices") or []
+                  model_text = ""
+                  if choices:
+                      model_text = ((choices[0].get("message") or {}).get("content") or "").strip()
+                  return http_status, raw_response, model_text
+
+              if provider == "qwen":
+                  key = os.environ.get("DASHSCOPE_API_KEY", "")
+                  if not key:
+                      raise RuntimeError("DASHSCOPE_API_KEY secret is not available.")
+                  payload = {
+                      "model": model,
+                      "messages": [
+                          {"role": "system", "content": system_prompt},
+                          {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+                      ],
+                      "temperature": 0,
+                      "max_tokens": 900,
+                  }
+                  http_status, raw_response = post_json(
+                      "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+                      payload,
+                      {"Authorization": f"Bearer {key}"},
+                  )
+                  choices = raw_response.get("choices") or []
+                  model_text = ""
+                  if choices:
+                      model_text = ((choices[0].get("message") or {}).get("content") or "").strip()
+                  return http_status, raw_response, model_text
+
+              if provider == "gemini":
+                  key = os.environ.get("GEMINI_API_KEY", "")
+                  if not key:
+                      raise RuntimeError("GEMINI_API_KEY secret is not available.")
+                  payload = {
+                      "contents": [
+                          {
+                              "role": "user",
+                              "parts": [
+                                  {
+                                      "text": system_prompt
+                                      + "\n\nPayload:\n"
+                                      + json.dumps(user_payload, ensure_ascii=False)
+                                  }
+                              ],
+                          }
+                      ],
+                      "generationConfig": {
+                          "temperature": 0,
+                          "maxOutputTokens": 900,
+                      },
+                  }
+                  http_status, raw_response = post_json(
+                      f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                      payload,
+                      {"x-goog-api-key": key},
+                  )
+                  candidates = raw_response.get("candidates") or []
+                  model_text = ""
+                  if candidates:
+                      parts = ((candidates[0].get("content") or {}).get("parts") or [])
+                      model_text = "".join(part.get("text", "") for part in parts).strip()
+                  return http_status, raw_response, model_text
+
+              raise RuntimeError(f"Unsupported provider: {provider}")
+
+          def validate_report(report):
+              errors = []
+              if not isinstance(report.get("passed"), bool):
+                  errors.append("`passed` must be boolean.")
+              if not isinstance(report.get("score"), (int, float)):
+                  errors.append("`score` must be numeric.")
+              elif not 0 <= report["score"] <= 1:
+                  errors.append("`score` must be from 0 to 1.")
+              if not isinstance(report.get("summary"), str):
+                  errors.append("`summary` must be string.")
+              for field in ("matched_criteria", "missing_criteria"):
+                  if not isinstance(report.get(field), list):
+                      errors.append(f"`{field}` must be array.")
+                  elif not all(isinstance(item, str) for item in report[field]):
+                      errors.append(f"`{field}` must contain strings.")
+              if not isinstance(report.get("issues"), list):
+                  errors.append("`issues` must be array.")
+              else:
+                  for issue in report["issues"]:
+                      if not isinstance(issue, dict):
+                          errors.append("Each issue must be an object.")
+                          continue
+                      if issue.get("severity") not in {"low", "medium", "high"}:
+                          errors.append("Issue severity must be low, medium, or high.")
+                      if not isinstance(issue.get("description"), str):
+                          errors.append("Issue description must be string.")
+                      if not isinstance(issue.get("evidence"), str):
+                          errors.append("Issue evidence must be string.")
+              if not isinstance(report.get("recommendation"), str):
+                  errors.append("`recommendation` must be string.")
+              return errors
+
+          results = []
+          failures = 0
+
+          for fixture_id in fixture_ids:
+              if fixture_id not in fixtures:
+                  raise RuntimeError(f"Unknown fixture: {fixture_id}")
+              fixture = fixtures[fixture_id]
+              for model_id in model_ids:
+                  if model_id not in models:
+                      raise RuntimeError(f"Unknown model: {model_id}")
+                  model_entry = models[model_id]
+                  provider = model_entry["provider"]
+                  model = model_entry["model"]
+                  modality = model_entry["modality"]
+                  smoke_status = model_entry["smoke_status"]
+
+                  combo_dir = artifact_root / fixture_id / safe_model_id(model_id)
+                  combo_dir.mkdir(parents=True, exist_ok=True)
+
+                  expected_passed = fixture["expected_result"]["passed"]
+                  result = {
+                      "fixture_id": fixture_id,
+                      "model_id": model_id,
+                      "provider": provider,
+                      "expected_passed": expected_passed,
+                      "actual_passed": None,
+                      "score": None,
+                      "status": "failed",
+                      "http_status": None,
+                      "error": "",
+                  }
+
+                  try:
+                      if provider not in {"qwen", "deepseek", "gemini"}:
+                          raise RuntimeError(f"Unsupported provider: {provider}")
+                      if "text" not in modality:
+                          raise RuntimeError(f"Selected model is not text-capable: {model_id}")
+                      if smoke_status == "not_tested":
+                          raise RuntimeError(f"Selected model has not passed text smoke yet: {model_id}")
+
+                      user_payload = {
+                          "fixture_title": fixture["title"],
+                          "browser_summary": fixture["browser_summary"],
+                          "acceptance_criteria": fixture["acceptance_criteria"],
+                          "report_schema": report_schema,
+                          "instructions": [
+                              "Assess whether the browser summary satisfies the acceptance criteria.",
+                              "Return only strict JSON with the required fields.",
+                              "Use issue severity low, medium, or high.",
+                          ],
+                      }
+                      request_record = {
+                          "fixture_id": fixture_id,
+                          "model_id": model_id,
+                          "provider": provider,
+                          "system": system_prompt,
+                          "user_payload": user_payload,
+                      }
+                      write_json(combo_dir / "request.json", request_record)
+
+                      http_status, raw_response, model_text = call_provider(provider, model, user_payload)
+                      result["http_status"] = http_status
+                      write_json(combo_dir / "raw-response.json", raw_response)
+
+                      if not (200 <= http_status < 300):
+                          raise RuntimeError(f"Provider request failed with HTTP status {http_status}.")
+                      if not model_text:
+                          raise RuntimeError("Model output text is empty.")
+
+                      try:
+                          report = json.loads(model_text)
+                      except json.JSONDecodeError as exc:
+                          raise RuntimeError(f"Model output was not strict JSON: {exc}") from exc
+
+                      schema_errors = validate_report(report)
+                      if schema_errors:
+                          raise RuntimeError("; ".join(schema_errors))
+
+                      if strict_expected and report["passed"] != expected_passed:
+                          raise RuntimeError(f"Expected passed={expected_passed}, got passed={report['passed']}.")
+
+                      write_json(combo_dir / "parsed-report.json", report)
+                      result["actual_passed"] = report["passed"]
+                      result["score"] = report["score"]
+                      result["status"] = "passed"
+                      summary = "\n".join([
+                          "# E2E Text Fixture Matrix Combination",
+                          "",
+                          f"- Fixture: `{fixture_id}`",
+                          f"- Model: `{model_id}`",
+                          f"- Provider: `{provider}`",
+                          f"- Expected passed: `{expected_passed}`",
+                          f"- Actual passed: `{report['passed']}`",
+                          f"- Score: `{report['score']}`",
+                          f"- Recommendation: {report['recommendation']}",
+                          "",
+                      ])
+                      (combo_dir / "summary.md").write_text(summary, encoding="utf-8")
+                  except Exception as exc:
+                      failures += 1
+                      result["error"] = str(exc)
+                      (combo_dir / "summary.md").write_text(
+                          "\n".join([
+                              "# E2E Text Fixture Matrix Combination",
+                              "",
+                              f"- Fixture: `{fixture_id}`",
+                              f"- Model: `{model_id}`",
+                              f"- Provider: `{provider}`",
+                              f"- Expected passed: `{expected_passed}`",
+                              f"- Status: `failed`",
+                              f"- Error: {exc}",
+                              "",
+                          ]),
+                          encoding="utf-8",
+                      )
+                  results.append(result)
+
+          write_json(artifact_root / "summary.json", results)
+          summary_lines = [
+              "# E2E Text Fixture Matrix",
+              "",
+              "| fixture id | model id | provider | expected passed | actual passed | score | status |",
+              "|---|---|---|---|---|---|---|",
+          ]
+          print("| fixture id | model id | provider | expected passed | actual passed | score | status |")
+          print("|---|---|---|---|---|---|---|")
+          for item in results:
+              row = (
+                  f"| {item['fixture_id']} | {item['model_id']} | {item['provider']} | "
+                  f"{item['expected_passed']} | {item['actual_passed']} | {item['score']} | {item['status']} |"
+              )
+              print(row)
+              summary_lines.append(row)
+              if item["error"]:
+                  print(f"Error for {item['fixture_id']} / {item['model_id']}: {item['error']}")
+                  summary_lines.append(f"Error for `{item['fixture_id']}` / `{item['model_id']}`: {item['error']}")
+          summary_lines.append("")
+          (artifact_root / "summary.md").write_text("\n".join(summary_lines), encoding="utf-8")
+
+          if failures:
+              print(f"E2E text fixture matrix failures: {failures}")
+              sys.exit(1)
+          PY
+
+      - name: Upload E2E text fixture matrix artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-text-fixture-matrix
+          path: /tmp/e2e-text-fixture-matrix/
+          if-no-files-found: error
+          retention-days: 3

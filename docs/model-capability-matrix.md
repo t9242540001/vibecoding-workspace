@@ -50,7 +50,7 @@ It is a working matrix for runner decisions, not a complete model catalog.
 | Docs-only runner smoke | DeepSeek `deepseek-v4-flash` | Qwen `qwen-plus` | cheap, fast, already connected, and passed end-to-end PR loop. |
 | Low-risk text/code validation | DeepSeek `deepseek-v4-flash` | Qwen `qwen-plus` | enough for runner mechanics. |
 | Harder code/reasoning experiment | DeepSeek `deepseek-v4-pro` after code fixtures | OpenAI reference when API quota exists | core-text smoke passed, but real code fixtures are still required before default use. |
-| Browser/E2E staging text analysis | Qwen `qwen-plus` after fixture smoke | DeepSeek `deepseek-v4-flash` / `deepseek-v4-pro`, Gemini `gemini-2.5-flash` | fixture layer added; real staging requires sanitized text summaries. |
+| Browser/E2E staging text analysis | Qwen `qwen-plus` after fixture smoke | DeepSeek `deepseek-v4-flash` / `deepseek-v4-pro`, Gemini `gemini-2.5-flash` | Qwen passed both current synthetic fixtures; matrix comparison across DeepSeek and Gemini is next; real staging requires sanitized text summaries. |
 | Image/document/multimodal checks | Gemini `gemini-2.5-flash` after media fixture smoke | Qwen VL family after activation and fixture design | Gemini text smoke passed, but media fixture smoke is still required. |
 | Audio understanding | Gemini `gemini-2.5-flash` after audio fixture smoke | Qwen audio family after activation | Gemini text smoke passed, but audio fixture smoke is still required. |
 | Video understanding | Gemini `gemini-2.5-flash` after video fixture smoke | Qwen video family after activation | Gemini text smoke passed, but video fixture smoke is still required. |
@@ -83,6 +83,7 @@ It is a working matrix for runner decisions, not a complete model catalog.
 5. Run `core-text` smoke package. Done.
 6. Select exact Qwen Coder model available in Singapore / international region.
 7. Design Browser/E2E staging text-analysis fixture. Done.
-8. Run Browser/E2E text fixture smoke for `basic-success` and `missing-cta`.
-9. Design synthetic fixtures for image, audio, video, and multimodal document workflows.
-10. Add media smoke workflows only after fixture rules are ready.
+8. Run Browser/E2E text fixture smoke for `basic-success` and `missing-cta`. Done with Qwen `qwen-plus`.
+9. Run E2E text fixture matrix across Qwen, DeepSeek, and Gemini.
+10. Design synthetic fixtures for image, audio, video, and multimodal document workflows.
+11. Add media smoke workflows only after fixture rules are ready.

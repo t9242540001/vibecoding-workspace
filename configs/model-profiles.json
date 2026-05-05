@@ -337,7 +337,9 @@
       ]
     },
     "e2e-text-fixtures": {
-      "status": "fixture_layer_added",
+      "status": "qwen_fixture_smoke_passed",
+      "last_result": "qwen/qwen-plus passed basic-success and missing-cta synthetic fixtures",
+      "next_result_needed": "run matrix across qwen, deepseek, and gemini models",
       "models": [
         "qwen/qwen-plus",
         "deepseek/deepseek-v4-flash",
@@ -348,7 +350,22 @@
         "uses synthetic Browser/E2E text fixtures",
         "does not access real staging",
         "does not run browser automation"
-      ]
+      ],
+      "fixture_status": {
+        "qwen/qwen-plus": {
+          "status": "passed",
+          "fixtures": {
+            "basic-success": {
+              "passed": true,
+              "score": 1.0
+            },
+            "missing-cta": {
+              "passed": false,
+              "score": 0.6
+            }
+          }
+        }
+      }
     }
   },
   "rules": [

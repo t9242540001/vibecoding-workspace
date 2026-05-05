@@ -33,6 +33,20 @@ This layer validates model-based Browser/E2E text analysis before real staging a
   - `deepseek/deepseek-v4-pro`
   - `gemini/gemini-2.5-flash`
 
+## Current Results
+
+- `qwen/qwen-plus` passed both current synthetic fixtures:
+  - `basic-success`: expected `passed: true`, model returned `passed: true`, score `1.0`;
+  - `missing-cta`: expected `passed: false`, model returned `passed: false`, score `0.6`.
+
+## Batch Matrix Workflow
+
+- `.github/workflows/e2e-text-fixture-matrix.yml`
+- manual only
+- runs all current fixtures against the `e2e-text-fixtures` model package
+- intended to compare Qwen, DeepSeek, and Gemini without one-by-one manual runs
+- does not access real staging or run browser automation
+
 ## Report Contract
 
 - `passed`
@@ -53,9 +67,10 @@ This layer validates model-based Browser/E2E text analysis before real staging a
 
 ## Next Steps
 
-1. Run fixture smoke for `basic-success`.
-2. Run fixture smoke for `missing-cta`.
-3. Compare Qwen, DeepSeek, and Gemini outputs.
-4. Add real staging text-summary fixture only after sanitization rules exist.
-5. Add browser automation later.
-6. Add screenshot/image/video fixtures only after media fixture rules exist.
+1. Run fixture smoke for `basic-success`. Done with `qwen/qwen-plus`.
+2. Run fixture smoke for `missing-cta`. Done with `qwen/qwen-plus`.
+3. Run E2E text fixture matrix across Qwen, DeepSeek, and Gemini.
+4. Compare Qwen, DeepSeek, and Gemini outputs.
+5. Add real staging text-summary fixture only after sanitization rules exist.
+6. Add browser automation later.
+7. Add screenshot/image/video fixtures only after media fixture rules exist.

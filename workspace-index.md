@@ -97,6 +97,7 @@ Active tools, rules, and docs:
 - `configs/model-profiles.json`
 - `configs/e2e-text-fixtures.json`
 - `docs/browser-e2e-text-fixtures.md`
+- `.github/workflows/e2e-text-fixture-matrix.yml`
 
 Active operational backlog:
 

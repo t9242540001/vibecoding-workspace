@@ -117,8 +117,9 @@ Use direct DeepSeek API first, not a router.
 9. Add provider model smoke matrix workflow. Done.
 10. Run `core-text` smoke package including Gemini candidates. Done.
 11. Add Browser/E2E text fixture layer. Done.
-12. Run Browser/E2E text fixture smoke across selected models.
-13. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
+12. Run Browser/E2E text fixture smoke with Qwen `qwen-plus`. Done.
+13. Run Browser/E2E text fixture matrix across Qwen, DeepSeek, and Gemini.
+14. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
 
 ## Open Decisions
 
