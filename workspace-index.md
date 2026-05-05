@@ -98,6 +98,8 @@ Active tools, rules, and docs:
 - `configs/e2e-text-fixtures.json`
 - `docs/browser-e2e-text-fixtures.md`
 - `.github/workflows/e2e-text-fixture-matrix.yml`
+- `configs/e2e-staging-summary-contract.json`
+- `docs/e2e-staging-summary-contract.md`
 
 Active operational backlog:
 

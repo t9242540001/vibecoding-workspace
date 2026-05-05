@@ -1,0 +1,93 @@
+{
+  "version": "0.1",
+  "updated": "2026-05-05",
+  "purpose": "Defines the sanitized text summary format for future real Browser/E2E staging analysis before any real staging URL, browser automation, cookies, screenshots, or user data are connected.",
+  "status": "contract_added_not_connected_to_real_staging",
+  "allowed_input": [
+    "sanitized page title",
+    "route label or synthetic/stable route name, not full private URL",
+    "visible text snippets",
+    "interaction summary",
+    "console error summaries with secrets removed",
+    "network error summaries with secrets removed",
+    "accessibility notes",
+    "acceptance criteria",
+    "test metadata without secrets"
+  ],
+  "forbidden_input": [
+    "real staging URLs unless explicitly approved",
+    "cookies",
+    "auth headers",
+    "bearer tokens",
+    "API keys",
+    "passwords",
+    "session dumps",
+    "raw HAR files",
+    "screenshots by default",
+    "real user personal data",
+    "private client data",
+    "billing/payment data",
+    "full request/response bodies unless sanitized and approved",
+    "local file paths",
+    "server IPs and private endpoints unless explicitly approved"
+  ],
+  "required_summary_fields": [
+    "summary_id",
+    "source",
+    "environment_label",
+    "route_label",
+    "page_title",
+    "visible_text",
+    "interactions",
+    "acceptance_criteria",
+    "console_errors",
+    "network_errors",
+    "sanitization_notes"
+  ],
+  "optional_summary_fields": [
+    "accessibility_notes",
+    "performance_notes",
+    "browser",
+    "viewport",
+    "test_timestamp_label",
+    "known_limitations"
+  ],
+  "acceptance_criteria_rules": [
+    "criteria must be explicit",
+    "criteria must be observable from sanitized summary",
+    "criteria must not require hidden secrets or private data",
+    "model report must distinguish missing evidence from failure"
+  ],
+  "model_report_schema": {
+    "passed": "boolean",
+    "score": "number 0..1",
+    "summary": "string",
+    "matched_criteria": [
+      "string"
+    ],
+    "missing_criteria": [
+      "string"
+    ],
+    "issues": [
+      {
+        "severity": "string",
+        "description": "string",
+        "evidence": "string"
+      }
+    ],
+    "recommendation": "string"
+  },
+  "rules": [
+    "fixture success does not authorize unsanitized staging data",
+    "real staging summaries must pass this contract before model analysis",
+    "default model path is Qwen/DeepSeek required providers",
+    "Gemini remains experimental for E2E text until it passes reliably",
+    "no browser automation is added by this contract",
+    "no real staging secrets are stored in repository"
+  ],
+  "next_steps": [
+    "create sanitized staging summary example using fake data",
+    "add manual validator for summary JSON",
+    "then connect browser automation only after staging access rules are approved"
+  ]
+}

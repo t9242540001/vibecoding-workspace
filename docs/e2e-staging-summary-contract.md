@@ -1,0 +1,77 @@
+# E2E Staging Summary Contract
+
+## Purpose
+
+This contract is the bridge from synthetic Browser/E2E text fixtures to future real staging analysis.
+
+## Why This Exists
+
+Models should analyze sanitized summaries, not raw staging sessions, secrets, cookies, screenshots, request dumps, or user data.
+
+## Current Status
+
+- contract added;
+- not connected to real staging;
+- no browser automation yet;
+- no real staging URL required.
+
+## Allowed Input
+
+- sanitized page title;
+- route label or stable route name;
+- visible text snippets;
+- interaction summary;
+- sanitized console and network error summaries;
+- accessibility notes;
+- acceptance criteria;
+- test metadata without secrets.
+
+## Forbidden Input
+
+- secrets;
+- cookies;
+- tokens;
+- session dumps;
+- raw HAR;
+- real personal data;
+- private client data;
+- billing/payment data;
+- screenshots by default;
+- private endpoints unless explicitly approved.
+
+## Required Summary Fields
+
+- `summary_id`
+- `source`
+- `environment_label`
+- `route_label`
+- `page_title`
+- `visible_text`
+- `interactions`
+- `acceptance_criteria`
+- `console_errors`
+- `network_errors`
+- `sanitization_notes`
+
+## Model Report Contract
+
+- `passed`
+- `score`
+- `summary`
+- `matched_criteria`
+- `missing_criteria`
+- `issues`
+- `recommendation`
+
+## Default Model Policy
+
+Qwen `qwen-plus`, DeepSeek `deepseek-v4-flash`, and DeepSeek `deepseek-v4-pro` passed the required synthetic fixture matrix.
+
+Gemini `gemini-2.5-flash` remains experimental for this workflow.
+
+## Next Steps
+
+1. Create sanitized staging summary example using fake data.
+2. Add summary contract validator.
+3. Add manual staging-summary analysis workflow.
+4. Connect real browser automation only after staging access and sanitization rules are approved.

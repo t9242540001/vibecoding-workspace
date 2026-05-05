@@ -47,6 +47,7 @@ This layer validates model-based Browser/E2E text analysis before real staging a
 - `gemini/gemini-2.5-flash` failed as an experimental comparison model:
   - `basic-success`: provider request failed with HTTP `503`;
   - `missing-cta`: output was empty or not strict JSON.
+- Rerun after hardening passed with `failure_policy: required-only`: required Qwen/DeepSeek models passed, while Gemini remains experimental and non-blocking.
 
 ## Failure Policy
 
@@ -89,8 +90,9 @@ The matrix uses `required-only` by default:
 1. Run fixture smoke for `basic-success`. Done with `qwen/qwen-plus`.
 2. Run fixture smoke for `missing-cta`. Done with `qwen/qwen-plus`.
 3. Run E2E text fixture matrix across Qwen, DeepSeek, and Gemini. Done for Qwen and DeepSeek; Gemini remains experimental.
-4. Rerun matrix with `failure_policy: required-only`.
+4. Rerun matrix with `failure_policy: required-only`. Done.
 5. Keep Gemini as experimental until it passes both fixtures.
-6. Add sanitized real staging summary only after required fixture matrix is stable.
-7. Add browser automation later.
-8. Add screenshot/image/video fixtures only after media fixture rules exist.
+6. Add sanitized staging summary contract. Done.
+7. Create sanitized staging summary example and validator.
+8. Add browser automation later.
+9. Add screenshot/image/video fixtures only after media fixture rules exist.

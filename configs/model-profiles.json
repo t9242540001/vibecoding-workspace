@@ -337,8 +337,8 @@
       ]
     },
     "e2e-text-fixtures": {
-      "status": "required_models_passed_gemini_experimental_failed",
-      "last_result": "qwen/qwen-plus, deepseek/deepseek-v4-flash, and deepseek/deepseek-v4-pro passed all current synthetic E2E text fixtures; gemini/gemini-2.5-flash failed and remains experimental",
+      "status": "required_models_passed_after_hardening",
+      "last_result": "required-only matrix rerun passed after hardening; Qwen and DeepSeek required models passed current synthetic E2E text fixtures; Gemini remains experimental",
       "failure_policy": "required-only",
       "required_models": [
         "qwen/qwen-plus",
@@ -348,7 +348,7 @@
       "experimental_models": [
         "gemini/gemini-2.5-flash"
       ],
-      "next_result_needed": "rerun matrix with required-only policy after retry/diagnostics update",
+      "next_result_needed": "add sanitized staging summary example and validator before real staging analysis",
       "models": [
         "qwen/qwen-plus",
         "deepseek/deepseek-v4-flash",
@@ -412,6 +412,23 @@
           }
         }
       }
+    },
+    "e2e-staging-summary-contract": {
+      "status": "contract_added_not_connected",
+      "models": [
+        "qwen/qwen-plus",
+        "deepseek/deepseek-v4-flash",
+        "deepseek/deepseek-v4-pro"
+      ],
+      "experimental_models": [
+        "gemini/gemini-2.5-flash"
+      ],
+      "notes": [
+        "sanitized summary contract only",
+        "does not connect to real staging",
+        "does not run browser automation",
+        "real staging summaries must exclude secrets, cookies, tokens, personal data, and private endpoints unless explicitly approved"
+      ]
     }
   },
   "rules": [
