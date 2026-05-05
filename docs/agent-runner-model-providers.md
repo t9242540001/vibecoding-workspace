@@ -14,6 +14,7 @@ Provider choice affects cost, quality, compatibility, security, quota behavior, 
 - OpenAI remains the high-quality/reference provider.
 - DeepSeek direct API is the first cheap provider to test for text/code runner smoke tests.
 - Alibaba/Qwen is the second provider to connect, with separate treatment for text/code and future multimodal/browser/E2E support.
+- Gemini is the third provider to connect as a free/low-cost fallback and multimodal candidate for small tasks.
 - Provider changes must be explicit and documented; do not silently swap models.
 
 ## Provider Order
@@ -21,7 +22,8 @@ Provider choice affects cost, quality, compatibility, security, quota behavior, 
 1. OpenAI - reference/high-quality provider when API billing is available.
 2. DeepSeek - first low-cost smoke-test provider.
 3. Qwen / Alibaba Model Studio - second provider, especially valuable for broader model families and future multimodal tests.
-4. Other routers/providers - later only after direct providers are understood.
+4. Gemini - third provider, useful as a free/low-cost fallback and multimodal candidate.
+5. Other routers/providers - later only after direct providers are understood.
 
 ## DeepSeek
 
@@ -56,6 +58,19 @@ Use direct DeepSeek API first, not a router.
 - Current smoke model: `qwen-plus`.
 - Current status: provider smoke passed with `qwen-plus` on the Singapore / international endpoint.
 - Qwen model families are broad, and some specialized models may require separate activation before workflow use.
+
+## Gemini
+
+- GitHub Secret: `GEMINI_API_KEY`.
+- API: Google Gemini API.
+- Initial role: free/low-cost fallback for small text tasks and multimodal candidate.
+- Initial text/multimodal candidates:
+  - `gemini-2.5-flash`;
+  - `gemini-2.5-flash-lite`;
+  - `gemini-2.5-pro` for stronger/reference experiments when limits allow.
+- Gemini is especially relevant for image/photo, audio, video, and multimodal document experiments.
+- Free-tier limits vary by model and tier and must not be assumed stable.
+- Current status: candidate, not yet smoke-tested in this workspace.
 
 ## Security Rules
 
@@ -96,14 +111,19 @@ Use direct DeepSeek API first, not a router.
 5. Run Qwen provider smoke on Singapore / international endpoint. Done.
 6. Create a model capability matrix for provider/model selection. Done.
 7. Run docs-only smoke PR using the selected low-cost provider. Done with DeepSeek `deepseek-v4-flash`.
-8. Add E2E staging smoke provider selection.
-9. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
+8. Create universal model profiles config. Done.
+9. Add provider model smoke matrix workflow. Done.
+10. Run `core-text` smoke package including Gemini candidates.
+11. Add E2E staging smoke provider selection.
+12. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
 
 ## Open Decisions
 
 - whether to modify `openai/codex-action` configuration directly or use direct provider-specific smoke scripts first;
 - which models belong in the first model capability matrix;
 - Qwen first text model and first multimodal model;
+- which Gemini models should become default for image, audio, and video workflows;
+- whether Gemini free-tier limits are sufficient for routine small smoke tasks;
 - whether provider selection should be workflow input or separate workflows;
 - budget limits per provider;
 - artifact and prompt retention rules for provider comparisons.

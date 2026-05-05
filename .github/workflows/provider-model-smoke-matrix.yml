@@ -1,0 +1,251 @@
+name: Provider Model Smoke Matrix
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Smoke package to run
+        required: true
+        default: core-text
+        type: choice
+        options:
+          - core-text
+          - reference-text
+          - multimodal-candidates
+          - generation-candidates
+      include_candidates:
+        description: Run candidate models that are not yet approved
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-matrix:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run provider model smoke matrix
+        env:
+          SMOKE_PACKAGE: ${{ inputs.package }}
+          INCLUDE_CANDIDATES: ${{ inputs.include_candidates }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p /tmp/model-smoke
+
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+          import urllib.error
+          import urllib.request
+
+          config_path = pathlib.Path("configs/model-profiles.json")
+          with config_path.open("r", encoding="utf-8") as f:
+              config = json.load(f)
+
+          package_name = os.environ["SMOKE_PACKAGE"]
+          include_candidates = os.environ["INCLUDE_CANDIDATES"].lower() == "true"
+          package = config["smoke_packages"].get(package_name)
+          if package is None:
+              print(f"Unknown smoke package: {package_name}")
+              sys.exit(1)
+
+          smoke_dir = pathlib.Path("/tmp/model-smoke")
+          selected = package["models"]
+          results = []
+
+          def write_json(name, data):
+              safe_name = name.replace("/", "__")
+              path = smoke_dir / f"{safe_name}.json"
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+          def record(model_id, provider, status, http_status="", content="", note=""):
+              results.append({
+                  "model_id": model_id,
+                  "provider": provider,
+                  "status": status,
+                  "http_status": str(http_status) if http_status else "",
+                  "content": content,
+                  "note": note,
+              })
+
+          def post_json(url, payload, headers):
+              data = json.dumps(payload).encode("utf-8")
+              request = urllib.request.Request(
+                  url,
+                  data=data,
+                  headers={**headers, "Content-Type": "application/json"},
+                  method="POST",
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=60) as response:
+                      body = response.read().decode("utf-8")
+                      return response.status, json.loads(body)
+              except urllib.error.HTTPError as exc:
+                  body = exc.read().decode("utf-8", errors="replace")
+                  try:
+                      parsed = json.loads(body)
+                  except json.JSONDecodeError:
+                      parsed = {"error": body}
+                  return exc.code, parsed
+
+          def deepseek_smoke(model):
+              key = os.environ.get("DEEPSEEK_API_KEY", "")
+              if not key:
+                  raise RuntimeError("DEEPSEEK_API_KEY secret is not available.")
+              payload = {
+                  "model": model,
+                  "messages": [
+                      {"role": "system", "content": "You are a smoke test responder."},
+                      {"role": "user", "content": "Reply with exactly: OK"},
+                  ],
+                  "thinking": {"type": "disabled"},
+                  "temperature": 0,
+                  "max_tokens": 32,
+              }
+              status, data = post_json(
+                  "https://api.deepseek.com/chat/completions",
+                  payload,
+                  {"Authorization": f"Bearer {key}"},
+              )
+              content = ""
+              if 200 <= status < 300:
+                  choices = data.get("choices") or []
+                  if choices:
+                      content = ((choices[0].get("message") or {}).get("content") or "").strip()
+              return status, data, content
+
+          def qwen_smoke(model):
+              key = os.environ.get("DASHSCOPE_API_KEY", "")
+              if not key:
+                  raise RuntimeError("DASHSCOPE_API_KEY secret is not available.")
+              payload = {
+                  "model": model,
+                  "messages": [
+                      {"role": "system", "content": "You are a smoke test responder."},
+                      {"role": "user", "content": "Reply with exactly: OK"},
+                  ],
+                  "temperature": 0,
+                  "max_tokens": 32,
+              }
+              status, data = post_json(
+                  "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+                  payload,
+                  {"Authorization": f"Bearer {key}"},
+              )
+              content = ""
+              if 200 <= status < 300:
+                  choices = data.get("choices") or []
+                  if choices:
+                      content = ((choices[0].get("message") or {}).get("content") or "").strip()
+              return status, data, content
+
+          def gemini_smoke(model):
+              key = os.environ.get("GEMINI_API_KEY", "")
+              if not key:
+                  raise RuntimeError("GEMINI_API_KEY secret is not available.")
+              payload = {
+                  "contents": [
+                      {
+                          "role": "user",
+                          "parts": [
+                              {"text": "Reply with exactly: OK"}
+                          ],
+                      }
+                  ],
+                  "generationConfig": {
+                      "temperature": 0,
+                      "maxOutputTokens": 32,
+                  },
+              }
+              url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+              status, data = post_json(url, payload, {"x-goog-api-key": key})
+              content = ""
+              if 200 <= status < 300:
+                  candidates = data.get("candidates") or []
+                  if candidates:
+                      parts = ((candidates[0].get("content") or {}).get("parts") or [])
+                      content = "".join(part.get("text", "") for part in parts).strip()
+              return status, data, content
+
+          failures = 0
+          for model_id in selected:
+              model_entry = config["models"][model_id]
+              provider = model_entry["provider"]
+              model = model_entry["model"]
+              status = model_entry["status"]
+              smoke_status = model_entry["smoke_status"]
+              modality = model_entry["modality"]
+
+              if model_id == "openai/reference":
+                  record(model_id, provider, "skipped", note="OpenAI reference skipped: API quota/billing is not configured.")
+                  continue
+
+              if ("candidate" in status or smoke_status == "not_tested") and not include_candidates:
+                  record(model_id, provider, "skipped", note="Candidate or not-tested model skipped; set include_candidates=true to run.")
+                  continue
+
+              if model.endswith("-candidate"):
+                  record(model_id, provider, "skipped", note="Placeholder candidate skipped until exact model name and activation are known.")
+                  continue
+
+              if "text" not in modality:
+                  record(model_id, provider, "skipped", note="Model is not text-smoke compatible in this first matrix workflow.")
+                  continue
+
+              try:
+                  if provider == "deepseek":
+                      http_status, data, content = deepseek_smoke(model)
+                  elif provider == "qwen":
+                      http_status, data, content = qwen_smoke(model)
+                  elif provider == "gemini":
+                      http_status, data, content = gemini_smoke(model)
+                  else:
+                      record(model_id, provider, "skipped", note="Provider is not supported by this smoke matrix.")
+                      continue
+                  write_json(model_id, data)
+                  if 200 <= http_status < 300 and content:
+                      record(model_id, provider, "passed", http_status=http_status, content=content)
+                  else:
+                      failures += 1
+                      record(model_id, provider, "failed", http_status=http_status, content=content, note="HTTP request failed or parsed content was empty.")
+              except Exception as exc:
+                  failures += 1
+                  write_json(model_id, {"error": str(exc)})
+                  record(model_id, provider, "failed", note=str(exc))
+
+          summary_path = smoke_dir / "summary.json"
+          summary_path.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
+
+          print("| model id | provider | status | HTTP status | parsed content |")
+          print("|---|---|---|---|---|")
+          for item in results:
+              content = item["content"].replace("|", "\\|")
+              print(f"| {item['model_id']} | {item['provider']} | {item['status']} | {item['http_status']} | {content} |")
+              if item["note"]:
+                  print(f"Note for {item['model_id']}: {item['note']}")
+
+          if failures:
+              print(f"Smoke matrix failed models: {failures}")
+              sys.exit(1)
+          PY
+
+      - name: Upload smoke matrix responses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: provider-model-smoke-matrix
+          path: /tmp/model-smoke/
+          if-no-files-found: ignore
+          retention-days: 3

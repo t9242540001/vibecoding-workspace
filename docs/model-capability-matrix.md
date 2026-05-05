@@ -21,6 +21,7 @@ It is a working matrix for runner decisions, not a complete model catalog.
 | OpenAI | `OPENAI_API_KEY` | OpenAI Platform API | Blocked by API quota/billing in current runner test | Reference/high-quality provider; billing separate from ChatGPT subscription. |
 | DeepSeek | `DEEPSEEK_API_KEY` | `https://api.deepseek.com` | Passed | First cheap smoke provider; `deepseek-v4-flash` passed with thinking disabled and docs-only PR runner passed end-to-end. |
 | Qwen / Alibaba Model Studio | `DASHSCOPE_API_KEY` | Singapore / international: `https://dashscope-intl.aliyuncs.com/compatible-mode/v1` | Passed | `qwen-plus` passed; many model families exist and some may require activation. |
+| Gemini | `GEMINI_API_KEY` | Google Gemini API | Candidate, not yet smoke-tested | Free/low-cost fallback candidate and multimodal candidate for image, audio, video, and document workflows. |
 
 ## Initial Model Matrix
 
@@ -34,6 +35,12 @@ It is a working matrix for runner decisions, not a complete model catalog.
 | Qwen | Qwen VL / vision family | Candidate, activation/model choice pending | future image/document/UI artifact interpretation | use with real personal data or unreviewed screenshots | Needs synthetic fixtures and artifact rules. |
 | Qwen | Qwen Omni / audio-video family | Future candidate | future audio/video workflows if needed | current docs/code runner | Defer until product need exists. |
 | Qwen | Qwen Math / specialized families | Future candidate | specialized evals if product needs them | general runner default | Activate/test only when needed. |
+| Gemini | `gemini-2.5-flash` | Candidate, not yet smoke-tested in workspace | small text, e2e-text, image/audio/video/document experiments | product or staging workflows before smoke and fixtures | Initial text/multimodal candidate. |
+| Gemini | `gemini-2.5-flash-lite` | Candidate, not yet smoke-tested in workspace | cheapest small tasks and repeatable smoke experiments | stronger reasoning or high-risk review | Free-tier limits must be checked before routine use. |
+| Gemini | `gemini-2.5-pro` | Candidate, not yet smoke-tested in workspace | stronger/reference experiments when free/tier limits allow | cheap smoke default | Use only after provider/model smoke. |
+| Gemini | Gemini image candidate | Future candidate | future image generation experiments | current docs/code runner or use without policy | Requires synthetic fixtures and separate workflow rules. |
+| Gemini | Gemini audio candidate | Future candidate | future audio understanding workflows | use with real personal data or unreviewed recordings | Requires synthetic fixtures and separate workflow rules. |
+| Gemini | Gemini video candidate | Future candidate | future video understanding workflows | use with real personal data or unreviewed recordings | Requires synthetic fixtures and separate workflow rules. |
 
 ## Task-To-Model Defaults
 
@@ -44,7 +51,10 @@ It is a working matrix for runner decisions, not a complete model catalog.
 | Low-risk text/code validation | DeepSeek `deepseek-v4-flash` | Qwen `qwen-plus` | enough for runner mechanics. |
 | Harder code/reasoning experiment | DeepSeek `deepseek-v4-pro` after smoke | OpenAI reference when API quota exists | stronger candidate, not default. |
 | Browser/E2E staging text analysis | Qwen `qwen-plus` or DeepSeek `deepseek-v4-flash` after runner tests | OpenAI reference when available | start with text-only checks before multimodal. |
-| Image/document/multimodal checks | Qwen VL family after activation and fixture design | OpenAI multimodal reference when available | do not start before synthetic fixtures. |
+| Image/document/multimodal checks | Gemini `gemini-2.5-flash` after smoke | Qwen VL family after activation and fixture design | do not start before synthetic fixtures. |
+| Audio understanding | Gemini `gemini-2.5-flash` after smoke and fixture design | Qwen audio family after activation | media workflows need synthetic fixtures first. |
+| Video understanding | Gemini `gemini-2.5-flash` after smoke and fixture design | Qwen video family after activation | media workflows need synthetic fixtures first. |
+| Image generation | Gemini image candidate after policy and fixture design | Qwen image generation candidate after activation | generation workflows need separate safety rules. |
 | Final high-risk product decision | OpenAI reference or human/orchestrator review | DeepSeek/Qwen as comparison only | quality and accountability matter more than token cost. |
 
 ## Required Smoke Before Use
@@ -52,6 +62,7 @@ It is a working matrix for runner decisions, not a complete model catalog.
 - Every new model must pass provider/model smoke before use in a runner.
 - Smoke must verify auth, endpoint, model name, response parser, usage metadata if available, and artifact behavior.
 - For multimodal models, smoke must use synthetic fixtures only.
+- Media models must pass fixture-based smoke for their modality before use in product or staging workflows.
 - Smoke success does not mean the model is approved for high-risk decisions.
 
 ## Model Comparison Rules
@@ -65,7 +76,10 @@ It is a working matrix for runner decisions, not a complete model catalog.
 
 1. Add this matrix to workspace navigation. Done.
 2. Build docs-only PR runner using selected low-cost provider. Done with DeepSeek `deepseek-v4-flash`.
-3. Smoke-test `deepseek-v4-pro`.
-4. Add Qwen Coder candidate after selecting exact Singapore-available model.
-5. Design Browser/E2E staging text-analysis fixture.
-6. Design multimodal fixture rules before any Qwen VL/Omni workflow.
+3. Create universal model profiles config. Done.
+4. Add provider model smoke matrix workflow. Done.
+5. Run `core-text` smoke package.
+6. Select exact Qwen Coder model available in Singapore / international region.
+7. Design Browser/E2E staging text-analysis fixture.
+8. Design synthetic fixtures for image, audio, video, and multimodal document workflows.
+9. Add media smoke workflows only after fixture rules are ready.

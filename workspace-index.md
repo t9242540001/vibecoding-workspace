@@ -45,6 +45,7 @@ Planned contents:
 | `examples/` | Sample artifacts for validating workspace templates | Active: sample product repository template test present |
 | `rules/` | Shared rules that are not product-specific | Active: root rules note present |
 | `tools/` | External tools and MCP-related notes | Active: plugin registry present |
+| `configs/` | Shared machine-readable configuration for runners and model profiles | Active: model profiles present |
 | `prompts/` | Reusable prompt templates for workspace and product workflows | Active: project audit and knowledge repair prompts present |
 | `scripts/` | Utility scripts for workspace operations | Pending setup |
 | `docs/` | Supporting documentation | Active: repository and Codex workflow docs present |
@@ -93,6 +94,7 @@ Active tools, rules, and docs:
 - `docs/agent-runner-github-actions.md`
 - `docs/agent-runner-model-providers.md`
 - `docs/model-capability-matrix.md`
+- `configs/model-profiles.json`
 
 Active operational backlog:
 

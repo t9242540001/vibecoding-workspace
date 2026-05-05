@@ -1,0 +1,346 @@
+{
+  "version": "0.1",
+  "updated": "2026-05-05",
+  "purpose": "Shared machine-readable model profiles for Vibe Coding agent runners, smoke tests, and provider selection.",
+  "providers": {
+    "openai": {
+      "status": "reference_blocked_by_api_billing",
+      "secret": "OPENAI_API_KEY",
+      "notes": [
+        "reference/high-quality provider",
+        "ChatGPT subscription does not provide API quota"
+      ]
+    },
+    "deepseek": {
+      "status": "active",
+      "secret": "DEEPSEEK_API_KEY",
+      "base_url": "https://api.deepseek.com",
+      "default_mode": "non_thinking_for_smoke",
+      "notes": [
+        "provider smoke passed",
+        "docs-only PR runner passed end-to-end"
+      ]
+    },
+    "qwen": {
+      "status": "active",
+      "secret": "DASHSCOPE_API_KEY",
+      "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+      "region": "Singapore / international",
+      "notes": [
+        "provider smoke passed with `qwen-plus`",
+        "specialized models may require activation"
+      ]
+    },
+    "gemini": {
+      "status": "candidate",
+      "secret": "GEMINI_API_KEY",
+      "api": "Google Gemini API",
+      "notes": [
+        "added as free/low-cost fallback candidate",
+        "useful for small text tasks and multimodal experiments",
+        "free-tier limits vary by model/tier and must not be assumed stable",
+        "not yet smoke-tested in this workspace"
+      ]
+    }
+  },
+  "task_profiles": {
+    "cheap-docs": {
+      "purpose": "Repeatable low-cost documentation generation and docs-only runner smoke.",
+      "default_model": "deepseek/deepseek-v4-flash",
+      "backup_model": "qwen/qwen-plus",
+      "status": "active",
+      "notes": "DeepSeek docs-only PR runner passed end-to-end."
+    },
+    "cheap-code": {
+      "purpose": "Low-risk text/code validation where runner mechanics matter more than reference quality.",
+      "default_model": "deepseek/deepseek-v4-flash",
+      "backup_model": "qwen/qwen-plus",
+      "status": "active",
+      "notes": "Use for cheap checks, not final high-risk decisions."
+    },
+    "strong-code": {
+      "purpose": "Harder code and reasoning experiments after model smoke.",
+      "default_model": "deepseek/deepseek-v4-pro",
+      "backup_model": "openai/reference",
+      "status": "candidate_requires_smoke",
+      "notes": "DeepSeek pro is not yet smoke-tested in this workspace."
+    },
+    "e2e-text": {
+      "purpose": "Browser/E2E staging text analysis and acceptance-criteria comparison.",
+      "default_model": "qwen/qwen-plus",
+      "backup_model": "deepseek/deepseek-v4-flash",
+      "status": "candidate_after_runner_tests",
+      "notes": "Start with text-only checks before multimodal workflows."
+    },
+    "image-understanding": {
+      "purpose": "Image/photo understanding for synthetic fixtures and safe artifacts.",
+      "default_model": "gemini/gemini-2.5-flash",
+      "backup_model": "qwen/qwen-vl-candidate",
+      "status": "candidate_requires_synthetic_fixtures",
+      "notes": "Do not use real personal data by default."
+    },
+    "video-understanding": {
+      "purpose": "Video understanding for synthetic fixtures and future product flows.",
+      "default_model": "gemini/gemini-2.5-flash",
+      "backup_model": "qwen/qwen-video-candidate",
+      "status": "candidate_requires_synthetic_fixtures",
+      "notes": "Requires dedicated media fixture rules."
+    },
+    "audio-understanding": {
+      "purpose": "Audio understanding for synthetic fixtures and future product flows.",
+      "default_model": "gemini/gemini-2.5-flash",
+      "backup_model": "qwen/qwen-audio-candidate",
+      "status": "candidate_requires_synthetic_fixtures",
+      "notes": "Requires dedicated media fixture rules."
+    },
+    "image-generation": {
+      "purpose": "Image generation experiments after policy and fixture design.",
+      "default_model": "gemini/gemini-image-candidate",
+      "backup_model": "qwen/qwen-image-generation-candidate",
+      "status": "future_candidate_requires_policy_and_fixture_design",
+      "notes": "Not part of the initial text smoke runner."
+    },
+    "multimodal-document-analysis": {
+      "purpose": "Document and mixed-media analysis using synthetic fixtures.",
+      "default_model": "gemini/gemini-2.5-flash",
+      "backup_model": "qwen/qwen-vl-candidate",
+      "status": "candidate_requires_synthetic_fixtures",
+      "notes": "Use only after artifact safety rules exist."
+    },
+    "reference-review": {
+      "purpose": "High-quality reference review and comparison.",
+      "default_model": "openai/reference",
+      "backup_model": "deepseek/deepseek-v4-pro",
+      "status": "reference_blocked_by_api_billing",
+      "notes": "OpenAI API billing/quota must be configured first."
+    }
+  },
+  "models": {
+    "openai/reference": {
+      "provider": "openai",
+      "model": "reference",
+      "profiles": [
+        "reference-review"
+      ],
+      "status": "reference_blocked_by_api_billing",
+      "smoke_status": "blocked_by_api_billing",
+      "modality": "text",
+      "notes": "Reference/high-quality provider once API quota is available."
+    },
+    "deepseek/deepseek-v4-flash": {
+      "provider": "deepseek",
+      "model": "deepseek-v4-flash",
+      "profiles": [
+        "cheap-docs",
+        "cheap-code",
+        "e2e-text"
+      ],
+      "status": "active",
+      "smoke_status": "provider_smoke_and_docs_pr_runner_passed",
+      "modality": "text",
+      "notes": "Use non-thinking mode for deterministic smoke and docs runner loops."
+    },
+    "deepseek/deepseek-v4-pro": {
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
+      "profiles": [
+        "strong-code",
+        "reference-review"
+      ],
+      "status": "candidate",
+      "smoke_status": "not_tested",
+      "modality": "text",
+      "notes": "Stronger candidate for harder text/code checks."
+    },
+    "qwen/qwen-plus": {
+      "provider": "qwen",
+      "model": "qwen-plus",
+      "profiles": [
+        "cheap-docs",
+        "cheap-code",
+        "e2e-text"
+      ],
+      "status": "active",
+      "smoke_status": "provider_smoke_passed",
+      "modality": "text",
+      "notes": "Current working Qwen text model on Singapore / international endpoint."
+    },
+    "qwen/qwen-coder-candidate": {
+      "provider": "qwen",
+      "model": "qwen-coder-candidate",
+      "profiles": [
+        "cheap-code",
+        "strong-code"
+      ],
+      "status": "candidate_requires_activation_check",
+      "smoke_status": "not_tested",
+      "modality": "text",
+      "notes": "Exact Singapore-available model name must be selected."
+    },
+    "qwen/qwen-vl-candidate": {
+      "provider": "qwen",
+      "model": "qwen-vl-candidate",
+      "profiles": [
+        "image-understanding",
+        "multimodal-document-analysis"
+      ],
+      "status": "candidate_requires_activation_check",
+      "smoke_status": "not_tested",
+      "modality": "image,text",
+      "notes": "Requires synthetic fixtures and artifact safety rules."
+    },
+    "qwen/qwen-video-candidate": {
+      "provider": "qwen",
+      "model": "qwen-video-candidate",
+      "profiles": [
+        "video-understanding"
+      ],
+      "status": "candidate_requires_activation_check",
+      "smoke_status": "not_tested",
+      "modality": "video,text",
+      "notes": "Requires exact model selection and fixture rules."
+    },
+    "qwen/qwen-audio-candidate": {
+      "provider": "qwen",
+      "model": "qwen-audio-candidate",
+      "profiles": [
+        "audio-understanding"
+      ],
+      "status": "candidate_requires_activation_check",
+      "smoke_status": "not_tested",
+      "modality": "audio,text",
+      "notes": "Requires exact model selection and fixture rules."
+    },
+    "qwen/qwen-image-generation-candidate": {
+      "provider": "qwen",
+      "model": "qwen-image-generation-candidate",
+      "profiles": [
+        "image-generation"
+      ],
+      "status": "candidate_requires_activation_check",
+      "smoke_status": "not_tested",
+      "modality": "image-generation",
+      "notes": "Image generation requires separate policy and fixture design."
+    },
+    "gemini/gemini-2.5-flash": {
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "profiles": [
+        "image-understanding",
+        "video-understanding",
+        "audio-understanding",
+        "multimodal-document-analysis",
+        "e2e-text"
+      ],
+      "status": "candidate",
+      "smoke_status": "not_tested",
+      "modality": "text,image,audio,video",
+      "notes": "Initial text/multimodal candidate."
+    },
+    "gemini/gemini-2.5-flash-lite": {
+      "provider": "gemini",
+      "model": "gemini-2.5-flash-lite",
+      "profiles": [
+        "cheap-docs",
+        "cheap-code"
+      ],
+      "status": "candidate",
+      "smoke_status": "not_tested",
+      "modality": "text",
+      "notes": "Cheap/small task candidate."
+    },
+    "gemini/gemini-2.5-pro": {
+      "provider": "gemini",
+      "model": "gemini-2.5-pro",
+      "profiles": [
+        "strong-code",
+        "reference-review"
+      ],
+      "status": "candidate",
+      "smoke_status": "not_tested",
+      "modality": "text,multimodal",
+      "notes": "Reference/strong candidate when limits allow."
+    },
+    "gemini/gemini-image-candidate": {
+      "provider": "gemini",
+      "model": "gemini-image-candidate",
+      "profiles": [
+        "image-generation"
+      ],
+      "status": "candidate",
+      "smoke_status": "not_tested",
+      "modality": "image-generation",
+      "notes": "Add only after dedicated image generation policy and fixtures."
+    },
+    "gemini/gemini-audio-candidate": {
+      "provider": "gemini",
+      "model": "gemini-audio-candidate",
+      "profiles": [
+        "audio-understanding"
+      ],
+      "status": "candidate",
+      "smoke_status": "not_tested",
+      "modality": "audio,text",
+      "notes": "Add only after dedicated audio fixture rules."
+    },
+    "gemini/gemini-video-candidate": {
+      "provider": "gemini",
+      "model": "gemini-video-candidate",
+      "profiles": [
+        "video-understanding"
+      ],
+      "status": "candidate",
+      "smoke_status": "not_tested",
+      "modality": "video,text",
+      "notes": "Add only after dedicated video fixture rules."
+    }
+  },
+  "smoke_packages": {
+    "core-text": {
+      "models": [
+        "deepseek/deepseek-v4-flash",
+        "deepseek/deepseek-v4-pro",
+        "qwen/qwen-plus",
+        "gemini/gemini-2.5-flash",
+        "gemini/gemini-2.5-flash-lite"
+      ]
+    },
+    "reference-text": {
+      "models": [
+        "gemini/gemini-2.5-pro",
+        "openai/reference"
+      ],
+      "notes": [
+        "OpenAI reference remains blocked until API billing/quota is configured"
+      ]
+    },
+    "multimodal-candidates": {
+      "models": [
+        "gemini/gemini-2.5-flash",
+        "qwen/qwen-vl-candidate",
+        "qwen/qwen-video-candidate",
+        "qwen/qwen-audio-candidate"
+      ],
+      "notes": [
+        "use only after synthetic fixture rules exist"
+      ]
+    },
+    "generation-candidates": {
+      "models": [
+        "gemini/gemini-image-candidate",
+        "qwen/qwen-image-generation-candidate"
+      ],
+      "notes": [
+        "image generation requires separate policy and fixture design"
+      ]
+    }
+  },
+  "rules": [
+    "new models must pass smoke before production-like runner use",
+    "multimodal smoke must use synthetic fixtures only",
+    "media workflows must not use real personal data by default",
+    "provider keys must remain in GitHub Secrets",
+    "do not assume free-tier limits are stable",
+    "do not expand model matrix faster than tests can validate"
+  ]
+}
