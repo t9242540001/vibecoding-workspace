@@ -1,6 +1,6 @@
 {
   "version": "0.1",
-  "updated": "2026-05-05",
+  "updated": "2026-05-06",
   "purpose": "Shared machine-readable model profiles for Vibe Coding agent runners, smoke tests, and provider selection.",
   "providers": {
     "openai": {
@@ -444,11 +444,35 @@
       ]
     },
     "browser-automation-handoff": {
-      "status": "synthetic_summary_generator_added",
+      "status": "synthetic_generator_required_run_set_passed",
       "contract": "configs/browser-automation-handoff-contract.json",
       "docs": "docs/browser-automation-handoff-contract.md",
       "synthetic_observations": "configs/synthetic-browser-observations.json",
       "generator_workflow": ".github/workflows/synthetic-browser-summary-generator.yml",
+      "synthetic_generator_result": {
+        "status": "passed",
+        "date_reported": "2026-05-06",
+        "scope": "synthetic-only; does not connect real staging or real browser automation",
+        "models": {
+          "qwen/qwen-plus": {
+            "landing-success": {
+              "passed": true
+            },
+            "landing-missing-cta": {
+              "passed": false
+            }
+          },
+          "deepseek/deepseek-v4-flash": {
+            "landing-success": {
+              "passed": true
+            },
+            "landing-missing-cta": {
+              "passed": false
+            }
+          }
+        },
+        "next_step": "design-only planning for real staging browser workflow"
+      },
       "depends_on": [
         "configs/e2e-staging-summary-contract.json",
         ".github/workflows/e2e-staging-summary-validator.yml",
