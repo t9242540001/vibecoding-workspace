@@ -94,9 +94,10 @@ It is a working matrix for runner decisions, not a complete model catalog.
 15. Run staging-summary analysis on fake sanitized summary with Qwen and DeepSeek. Done.
 16. Add browser automation handoff contract. Done.
 17. Create synthetic browser runner summary generator. Done.
-18. Run synthetic `landing-success` and `landing-missing-cta` with Qwen.
-19. Run both synthetic observations with DeepSeek.
-20. Record synthetic browser summary generator results.
-21. Connect real browser automation only after staging access and sanitization rules are approved.
-22. Design synthetic fixtures for image, audio, video, and multimodal document workflows.
-23. Add media smoke workflows only after fixture rules are ready.
+18. Run synthetic `landing-success` and `landing-missing-cta` with Qwen `qwen/qwen-plus`. Done.
+19. Run both synthetic observations with DeepSeek `deepseek/deepseek-v4-flash`. Done.
+20. Record synthetic browser summary generator results. Done: `landing-success` returned `passed: true`; `landing-missing-cta` returned `passed: false`; scope remains synthetic-only with no real staging and no real browser automation.
+21. Design-only planning for a real staging browser workflow.
+22. Connect real browser automation only after route scope, staging access, credentials handling, sanitization, and stop conditions are approved.
+23. Design synthetic fixtures for image, audio, video, and multimodal document workflows.
+24. Add media smoke workflows only after fixture rules are ready.
