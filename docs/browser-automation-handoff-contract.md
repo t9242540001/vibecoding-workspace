@@ -9,6 +9,7 @@ This contract defines how future browser automation hands off safe text summarie
 - contract added;
 - synthetic browser observations added;
 - synthetic browser summary generator workflow added;
+- synthetic browser summary generator required run set passed;
 - no real browser automation yet;
 - no real staging URL;
 - no credentials;
@@ -74,6 +75,13 @@ Browser automation can see sensitive session data. Models should receive sanitiz
 - synthetic fixtures passed required matrix;
 - sanitized example passed validator;
 - fake sanitized summary analysis passed with Qwen and DeepSeek.
+- validation passed before synthetic generator model analysis;
+- `qwen/qwen-plus` completed both required observations with expected outcomes:
+  - `landing-success`: expected `passed: true`, model returned `passed: true`;
+  - `landing-missing-cta`: expected `passed: false`, model returned `passed: false`.
+- `deepseek/deepseek-v4-flash` completed both required observations with expected outcomes:
+  - `landing-success`: expected `passed: true`, model returned `passed: true`;
+  - `landing-missing-cta`: expected `passed: false`, model returned `passed: false`.
 
 ## Next Steps
 
@@ -84,7 +92,7 @@ References:
 - `docs/synthetic-browser-summary-generator.md`
 
 1. Create synthetic browser runner summary generator. Done.
-2. Run `landing-success` with Qwen.
-3. Run `landing-missing-cta` with Qwen.
-4. Run both with DeepSeek.
-5. Then design real staging browser workflow.
+2. Run `landing-success` with Qwen. Done.
+3. Run `landing-missing-cta` with Qwen. Done.
+4. Run both with DeepSeek. Done.
+5. Design-only planning for a real staging browser workflow.
