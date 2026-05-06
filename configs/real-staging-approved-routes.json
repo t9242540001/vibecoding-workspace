@@ -1,0 +1,85 @@
+{
+  "version": "0.1",
+  "updated": "2026-05-06",
+  "purpose": "Approved route registry for future manual real public/no-auth browser summary workflows.",
+  "status": "routes_config_added_no_workflow",
+  "rules": [
+    "no arbitrary URL input",
+    "route label must be selected from this config",
+    "browser workflow implementation is not added by this config",
+    "credentials are not required for public no-auth routes",
+    "sanitized summary validation must pass before model analysis",
+    "real browser automation remains a separate implementation step"
+  ],
+  "default_artifact_retention_days": 3,
+  "model_analysis": {
+    "allowed_models": [
+      "qwen/qwen-plus",
+      "deepseek/deepseek-v4-flash"
+    ],
+    "excluded_first_flow_models": [
+      "gemini/gemini-2.5-flash"
+    ]
+  },
+  "routes": [
+    {
+      "route_id": "yurassistent-home",
+      "route_label": "yurassistent-home",
+      "url": "https://yurassistent.ru/",
+      "environment_label": "public-production-no-auth",
+      "auth_required": false,
+      "route_type": "public_no_auth_homepage",
+      "allowed_interaction_profile_ids": [
+        "homepage-load-only",
+        "homepage-primary-cta-presence"
+      ],
+      "forbidden_interaction_classes": [
+        "login",
+        "auth",
+        "payment",
+        "document_upload",
+        "personal_data_entry",
+        "form_submit",
+        "account_creation",
+        "destructive_action"
+      ],
+      "allowed_observation_types": [
+        "page_title",
+        "visible_text",
+        "primary_cta_presence",
+        "high_level_console_errors",
+        "high_level_network_errors",
+        "accessibility_notes",
+        "performance_notes"
+      ],
+      "forbidden_artifact_types": [
+        "cookies",
+        "auth_headers",
+        "bearer_tokens",
+        "api_keys",
+        "passwords",
+        "session_dumps",
+        "raw_har",
+        "raw_request_bodies",
+        "raw_response_bodies",
+        "screenshots",
+        "videos",
+        "traces",
+        "personal_data",
+        "private_client_data",
+        "billing_payment_data",
+        "local_paths"
+      ],
+      "default_artifact_retention_days": 3,
+      "model_analysis": {
+        "allowed_models": [
+          "qwen/qwen-plus",
+          "deepseek/deepseek-v4-flash"
+        ],
+        "excluded_first_flow_models": [
+          "gemini/gemini-2.5-flash"
+        ]
+      }
+    }
+  ]
+}
