@@ -1,0 +1,125 @@
+{
+  "version": "0.1",
+  "updated": "2026-05-06",
+  "purpose": "Approved interaction and acceptance profiles for future manual real public/no-auth browser summary workflows.",
+  "status": "interaction_profiles_config_added_no_workflow",
+  "rules": [
+    "interaction profile must be selected from this config",
+    "profile must be allowed by the selected route config",
+    "no arbitrary browser commands",
+    "no form submission",
+    "no credential entry",
+    "no screenshots/videos/traces/raw HAR by default",
+    "sanitized summary validation must pass before model analysis",
+    "browser workflow implementation is not added by this config"
+  ],
+  "shared_forbidden_artifact_types": [
+    "cookies",
+    "auth_headers",
+    "bearer_tokens",
+    "api_keys",
+    "passwords",
+    "session_dumps",
+    "raw_har",
+    "raw_request_bodies",
+    "raw_response_bodies",
+    "screenshots",
+    "videos",
+    "traces",
+    "personal_data",
+    "private_client_data",
+    "billing_payment_data",
+    "local_paths"
+  ],
+  "profiles": [
+    {
+      "profile_id": "homepage-load-only",
+      "route_compatibility": [
+        "yurassistent-home"
+      ],
+      "purpose": "Verify that the public homepage loads and produces a safe sanitized summary.",
+      "allowed_actions": [
+        "navigate_to_route",
+        "wait_for_page_load",
+        "collect_sanitized_visible_text",
+        "collect_high_level_console_errors",
+        "collect_high_level_network_errors"
+      ],
+      "forbidden_actions": [
+        "click",
+        "type",
+        "submit_form",
+        "upload_file",
+        "login",
+        "payment",
+        "account_creation",
+        "screenshot",
+        "video",
+        "trace",
+        "raw_har"
+      ],
+      "acceptance_criteria": [
+        "page loads successfully",
+        "page title or visible text is present",
+        "visible text is not empty",
+        "no high-level console errors are present",
+        "no high-level network errors are present",
+        "sanitized summary contains no forbidden artifacts"
+      ]
+    },
+    {
+      "profile_id": "homepage-primary-cta-presence",
+      "route_compatibility": [
+        "yurassistent-home"
+      ],
+      "purpose": "Verify that the public homepage exposes a primary call-to-action without clicking or submitting anything.",
+      "allowed_actions": [
+        "navigate_to_route",
+        "wait_for_page_load",
+        "collect_sanitized_visible_text",
+        "detect_primary_cta_presence",
+        "collect_high_level_console_errors",
+        "collect_high_level_network_errors"
+      ],
+      "forbidden_actions": [
+        "click",
+        "type",
+        "submit_form",
+        "upload_file",
+        "login",
+        "payment",
+        "account_creation",
+        "screenshot",
+        "video",
+        "trace",
+        "raw_har"
+      ],
+      "primary_cta_detection": {
+        "method": "detect visible button/link-like text only from sanitized visible text",
+        "rules": [
+          "do not click the CTA",
+          "do not follow links",
+          "do not submit forms",
+          "do not infer from screenshots"
+        ],
+        "acceptable_cta_text_candidates": [
+          "Начать",
+          "Начать бесплатно",
+          "Попробовать",
+          "Создать документ",
+          "Получить консультацию",
+          "Запустить",
+          "Открыть помощника"
+        ]
+      },
+      "acceptance_criteria": [
+        "page loads successfully",
+        "visible text is not empty",
+        "primary CTA candidate is present in sanitized visible text",
+        "no high-level console errors are present",
+        "no high-level network errors are present",
+        "sanitized summary contains no forbidden artifacts"
+      ]
+    }
+  ]
+}
