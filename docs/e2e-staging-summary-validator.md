@@ -43,6 +43,7 @@ The validator checks sanitized staging summary JSON before any model analysis or
 
 ## Next Steps
 
-1. Run validator on the example.
-2. Add staging-summary analysis workflow after validator passes.
-3. Connect real browser automation only after staging access and sanitization rules are approved.
+1. Run validator on the example. Done.
+2. Add staging-summary analysis workflow after validator passes. Done.
+3. Run analysis on fake sanitized summary with Qwen and DeepSeek.
+4. Connect real browser automation only after staging access and sanitization rules are approved.

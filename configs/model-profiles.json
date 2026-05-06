@@ -414,9 +414,11 @@
       }
     },
     "e2e-staging-summary-contract": {
-      "status": "example_and_validator_added",
+      "status": "analysis_workflow_added_not_connected_to_real_staging",
       "example": "examples/e2e/sanitized-staging-summary-example.json",
       "validator_workflow": ".github/workflows/e2e-staging-summary-validator.yml",
+      "validator_result": "passed on sanitized fake example",
+      "analysis_workflow": ".github/workflows/e2e-staging-summary-analysis.yml",
       "models": [
         "qwen/qwen-plus",
         "deepseek/deepseek-v4-flash",
@@ -429,6 +431,10 @@
         "sanitized summary contract only",
         "sanitized staging summary example added",
         "manual validator workflow added",
+        "validator passed on fake sanitized summary",
+        "manual staging-summary analysis workflow added",
+        "Qwen and DeepSeek only for first analysis workflow",
+        "Gemini remains experimental",
         "still does not connect to real staging",
         "still does not run browser automation"
       ]

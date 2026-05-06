@@ -13,6 +13,8 @@ Models should analyze sanitized summaries, not raw staging sessions, secrets, co
 - contract added;
 - sanitized summary example added;
 - validator workflow added;
+- validator passed on fake sanitized summary;
+- manual staging-summary analysis workflow added;
 - not connected to real staging;
 - no browser automation yet;
 - no real staging URL required.
@@ -75,11 +77,14 @@ Gemini `gemini-2.5-flash` remains experimental for this workflow.
 
 - `examples/e2e/sanitized-staging-summary-example.json`
 - `.github/workflows/e2e-staging-summary-validator.yml`
+- `.github/workflows/e2e-staging-summary-analysis.yml`
 - `docs/e2e-staging-summary-validator.md`
+- `docs/e2e-staging-summary-analysis.md`
 
 ## Next Steps
 
 1. Create sanitized staging summary example using fake data. Done.
 2. Add summary contract validator. Done.
-3. Add manual staging-summary analysis workflow.
-4. Connect real browser automation only after staging access and sanitization rules are approved.
+3. Add manual staging-summary analysis workflow. Done.
+4. Run analysis on fake sanitized summary with Qwen and DeepSeek.
+5. Connect real browser automation only after staging access and sanitization rules are approved.

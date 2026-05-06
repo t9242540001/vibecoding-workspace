@@ -1,0 +1,404 @@
+name: E2E Staging Summary Analysis
+
+on:
+  workflow_dispatch:
+    inputs:
+      summary_path:
+        description: Repository path to sanitized staging summary JSON
+        required: true
+        default: examples/e2e/sanitized-staging-summary-example.json
+      contract_path:
+        description: Repository path to staging summary contract JSON
+        required: true
+        default: configs/e2e-staging-summary-contract.json
+      model_id:
+        description: Model id from configs/model-profiles.json
+        required: true
+        default: qwen/qwen-plus
+        type: choice
+        options:
+          - qwen/qwen-plus
+          - deepseek/deepseek-v4-flash
+          - deepseek/deepseek-v4-pro
+      strict_forbidden_scan:
+        description: Fail on suspicious forbidden patterns before model analysis
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  analyze-summary:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate and analyze sanitized summary
+        env:
+          SUMMARY_PATH: ${{ inputs.summary_path }}
+          CONTRACT_PATH: ${{ inputs.contract_path }}
+          MODEL_ID: ${{ inputs.model_id }}
+          STRICT_FORBIDDEN_SCAN: ${{ inputs.strict_forbidden_scan }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p /tmp/e2e-staging-summary-analysis
+
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+          import re
+          import sys
+          import time
+          import urllib.error
+          import urllib.request
+
+          artifact_dir = pathlib.Path("/tmp/e2e-staging-summary-analysis")
+          summary_path_input = os.environ["SUMMARY_PATH"]
+          contract_path_input = os.environ["CONTRACT_PATH"]
+          model_id = os.environ["MODEL_ID"]
+          strict_forbidden_scan = os.environ["STRICT_FORBIDDEN_SCAN"].lower() == "true"
+
+          errors = []
+          warnings = []
+          forbidden_scan_matches = []
+
+          def reject_unsafe_repo_path(path_value, label):
+              normalized = path_value.replace("\\", "/")
+              if normalized.startswith("/") or ":" in normalized:
+                  errors.append(f"{label} must be a repository-relative path.")
+              if ".." in normalized.split("/"):
+                  errors.append(f"{label} must not contain parent directory traversal.")
+              if normalized.startswith("_local/") or "/_local/" in normalized:
+                  errors.append(f"{label} must not read _local/.")
+              if normalized == ".codex/config.toml" or normalized.endswith("/.codex/config.toml"):
+                  errors.append(f"{label} must not read .codex/config.toml.")
+              if normalized.startswith(".codex/"):
+                  errors.append(f"{label} must not read .codex files.")
+              return pathlib.Path(normalized)
+
+          summary_path = reject_unsafe_repo_path(summary_path_input, "summary_path")
+          contract_path = reject_unsafe_repo_path(contract_path_input, "contract_path")
+          profiles_path = pathlib.Path("configs/model-profiles.json")
+
+          def load_json(path, label):
+              if errors:
+                  return None
+              if not path.exists():
+                  errors.append(f"{label} does not exist: {path}")
+                  return None
+              try:
+                  with path.open("r", encoding="utf-8") as f:
+                      return json.load(f)
+              except json.JSONDecodeError as exc:
+                  errors.append(f"{label} is not valid JSON: {exc}")
+                  return None
+
+          summary = load_json(summary_path, "summary")
+          contract = load_json(contract_path, "contract")
+          profiles = load_json(profiles_path, "model profiles")
+
+          required_fields_checked = []
+          required_types = {
+              "summary_id": str,
+              "source": str,
+              "environment_label": str,
+              "route_label": str,
+              "page_title": str,
+              "visible_text": list,
+              "interactions": list,
+              "acceptance_criteria": list,
+              "console_errors": list,
+              "network_errors": list,
+              "sanitization_notes": list,
+          }
+
+          if summary is not None and contract is not None:
+              required_fields = contract.get("required_summary_fields", [])
+              for field in required_fields:
+                  required_fields_checked.append(field)
+                  if field not in summary:
+                      errors.append(f"Missing required field: {field}")
+
+              for field, expected_type in required_types.items():
+                  if field in summary and not isinstance(summary[field], expected_type):
+                      errors.append(f"Field `{field}` has wrong type.")
+
+              for field in ("acceptance_criteria", "visible_text", "sanitization_notes"):
+                  value = summary.get(field)
+                  if isinstance(value, list):
+                      if not value:
+                          errors.append(f"`{field}` must not be empty.")
+                      if not all(isinstance(item, str) and item.strip() for item in value):
+                          errors.append(f"`{field}` must contain non-empty strings.")
+
+              serialized = json.dumps(summary, ensure_ascii=False, sort_keys=True)
+              forbidden_patterns = [
+                  ("http-url", r"http://"),
+                  ("https-url", r"https://"),
+                  ("bearer-token", r"Bearer\s+"),
+                  ("authorization-header", r"Authorization"),
+                  ("cookie-header", r"Cookie"),
+                  ("set-cookie-header", r"Set-Cookie"),
+                  ("api-key", r"api_key"),
+                  ("apikey", r"apikey"),
+                  ("token-assignment", r"\btoken\s*[:=]"),
+                  ("password", r"password"),
+                  ("secret", r"secret"),
+                  ("private-ip-10", r"\b10\."),
+                  ("private-ip-192", r"\b192\.168\."),
+                  ("private-ip-172", r"\b172\.(1[6-9]|2[0-9]|3[0-1])\."),
+                  ("email-like", r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
+                  ("jwt-like", r"\b[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b"),
+                  ("windows-local-path", r"C:\\"),
+                  ("unix-home-path", r"/home/"),
+                  ("env-file", r"\.env"),
+              ]
+              for name, pattern in forbidden_patterns:
+                  matches = re.findall(pattern, serialized)
+                  if matches:
+                      forbidden_scan_matches.append({"pattern": name, "count": len(matches)})
+
+              if forbidden_scan_matches:
+                  message = f"Forbidden scan found {len(forbidden_scan_matches)} suspicious pattern groups."
+                  if strict_forbidden_scan:
+                      errors.append(message)
+                  else:
+                      warnings.append(message)
+
+          model = None
+          provider = None
+          if profiles is not None:
+              model = profiles.get("models", {}).get(model_id)
+              if model is None:
+                  errors.append(f"Model not found in configs/model-profiles.json: {model_id}")
+              else:
+                  provider = model.get("provider")
+                  modality = model.get("modality", "")
+                  if provider not in ("qwen", "deepseek"):
+                      errors.append("Only Qwen and DeepSeek models are allowed in this analysis workflow.")
+                  if "text" not in [part.strip() for part in modality.split(",")]:
+                      errors.append(f"Model is not text-capable: {model_id}")
+                  if model.get("smoke_status") == "not_tested":
+                      errors.append(f"Model has not passed smoke: {model_id}")
+
+          validation_report = {
+              "summary_path": summary_path_input,
+              "contract_path": contract_path_input,
+              "valid": not errors,
+              "errors": errors,
+              "warnings": warnings,
+              "required_fields_checked": required_fields_checked,
+              "forbidden_scan_matches": forbidden_scan_matches,
+          }
+          (artifact_dir / "validation-report.json").write_text(
+              json.dumps(validation_report, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+
+          if errors:
+              print(f"Summary path: {summary_path_input}")
+              print(f"Model id: {model_id}")
+              print("Validation passed: False")
+              print(f"Errors: {len(errors)}")
+              sys.exit(1)
+
+          report_schema = contract.get("model_report_schema", {})
+          user_payload = {
+              "sanitized_summary": summary,
+              "acceptance_criteria": summary.get("acceptance_criteria", []),
+              "report_schema": report_schema,
+          }
+          system_prompt = (
+              "You evaluate sanitized Browser/E2E staging summaries. "
+              "Return strict JSON only. Do not use markdown fences."
+          )
+          user_prompt = (
+              "Analyze this sanitized staging summary against the acceptance criteria. "
+              "Return JSON with fields: passed, score, summary, matched_criteria, "
+              "missing_criteria, issues, recommendation.\n\n"
+              + json.dumps(user_payload, ensure_ascii=False, indent=2)
+          )
+
+          model_name = model["model"]
+          if provider == "deepseek":
+              endpoint = "https://api.deepseek.com/chat/completions"
+              api_key = os.environ["DEEPSEEK_API_KEY"]
+              payload = {
+                  "model": model_name,
+                  "messages": [
+                      {"role": "system", "content": system_prompt},
+                      {"role": "user", "content": user_prompt},
+                  ],
+                  "temperature": 0,
+                  "max_tokens": 900,
+                  "thinking": {"type": "disabled"},
+              }
+          else:
+              endpoint = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
+              api_key = os.environ["DASHSCOPE_API_KEY"]
+              payload = {
+                  "model": model_name,
+                  "messages": [
+                      {"role": "system", "content": system_prompt},
+                      {"role": "user", "content": user_prompt},
+                  ],
+                  "temperature": 0,
+                  "max_tokens": 900,
+              }
+
+          request_artifact = {
+              "model_id": model_id,
+              "provider": provider,
+              "endpoint_label": f"{provider}-chat-completions",
+              "payload": payload,
+          }
+          (artifact_dir / "request.json").write_text(
+              json.dumps(request_artifact, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+
+          transient_statuses = {429, 500, 502, 503, 504}
+          delays = [3, 6]
+
+          def post_with_retry():
+              attempts = 0
+              last_status = None
+              last_body = None
+              last_error = None
+              headers = {
+                  "Authorization": f"Bearer {api_key}",
+                  "Content-Type": "application/json",
+              }
+              for attempt_index in range(3):
+                  attempts = attempt_index + 1
+                  body = json.dumps(payload).encode("utf-8")
+                  req = urllib.request.Request(endpoint, data=body, headers=headers, method="POST")
+                  try:
+                      with urllib.request.urlopen(req, timeout=60) as response:
+                          last_status = response.status
+                          last_body = response.read().decode("utf-8")
+                          return attempts, last_status, last_body, None
+                  except urllib.error.HTTPError as exc:
+                      last_status = exc.code
+                      last_body = exc.read().decode("utf-8", errors="replace")
+                      last_error = f"HTTP {exc.code}"
+                  except urllib.error.URLError as exc:
+                      last_error = f"URL error: {exc.reason}"
+
+                  if last_status in transient_statuses and attempt_index < 2:
+                      time.sleep(delays[attempt_index])
+                      continue
+                  break
+
+              return attempts, last_status, last_body, last_error
+
+          attempts, http_status, raw_body, request_error = post_with_retry()
+          raw_response = {
+              "attempts": attempts,
+              "http_status": http_status,
+              "error": request_error,
+              "body": None,
+          }
+          parsed_response = None
+          if raw_body:
+              try:
+                  parsed_response = json.loads(raw_body)
+                  raw_response["body"] = parsed_response
+              except json.JSONDecodeError:
+                  raw_response["body"] = {"unparsed": raw_body}
+          (artifact_dir / "raw-response.json").write_text(
+              json.dumps(raw_response, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+
+          if request_error or not http_status or http_status < 200 or http_status >= 300:
+              raise SystemExit(f"Provider request failed after {attempts} attempt(s): {request_error or http_status}")
+
+          if parsed_response is None:
+              raise SystemExit("Provider response was not valid JSON.")
+
+          choices = parsed_response.get("choices") or []
+          message = choices[0].get("message", {}) if choices else {}
+          model_text = (message.get("content") or "").strip()
+          if not model_text:
+              raise SystemExit("Model output content was empty.")
+
+          try:
+              parsed_report = json.loads(model_text)
+          except json.JSONDecodeError as exc:
+              raise SystemExit(f"Model output was not strict JSON: {exc}")
+
+          report_errors = []
+          if not isinstance(parsed_report.get("passed"), bool):
+              report_errors.append("`passed` must be boolean.")
+          if not isinstance(parsed_report.get("score"), (int, float)):
+              report_errors.append("`score` must be numeric.")
+          elif parsed_report["score"] < 0 or parsed_report["score"] > 1:
+              report_errors.append("`score` must be between 0 and 1.")
+          if not isinstance(parsed_report.get("summary"), str):
+              report_errors.append("`summary` must be string.")
+          for field in ("matched_criteria", "missing_criteria", "issues"):
+              if not isinstance(parsed_report.get(field), list):
+                  report_errors.append(f"`{field}` must be array.")
+          for issue in parsed_report.get("issues", []):
+              if not isinstance(issue, dict):
+                  report_errors.append("Each issue must be an object.")
+                  continue
+              for field in ("severity", "description", "evidence"):
+                  if field not in issue:
+                      report_errors.append(f"Each issue must include `{field}`.")
+                  elif not isinstance(issue[field], str):
+                      report_errors.append(f"Issue field `{field}` must be string.")
+          if not isinstance(parsed_report.get("recommendation"), str):
+              report_errors.append("`recommendation` must be string.")
+
+          (artifact_dir / "parsed-report.json").write_text(
+              json.dumps(parsed_report, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+
+          summary_lines = [
+              "# E2E Staging Summary Analysis",
+              "",
+              f"- Summary path: `{summary_path_input}`",
+              f"- Model id: `{model_id}`",
+              f"- Provider: `{provider}`",
+              "- Validation passed: `True`",
+              f"- Model report passed: `{parsed_report.get('passed')}`",
+              f"- Score: `{parsed_report.get('score')}`",
+              f"- Recommendation: {parsed_report.get('recommendation')}",
+              f"- Attempts: `{attempts}`",
+              "",
+          ]
+          (artifact_dir / "summary.md").write_text("\n".join(summary_lines), encoding="utf-8")
+
+          print(f"Summary path: {summary_path_input}")
+          print(f"Model id: {model_id}")
+          print(f"Provider: {provider}")
+          print("Validation passed: True")
+          print(f"Model report passed: {parsed_report.get('passed')}")
+          print(f"Score: {parsed_report.get('score')}")
+          print(f"Recommendation: {parsed_report.get('recommendation')}")
+
+          if report_errors:
+              for error in report_errors:
+                  print(f"Report schema error: {error}")
+              sys.exit(1)
+          PY
+
+      - name: Upload analysis artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-staging-summary-analysis
+          path: /tmp/e2e-staging-summary-analysis/
+          if-no-files-found: error
+          retention-days: 3
