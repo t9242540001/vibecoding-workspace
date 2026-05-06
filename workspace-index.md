@@ -107,6 +107,9 @@ Active tools, rules, and docs:
 - `docs/e2e-staging-summary-analysis.md`
 - `configs/browser-automation-handoff-contract.json`
 - `docs/browser-automation-handoff-contract.md`
+- `configs/synthetic-browser-observations.json`
+- `.github/workflows/synthetic-browser-summary-generator.yml`
+- `docs/synthetic-browser-summary-generator.md`
 
 Active operational backlog:
 

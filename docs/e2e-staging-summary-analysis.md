@@ -63,4 +63,6 @@ Gemini remains experimental and is not allowed in this first analysis workflow.
 1. Run analysis on fake sanitized summary with Qwen. Done.
 2. Run analysis on fake sanitized summary with DeepSeek. Done.
 3. Add browser automation handoff contract. Done.
-4. Create synthetic browser runner summary generator.
+4. Create synthetic browser runner summary generator. Done.
+5. Run synthetic generator cases with Qwen and DeepSeek.
+6. Then design real browser automation later.

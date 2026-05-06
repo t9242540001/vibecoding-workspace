@@ -1,0 +1,76 @@
+{
+  "version": "0.1",
+  "updated": "2026-05-05",
+  "purpose": "Synthetic browser observations used to rehearse the browser-runner-to-sanitized-summary handoff without real staging or browser automation.",
+  "status": "synthetic_only_no_real_browser",
+  "observations": [
+    {
+      "observation_id": "landing-success",
+      "title": "Synthetic successful landing flow",
+      "status": "synthetic",
+      "route_label": "landing-page",
+      "page_title": "Sample Product Landing",
+      "visible_text": [
+        "Welcome to Sample Product",
+        "Create your first document",
+        "Start now",
+        "Privacy notice"
+      ],
+      "interactions": [
+        "Opened landing page",
+        "Primary call-to-action was visible",
+        "Clicked primary call-to-action",
+        "Setup step opened"
+      ],
+      "console_errors": [],
+      "network_errors": [],
+      "accessibility_notes": [
+        "Primary call-to-action has visible text"
+      ],
+      "performance_notes": [
+        "Synthetic observation only; no real timing collected"
+      ],
+      "acceptance_criteria": [
+        "Landing page is visible.",
+        "Primary call-to-action is visible.",
+        "Clicking the primary call-to-action opens the next setup step.",
+        "No console errors are present.",
+        "No network errors are present."
+      ],
+      "expected_summary_passes_validator": true,
+      "expected_analysis_passed": true
+    },
+    {
+      "observation_id": "landing-missing-cta",
+      "title": "Synthetic landing flow with missing CTA",
+      "status": "synthetic",
+      "route_label": "landing-page",
+      "page_title": "Sample Product Landing",
+      "visible_text": [
+        "Welcome to Sample Product",
+        "Privacy notice"
+      ],
+      "interactions": [
+        "Opened landing page",
+        "Could not click primary call-to-action because it was not visible"
+      ],
+      "console_errors": [],
+      "network_errors": [],
+      "accessibility_notes": [
+        "Primary call-to-action not found"
+      ],
+      "performance_notes": [
+        "Synthetic observation only; no real timing collected"
+      ],
+      "acceptance_criteria": [
+        "Landing page is visible.",
+        "Primary call-to-action is visible.",
+        "Clicking the primary call-to-action opens the next setup step.",
+        "No console errors are present.",
+        "No network errors are present."
+      ],
+      "expected_summary_passes_validator": true,
+      "expected_analysis_passed": false
+    }
+  ]
+}

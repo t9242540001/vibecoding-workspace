@@ -7,6 +7,8 @@ This contract defines how future browser automation hands off safe text summarie
 ## Current Status
 
 - contract added;
+- synthetic browser observations added;
+- synthetic browser summary generator workflow added;
 - no real browser automation yet;
 - no real staging URL;
 - no credentials;
@@ -75,7 +77,14 @@ Browser automation can see sensitive session data. Models should receive sanitiz
 
 ## Next Steps
 
-1. Create synthetic browser runner summary generator.
-2. Validate generated summary.
-3. Analyze generated summary with Qwen and DeepSeek.
-4. Then design real staging browser workflow.
+References:
+
+- `configs/synthetic-browser-observations.json`
+- `.github/workflows/synthetic-browser-summary-generator.yml`
+- `docs/synthetic-browser-summary-generator.md`
+
+1. Create synthetic browser runner summary generator. Done.
+2. Run `landing-success` with Qwen.
+3. Run `landing-missing-cta` with Qwen.
+4. Run both with DeepSeek.
+5. Then design real staging browser workflow.

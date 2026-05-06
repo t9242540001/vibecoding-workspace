@@ -444,9 +444,11 @@
       ]
     },
     "browser-automation-handoff": {
-      "status": "contract_added_no_real_browser_automation",
+      "status": "synthetic_summary_generator_added",
       "contract": "configs/browser-automation-handoff-contract.json",
       "docs": "docs/browser-automation-handoff-contract.md",
+      "synthetic_observations": "configs/synthetic-browser-observations.json",
+      "generator_workflow": ".github/workflows/synthetic-browser-summary-generator.yml",
       "depends_on": [
         "configs/e2e-staging-summary-contract.json",
         ".github/workflows/e2e-staging-summary-validator.yml",
@@ -454,8 +456,13 @@
       ],
       "notes": [
         "defines handoff from future browser runner to sanitized summary JSON",
+        "synthetic browser observations added",
+        "synthetic summary generator workflow added",
         "does not add real staging access",
         "does not add browser automation workflow",
+        "still does not access real staging",
+        "still does not run real browser automation",
+        "generated summaries must pass validator before analysis",
         "validator must pass before model analysis"
       ]
     }
