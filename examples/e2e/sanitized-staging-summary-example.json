@@ -1,0 +1,45 @@
+{
+  "summary_id": "synthetic-summary-001",
+  "source": "fake-validator-example",
+  "environment_label": "synthetic-staging-summary-example",
+  "route_label": "landing-page",
+  "page_title": "Sample Product Landing",
+  "visible_text": [
+    "Welcome to Sample Product",
+    "Create your first document",
+    "Start now",
+    "Privacy notice"
+  ],
+  "interactions": [
+    "Opened landing page summary",
+    "Primary call-to-action was visible",
+    "Clicking the primary call-to-action opened the setup step"
+  ],
+  "acceptance_criteria": [
+    "Landing page is visible.",
+    "Primary call-to-action is visible.",
+    "Clicking the primary call-to-action opens the next setup step.",
+    "No console errors are present.",
+    "No network errors are present."
+  ],
+  "console_errors": [],
+  "network_errors": [],
+  "sanitization_notes": [
+    "no real URL included",
+    "no cookies/tokens/session data included",
+    "no personal data included",
+    "no screenshots or raw HAR included"
+  ],
+  "accessibility_notes": [
+    "Primary call-to-action text was visible in the sanitized summary"
+  ],
+  "performance_notes": [
+    "No synthetic performance issue recorded"
+  ],
+  "browser": "synthetic-browser-label",
+  "viewport": "synthetic-desktop",
+  "test_timestamp_label": "synthetic-time-label",
+  "known_limitations": [
+    "This is fake data for validator testing and does not represent real staging"
+  ]
+}

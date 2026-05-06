@@ -121,8 +121,9 @@ Use direct DeepSeek API first, not a router.
 13. Run Browser/E2E text fixture matrix across Qwen, DeepSeek, and Gemini. Done for required providers; Gemini remains experimental for E2E fixture analysis.
 14. Rerun Browser/E2E text fixture matrix with `required-only` after retry/diagnostics update. Done.
 15. Add sanitized staging summary contract. Done.
-16. Add sanitized staging summary example and validator.
-17. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
+16. Add sanitized staging summary example and validator. Done.
+17. Add manual staging-summary analysis workflow.
+18. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
 
 ## Open Decisions
 

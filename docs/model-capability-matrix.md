@@ -88,8 +88,9 @@ It is a working matrix for runner decisions, not a complete model catalog.
 9. Run E2E text fixture matrix across Qwen, DeepSeek, and Gemini. Done with required models passed and Gemini experimental failed.
 10. Rerun E2E text fixture matrix with `failure_policy: required-only`. Done.
 11. Add sanitized staging summary contract. Done.
-12. Create sanitized staging summary example using fake data.
-13. Add validator workflow.
-14. Connect real browser automation only after staging access and sanitization rules are approved.
-15. Design synthetic fixtures for image, audio, video, and multimodal document workflows.
-16. Add media smoke workflows only after fixture rules are ready.
+12. Create sanitized staging summary example using fake data. Done.
+13. Add validator workflow. Done.
+14. Add manual staging-summary analysis workflow.
+15. Connect real browser automation only after staging access and sanitization rules are approved.
+16. Design synthetic fixtures for image, audio, video, and multimodal document workflows.
+17. Add media smoke workflows only after fixture rules are ready.

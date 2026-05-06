@@ -414,7 +414,9 @@
       }
     },
     "e2e-staging-summary-contract": {
-      "status": "contract_added_not_connected",
+      "status": "example_and_validator_added",
+      "example": "examples/e2e/sanitized-staging-summary-example.json",
+      "validator_workflow": ".github/workflows/e2e-staging-summary-validator.yml",
       "models": [
         "qwen/qwen-plus",
         "deepseek/deepseek-v4-flash",
@@ -425,9 +427,10 @@
       ],
       "notes": [
         "sanitized summary contract only",
-        "does not connect to real staging",
-        "does not run browser automation",
-        "real staging summaries must exclude secrets, cookies, tokens, personal data, and private endpoints unless explicitly approved"
+        "sanitized staging summary example added",
+        "manual validator workflow added",
+        "still does not connect to real staging",
+        "still does not run browser automation"
       ]
     }
   },

@@ -1,0 +1,204 @@
+name: E2E Staging Summary Validator
+
+on:
+  workflow_dispatch:
+    inputs:
+      summary_path:
+        description: Repository path to sanitized staging summary JSON
+        required: true
+        default: examples/e2e/sanitized-staging-summary-example.json
+      contract_path:
+        description: Repository path to staging summary contract JSON
+        required: true
+        default: configs/e2e-staging-summary-contract.json
+      strict_forbidden_scan:
+        description: Fail on suspicious forbidden patterns
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  validate-summary:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate sanitized staging summary
+        env:
+          SUMMARY_PATH: ${{ inputs.summary_path }}
+          CONTRACT_PATH: ${{ inputs.contract_path }}
+          STRICT_FORBIDDEN_SCAN: ${{ inputs.strict_forbidden_scan }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p /tmp/e2e-staging-summary-validator
+
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+          import re
+          import sys
+
+          artifact_dir = pathlib.Path("/tmp/e2e-staging-summary-validator")
+          summary_path_input = os.environ["SUMMARY_PATH"]
+          contract_path_input = os.environ["CONTRACT_PATH"]
+          strict_forbidden_scan = os.environ["STRICT_FORBIDDEN_SCAN"].lower() == "true"
+
+          errors = []
+          warnings = []
+          forbidden_scan_matches = []
+
+          def reject_unsafe_repo_path(path_value, label):
+              normalized = path_value.replace("\\", "/")
+              if normalized.startswith("/") or ":" in normalized:
+                  errors.append(f"{label} must be a repository-relative path.")
+              if ".." in normalized.split("/"):
+                  errors.append(f"{label} must not contain parent directory traversal.")
+              if normalized.startswith("_local/") or "/_local/" in normalized:
+                  errors.append(f"{label} must not read _local/.")
+              if normalized == ".codex/config.toml" or normalized.endswith("/.codex/config.toml"):
+                  errors.append(f"{label} must not read .codex/config.toml.")
+              if normalized.startswith(".codex/"):
+                  errors.append(f"{label} must not read .codex files.")
+              return pathlib.Path(normalized)
+
+          summary_path = reject_unsafe_repo_path(summary_path_input, "summary_path")
+          contract_path = reject_unsafe_repo_path(contract_path_input, "contract_path")
+
+          def load_json(path, label):
+              if errors:
+                  return None
+              if not path.exists():
+                  errors.append(f"{label} does not exist: {path}")
+                  return None
+              try:
+                  with path.open("r", encoding="utf-8") as f:
+                      return json.load(f)
+              except json.JSONDecodeError as exc:
+                  errors.append(f"{label} is not valid JSON: {exc}")
+                  return None
+
+          summary = load_json(summary_path, "summary")
+          contract = load_json(contract_path, "contract")
+
+          required_fields_checked = []
+          required_types = {
+              "summary_id": str,
+              "source": str,
+              "environment_label": str,
+              "route_label": str,
+              "page_title": str,
+              "visible_text": list,
+              "interactions": list,
+              "acceptance_criteria": list,
+              "console_errors": list,
+              "network_errors": list,
+              "sanitization_notes": list,
+          }
+
+          if summary is not None and contract is not None:
+              required_fields = contract.get("required_summary_fields", [])
+              for field in required_fields:
+                  required_fields_checked.append(field)
+                  if field not in summary:
+                      errors.append(f"Missing required field: {field}")
+
+              for field, expected_type in required_types.items():
+                  if field in summary and not isinstance(summary[field], expected_type):
+                      errors.append(f"Field `{field}` has wrong type.")
+
+              for field in ("acceptance_criteria", "visible_text", "sanitization_notes"):
+                  value = summary.get(field)
+                  if isinstance(value, list):
+                      if not value:
+                          errors.append(f"`{field}` must not be empty.")
+                      if not all(isinstance(item, str) and item.strip() for item in value):
+                          errors.append(f"`{field}` must contain non-empty strings.")
+
+              serialized = json.dumps(summary, ensure_ascii=False, sort_keys=True)
+              forbidden_patterns = [
+                  ("http-url", r"http://"),
+                  ("https-url", r"https://"),
+                  ("bearer-token", r"Bearer\s+"),
+                  ("authorization-header", r"Authorization"),
+                  ("cookie-header", r"Cookie"),
+                  ("set-cookie-header", r"Set-Cookie"),
+                  ("api-key", r"api_key"),
+                  ("apikey", r"apikey"),
+                  ("token-assignment", r"\btoken\s*[:=]"),
+                  ("password", r"password"),
+                  ("secret", r"secret"),
+                  ("private-ip-10", r"\b10\."),
+                  ("private-ip-192", r"\b192\.168\."),
+                  ("private-ip-172", r"\b172\.(1[6-9]|2[0-9]|3[0-1])\."),
+                  ("email-like", r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
+                  ("jwt-like", r"\b[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b"),
+                  ("windows-local-path", r"C:\\"),
+                  ("unix-home-path", r"/home/"),
+                  ("env-file", r"\.env"),
+              ]
+              for name, pattern in forbidden_patterns:
+                  matches = re.findall(pattern, serialized)
+                  if matches:
+                      forbidden_scan_matches.append({"pattern": name, "count": len(matches)})
+
+              if forbidden_scan_matches:
+                  message = f"Forbidden scan found {len(forbidden_scan_matches)} suspicious pattern groups."
+                  if strict_forbidden_scan:
+                      errors.append(message)
+                  else:
+                      warnings.append(message)
+
+          valid = not errors
+          report = {
+              "summary_path": summary_path_input,
+              "contract_path": contract_path_input,
+              "valid": valid,
+              "errors": errors,
+              "warnings": warnings,
+              "required_fields_checked": required_fields_checked,
+              "forbidden_scan_matches": forbidden_scan_matches,
+          }
+
+          (artifact_dir / "validation-report.json").write_text(
+              json.dumps(report, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+          summary_lines = [
+              "# E2E Staging Summary Validation",
+              "",
+              f"- Summary path: `{summary_path_input}`",
+              f"- Contract path: `{contract_path_input}`",
+              f"- Valid: `{valid}`",
+              f"- Errors: `{len(errors)}`",
+              f"- Warnings: `{len(warnings)}`",
+              f"- Forbidden scan matches: `{len(forbidden_scan_matches)}`",
+              "",
+          ]
+          (artifact_dir / "validation-summary.md").write_text("\n".join(summary_lines), encoding="utf-8")
+
+          print(f"Summary path: {summary_path_input}")
+          print(f"Contract path: {contract_path_input}")
+          print(f"Valid: {valid}")
+          print(f"Errors: {len(errors)}")
+          print(f"Warnings: {len(warnings)}")
+          print(f"Forbidden scan matches: {len(forbidden_scan_matches)}")
+
+          if not valid:
+              sys.exit(1)
+          PY
+
+      - name: Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-staging-summary-validator
+          path: /tmp/e2e-staging-summary-validator/
+          if-no-files-found: error
+          retention-days: 3

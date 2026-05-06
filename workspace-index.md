@@ -65,6 +65,7 @@ Active templates:
 Active examples:
 
 - `examples/sample-product-repo/` — sample product repository instantiated from the template.
+- `examples/e2e/sanitized-staging-summary-example.json` — fake sanitized staging summary example for validator testing.
 
 Active root agent layer:
 
@@ -100,6 +101,8 @@ Active tools, rules, and docs:
 - `.github/workflows/e2e-text-fixture-matrix.yml`
 - `configs/e2e-staging-summary-contract.json`
 - `docs/e2e-staging-summary-contract.md`
+- `.github/workflows/e2e-staging-summary-validator.yml`
+- `docs/e2e-staging-summary-validator.md`
 
 Active operational backlog:
 
