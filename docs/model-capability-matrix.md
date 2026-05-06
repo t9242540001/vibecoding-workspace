@@ -91,7 +91,9 @@ It is a working matrix for runner decisions, not a complete model catalog.
 12. Create sanitized staging summary example using fake data. Done.
 13. Add validator workflow. Done.
 14. Add manual staging-summary analysis workflow. Done.
-15. Run staging-summary analysis on fake sanitized summary with Qwen and DeepSeek.
-16. Connect real browser automation only after staging access and sanitization rules are approved.
-17. Design synthetic fixtures for image, audio, video, and multimodal document workflows.
-18. Add media smoke workflows only after fixture rules are ready.
+15. Run staging-summary analysis on fake sanitized summary with Qwen and DeepSeek. Done.
+16. Add browser automation handoff contract. Done.
+17. Create synthetic browser runner summary generator.
+18. Connect real browser automation only after staging access and sanitization rules are approved.
+19. Design synthetic fixtures for image, audio, video, and multimodal document workflows.
+20. Add media smoke workflows only after fixture rules are ready.

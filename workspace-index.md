@@ -105,6 +105,8 @@ Active tools, rules, and docs:
 - `docs/e2e-staging-summary-validator.md`
 - `.github/workflows/e2e-staging-summary-analysis.yml`
 - `docs/e2e-staging-summary-analysis.md`
+- `configs/browser-automation-handoff-contract.json`
+- `docs/browser-automation-handoff-contract.md`
 
 Active operational backlog:
 

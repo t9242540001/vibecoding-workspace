@@ -1,0 +1,96 @@
+{
+  "version": "0.1",
+  "updated": "2026-05-05",
+  "purpose": "Defines how a future browser automation runner must convert browser observations into sanitized staging summary JSON before validator and model analysis workflows are allowed to process them.",
+  "status": "contract_added_no_real_browser_automation",
+  "runner_role": [
+    "open approved route",
+    "perform approved interactions",
+    "collect visible text and high-level error summaries",
+    "create sanitized summary JSON",
+    "never pass raw session artifacts directly to model analysis"
+  ],
+  "allowed_observations": [
+    "page title",
+    "route label",
+    "visible text snippets",
+    "interaction labels",
+    "high-level console error summaries after redaction",
+    "high-level network error summaries after redaction",
+    "accessibility notes",
+    "performance notes",
+    "browser/viewport labels",
+    "acceptance criteria outcome evidence"
+  ],
+  "forbidden_artifacts": [
+    "cookies",
+    "auth headers",
+    "bearer tokens",
+    "API keys",
+    "passwords",
+    "session dumps",
+    "raw HAR",
+    "raw request/response bodies by default",
+    "screenshots by default",
+    "videos by default",
+    "traces by default",
+    "real user personal data",
+    "private client data",
+    "billing/payment data",
+    "full private URLs by default",
+    "server IPs/private endpoints unless explicitly approved",
+    "local file paths"
+  ],
+  "sanitization_requirements": [
+    "replace real URL with route_label",
+    "remove query strings",
+    "remove tokens and identifiers",
+    "redact emails and phone numbers",
+    "summarize console errors without secrets",
+    "summarize network errors without request/response bodies",
+    "do not store cookies or headers",
+    "do not attach screenshots/videos/traces unless separately approved",
+    "ensure summary passes E2E Staging Summary Validator"
+  ],
+  "output_summary_contract": {
+    "contract": "configs/e2e-staging-summary-contract.json",
+    "example": "examples/e2e/sanitized-staging-summary-example.json",
+    "required_output": [
+      "must be JSON",
+      "must satisfy required summary fields",
+      "must pass validator before model analysis"
+    ]
+  },
+  "handoff_flow": [
+    "browser runner executes approved route and interactions",
+    "browser runner creates sanitized summary JSON",
+    "validator workflow validates summary",
+    "analysis workflow analyzes summary with Qwen/DeepSeek",
+    "model report is reviewed before any production/staging decision"
+  ],
+  "stop_conditions": [
+    "login/auth required and not explicitly approved",
+    "payment/billing flow encountered",
+    "real personal data encountered",
+    "private client data encountered",
+    "secrets/cookies/tokens detected",
+    "screenshots/video/traces required but not approved",
+    "raw HAR needed",
+    "route/interaction scope unclear",
+    "staging URL or credentials missing/unclear"
+  ],
+  "rules": [
+    "this contract does not enable real browser automation",
+    "this contract does not add staging URLs",
+    "this contract does not authorize credential use",
+    "browser automation may be added only after route scope and staging access rules are approved",
+    "model analysis receives only sanitized summary JSON",
+    "validator must pass before analysis workflow runs"
+  ],
+  "next_steps": [
+    "create synthetic browser runner summary generator",
+    "validate generated summary",
+    "analyze generated summary with Qwen/DeepSeek",
+    "only then design real staging browser workflow"
+  ]
+}

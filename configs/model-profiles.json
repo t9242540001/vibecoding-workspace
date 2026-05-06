@@ -414,11 +414,13 @@
       }
     },
     "e2e-staging-summary-contract": {
-      "status": "analysis_workflow_added_not_connected_to_real_staging",
+      "status": "analysis_passed_browser_handoff_contract_added",
       "example": "examples/e2e/sanitized-staging-summary-example.json",
       "validator_workflow": ".github/workflows/e2e-staging-summary-validator.yml",
       "validator_result": "passed on sanitized fake example",
       "analysis_workflow": ".github/workflows/e2e-staging-summary-analysis.yml",
+      "analysis_result": "fake sanitized summary analysis passed with qwen/qwen-plus and deepseek/deepseek-v4-flash",
+      "browser_handoff_contract": "configs/browser-automation-handoff-contract.json",
       "models": [
         "qwen/qwen-plus",
         "deepseek/deepseek-v4-flash",
@@ -435,8 +437,26 @@
         "manual staging-summary analysis workflow added",
         "Qwen and DeepSeek only for first analysis workflow",
         "Gemini remains experimental",
+        "fake sanitized summary analysis passed with Qwen and DeepSeek",
+        "browser automation handoff contract added",
         "still does not connect to real staging",
         "still does not run browser automation"
+      ]
+    },
+    "browser-automation-handoff": {
+      "status": "contract_added_no_real_browser_automation",
+      "contract": "configs/browser-automation-handoff-contract.json",
+      "docs": "docs/browser-automation-handoff-contract.md",
+      "depends_on": [
+        "configs/e2e-staging-summary-contract.json",
+        ".github/workflows/e2e-staging-summary-validator.yml",
+        ".github/workflows/e2e-staging-summary-analysis.yml"
+      ],
+      "notes": [
+        "defines handoff from future browser runner to sanitized summary JSON",
+        "does not add real staging access",
+        "does not add browser automation workflow",
+        "validator must pass before model analysis"
       ]
     }
   },

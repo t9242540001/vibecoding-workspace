@@ -9,6 +9,8 @@ This workflow analyzes validated sanitized staging summaries with approved text 
 - manual workflow added;
 - works on repository JSON summaries;
 - uses Qwen or DeepSeek;
+- fake sanitized summary analysis passed with `qwen/qwen-plus`;
+- fake sanitized summary analysis passed with `deepseek/deepseek-v4-flash`;
 - not connected to real staging;
 - no browser automation.
 
@@ -58,7 +60,7 @@ Gemini remains experimental and is not allowed in this first analysis workflow.
 
 ## Next Steps
 
-1. Run analysis on fake sanitized summary with Qwen.
-2. Run analysis on fake sanitized summary with DeepSeek.
-3. Record results.
-4. Only then design real browser automation handoff.
+1. Run analysis on fake sanitized summary with Qwen. Done.
+2. Run analysis on fake sanitized summary with DeepSeek. Done.
+3. Add browser automation handoff contract. Done.
+4. Create synthetic browser runner summary generator.

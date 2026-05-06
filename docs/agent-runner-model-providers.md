@@ -123,8 +123,10 @@ Use direct DeepSeek API first, not a router.
 15. Add sanitized staging summary contract. Done.
 16. Add sanitized staging summary example and validator. Done.
 17. Add manual staging-summary analysis workflow. Done.
-18. Run staging-summary analysis on fake sanitized summary with Qwen and DeepSeek.
-19. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
+18. Run staging-summary analysis on fake sanitized summary with Qwen and DeepSeek. Done.
+19. Add browser automation handoff contract. Done.
+20. Create synthetic browser runner summary generator.
+21. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
 
 ## Open Decisions
 
