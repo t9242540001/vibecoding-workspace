@@ -126,10 +126,11 @@ Use direct DeepSeek API first, not a router.
 18. Run staging-summary analysis on fake sanitized summary with Qwen and DeepSeek. Done.
 19. Add browser automation handoff contract. Done.
 20. Create synthetic browser runner summary generator. Done.
-21. Run synthetic browser summary generator with Qwen.
-22. Run synthetic browser summary generator with DeepSeek.
-23. Record synthetic browser summary generator results.
-24. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
+21. Run synthetic browser summary generator with Qwen `qwen/qwen-plus`. Done.
+22. Run synthetic browser summary generator with DeepSeek `deepseek/deepseek-v4-flash`. Done.
+23. Record synthetic browser summary generator results. Done: `landing-success` returned `passed: true`; `landing-missing-cta` returned `passed: false`; scope remains synthetic-only with no real staging and no real browser automation.
+24. Design-only planning for a real staging browser workflow.
+25. Add multimodal/Qwen workflows only after synthetic fixtures and artifact safety rules are ready.
 
 ## Open Decisions
 
