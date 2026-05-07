@@ -681,6 +681,170 @@ jobs:
               sys.exit(1)
           PY
 
+      - name: Write GitHub job summary
+        if: always()
+        env:
+          ROUTE_ID: ${{ inputs.route_id }}
+          INTERACTION_PROFILE_ID: ${{ inputs.interaction_profile_id }}
+          MODEL_ID: ${{ inputs.model_id }}
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+
+          artifact_dir = pathlib.Path("/tmp/real-public-browser-summary")
+          summary_path = pathlib.Path(os.environ["GITHUB_STEP_SUMMARY"])
+          route_id_input = os.environ.get("ROUTE_ID", "unknown")
+          profile_id_input = os.environ.get("INTERACTION_PROFILE_ID", "unknown")
+          model_id_input = os.environ.get("MODEL_ID", "not selected")
+
+          def load_json(path):
+              try:
+                  with path.open("r", encoding="utf-8") as f:
+                      return json.load(f)
+              except FileNotFoundError:
+                  return None
+              except json.JSONDecodeError:
+                  return None
+
+          def safe_text(value):
+              text = str(value if value is not None else "not available")
+              return text.replace("|", "\\|").replace("\n", " ").strip()
+
+          generated = load_json(artifact_dir / "generated-summary.json")
+          validation = load_json(artifact_dir / "validation-report.json")
+          model_report = load_json(artifact_dir / "model-report.json")
+          existing_summary = (artifact_dir / "summary.md").exists()
+
+          validation_passed = validation.get("valid") if validation else False
+          forbidden_matches = validation.get("forbidden_scan_matches", []) if validation else []
+          forbidden_count = len(forbidden_matches)
+          model_analysis_ran = model_report is not None
+          model_passed = model_report.get("passed") if model_report else None
+          model_score = model_report.get("score") if model_report else None
+          recommendation = model_report.get("recommendation") if model_report else None
+
+          route_id = validation.get("route_id", route_id_input) if validation else route_id_input
+          route_label = validation.get("route_label") if validation else None
+          if generated:
+              route_label = generated.get("route_label", route_label)
+          interaction_profile = (
+              validation.get("interaction_profile_id", profile_id_input)
+              if validation else profile_id_input
+          )
+
+          provider = "not available"
+          if model_analysis_ran:
+              if model_id_input.startswith("qwen/"):
+                  provider = "qwen"
+              elif model_id_input.startswith("deepseek/"):
+                  provider = "deepseek"
+
+          visible_count = len(generated.get("visible_text", [])) if generated else 0
+          console_count = len(generated.get("console_errors", [])) if generated else 0
+          network_count = len(generated.get("network_errors", [])) if generated else 0
+          cta = generated.get("primary_cta_presence") if generated else None
+          cta_value = "not available"
+          if isinstance(cta, dict):
+              cta_value = str(cta.get("present"))
+
+          lines = [
+              "# Real Public Browser Summary",
+              "",
+              "## Overall Status",
+              "",
+              f"- Validation passed: `{validation_passed}`",
+              f"- Forbidden scan match groups: `{forbidden_count}`",
+              f"- Model analysis ran: `{model_analysis_ran}`",
+          ]
+          if model_analysis_ran:
+              lines.extend([
+                  f"- Model report passed: `{model_passed}`",
+                  f"- Score: `{model_score}`",
+              ])
+          else:
+              lines.append("- Model report: `not available`")
+
+          lines.extend([
+              "",
+              "## Run Context",
+              "",
+              f"- Route id: `{safe_text(route_id)}`",
+              f"- Route label: `{safe_text(route_label)}`",
+              f"- Interaction profile: `{safe_text(interaction_profile)}`",
+          ])
+          if model_analysis_ran:
+              lines.extend([
+                  f"- Model id: `{safe_text(model_id_input)}`",
+                  f"- Provider: `{safe_text(provider)}`",
+              ])
+
+          lines.extend([
+              "",
+              "## Browser Observation",
+              "",
+              f"- Visible text snippet count: `{visible_count}`",
+              f"- Console error summary count: `{console_count}`",
+              f"- Network error summary count: `{network_count}`",
+              f"- CTA presence: `{safe_text(cta_value)}`",
+          ])
+
+          if model_analysis_ran:
+              lines.extend([
+                  "",
+                  "## Model Recommendation",
+                  "",
+                  safe_text(recommendation),
+              ])
+              issues = model_report.get("issues", [])
+              if issues:
+                  lines.extend(["", "Top issues:"])
+                  for issue in issues[:5]:
+                      severity = safe_text(issue.get("severity", "unknown"))
+                      description = safe_text(issue.get("description", "no description"))
+                      evidence = safe_text(issue.get("evidence", "no evidence"))
+                      lines.append(f"- `{severity}`: {description} Evidence: {evidence}")
+
+          if validation and validation.get("errors"):
+              lines.extend(["", "## Validation Errors", ""])
+              for error in validation.get("errors", [])[:10]:
+                  lines.append(f"- {safe_text(error)}")
+
+          artifacts = [
+              "generated-summary.json",
+              "validation-report.json",
+          ]
+          if model_analysis_ran:
+              artifacts.append("model-report.json")
+          if existing_summary:
+              artifacts.append("summary.md")
+
+          lines.extend([
+              "",
+              "## Artifacts",
+              "",
+          ])
+          for artifact in artifacts:
+              lines.append(f"- `{artifact}`")
+
+          lines.extend([
+              "",
+              "## Safety Note",
+              "",
+              "This job summary is generated from sanitized summary artifacts only.",
+              "",
+              "- No screenshots, videos, traces, or raw HAR.",
+              "- No cookies, storage state, or auth headers.",
+              "- No raw request or response bodies.",
+              "- No raw provider response.",
+          ])
+
+          summary_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+
       - name: Upload sanitized browser summary artifacts
         if: always()
         uses: actions/upload-artifact@v4
