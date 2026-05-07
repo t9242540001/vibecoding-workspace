@@ -143,6 +143,51 @@ Link Check v1 is a safe status signal, not a full navigation audit.
 - A skipped private/auth/payment-like link is not automatically a product bug; it is a review signal.
 - A broken or redirected link should be inspected by a human before product conclusions are made.
 
+## First Run Result
+
+First reported run: `2026-05-07`
+
+- Route: `yurassistent-home`
+- Profile: `homepage-link-check-v1`
+- Mode: `dual-model-comparison`
+- Validation passed: `true`
+- Forbidden scan match groups: `0`
+- Qwen `qwen/qwen-plus`: `passed: false`, score `0.8`
+- DeepSeek `deepseek/deepseek-v4-flash`: `passed: false`, score `0.7`
+- Passed agreement: `true`
+- Score delta: `0.1`
+- Total links seen: `42`
+- Links checked: `30`
+- OK links: `30`
+- Broken links: `0`
+- Redirected links: `0`
+- Skipped links: `12`
+- Contact links found: `1`
+- Email link present: `false`
+- Phone link present: `false`
+- Messenger link present: `true`
+- Private/auth-like links skipped: `0`
+- Payment-like links skipped: `0`
+
+Product interpretation:
+
+- Link Check v1 worked safely.
+- Public checked links appear healthy: `30` checked, `30` OK, `0` broken.
+- A messenger contact link was detected.
+- Email and phone contact links were not detected.
+- No private/auth/payment-like links were followed or flagged as skipped.
+- The page still needs technical review because console/network errors remain.
+- Both models point to a 401 unauthorized-style issue in console/network evidence.
+- The GitHub Actions Node.js 20 warning is a workflow hardening item, not a product-site finding.
+
+## Recommended Follow-Up
+
+1. Inspect the 401 unauthorized-style console/network error.
+2. Confirm whether messenger-only contact is intentional.
+3. If email or phone should exist, add visible safe contact links.
+4. Rerun Link Check v1 after the 401 issue is resolved.
+5. Do not expand to forms or dialogue E2E until public health issues are understood.
+
 ## Next Steps After First Run
 
 1. Review the GitHub Job Summary.

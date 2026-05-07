@@ -49,6 +49,10 @@ Link Check v1 exists as `homepage-link-check-v1` for the approved `yurassistent-
 
 It checks public links and contact-link signals using sanitized link metadata only. It does not include full URLs, raw email addresses, raw phone numbers, query strings, headers, or response bodies in reports.
 
+The first Link Check v1 run completed safely. Public checked links were healthy: `30` checked, `30` OK, `0` broken. A messenger contact link was detected.
+
+The page still needs technical review because console/network evidence points to a 401-style issue.
+
 It does not submit forms, login, follow private/auth/payment flows, click links in the browser, send contact messages, collect screenshots, or collect HAR.
 
 ## Test Intent Taxonomy

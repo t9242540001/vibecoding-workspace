@@ -552,6 +552,63 @@
         ],
         "next_step": "prepare product-level homepage improvement plan before expanding browser interactions"
       },
+      "link_check_v1_result": {
+        "status": "link_check_v1_run_completed_links_healthy_needs_technical_review",
+        "date_reported": "2026-05-07",
+        "workflow": ".github/workflows/real-public-browser-summary.yml",
+        "route": "yurassistent-home",
+        "profile": "homepage-link-check-v1",
+        "analysis_mode": "dual-model-comparison",
+        "validation_passed": true,
+        "forbidden_scan_match_groups": 0,
+        "models": {
+          "qwen/qwen-plus": {
+            "passed": false,
+            "score": 0.8
+          },
+          "deepseek/deepseek-v4-flash": {
+            "passed": false,
+            "score": 0.7
+          }
+        },
+        "comparison": {
+          "passed_agreement": true,
+          "score_delta": 0.1,
+          "both_failed": true,
+          "deterministic_difference": "none identified"
+        },
+        "link_check_summary": {
+          "total_links_seen": 42,
+          "links_checked": 30,
+          "ok_links": 30,
+          "broken_links": 0,
+          "redirected_links": 0,
+          "skipped_links": 12,
+          "contact_links_found": 1,
+          "private_auth_like_links_skipped": 0,
+          "payment_like_links_skipped": 0,
+          "email_link_present": false,
+          "phone_link_present": false,
+          "messenger_link_present": true
+        },
+        "interpretation": [
+          "Link Check v1 works safely",
+          "public links checked in the run appear healthy",
+          "no broken checked links were found",
+          "messenger contact link was detected",
+          "email and phone contact links were not detected",
+          "page still needs technical review because console/network errors remain",
+          "401 unauthorized-style issue should be diagnosed in the product/site layer"
+        ],
+        "safety": [
+          "no full URLs stored in reports",
+          "no raw emails/phones stored",
+          "no forms submitted",
+          "no browser clicks",
+          "no screenshots/HAR/cookies/auth headers/raw request-response bodies collected"
+        ],
+        "next_step": "diagnose the public-page 401/console/network issue before expanding into forms or dialogue E2E"
+      },
       "safety_boundaries": [
         "no arbitrary URL input",
         "no arbitrary browser commands",
