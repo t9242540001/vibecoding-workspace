@@ -3,7 +3,7 @@
 <!--
   @file:        workspace-index.md
   @description: Root navigation file for the Vibe Coding workspace infrastructure
-  @updated:     2026-05-04
+  @updated:     2026-05-07
   @version:     0.2
 -->
 
@@ -110,6 +110,11 @@ Active tools, rules, and docs:
 - `configs/synthetic-browser-observations.json`
 - `.github/workflows/synthetic-browser-summary-generator.yml`
 - `docs/synthetic-browser-summary-generator.md`
+- `docs/real-staging-browser-workflow-design.md`
+- `configs/real-staging-approved-routes.json`
+- `configs/real-staging-interaction-profiles.json`
+- `.github/workflows/real-public-browser-summary.yml`
+- `docs/real-public-browser-summary-mvp.md`
 
 Active operational backlog:
 
@@ -141,9 +146,18 @@ Shared standards and skills are not duplicated inside product repositories unles
 
 ## Current Setup Stage
 
-Current stage: skills universality migration.
+Current stage: real public browser summary MVP documented and passed.
 
-Immediate next steps:
+Current Browser/E2E MVP status:
+
+- First approved route: `yurassistent-home`.
+- First approved profiles: `homepage-load-only`, `homepage-primary-cta-presence`.
+- First approved analysis models: `qwen/qwen-plus`, `deepseek/deepseek-v4-flash`.
+- Broader routes/interactions remain approval-gated.
+
+Skills universality migration remains recorded below.
+
+Skills migration immediate next steps:
 
 1. Audit existing skills for universal wording.
 2. Replace platform-specific wording where needed:
