@@ -28,6 +28,14 @@ on:
         required: true
         default: true
         type: boolean
+      analysis_mode:
+        description: Model analysis mode
+        required: true
+        default: dual-model-comparison
+        type: choice
+        options:
+          - dual-model-comparison
+          - single-model
       model_id:
         description: Model id for optional analysis
         required: true
@@ -62,6 +70,7 @@ jobs:
           INTERACTION_PROFILE_ID: ${{ inputs.interaction_profile_id }}
           STRICT_FORBIDDEN_SCAN: ${{ inputs.strict_forbidden_scan }}
           RUN_ANALYSIS: ${{ inputs.run_analysis }}
+          ANALYSIS_MODE: ${{ inputs.analysis_mode }}
           MODEL_ID: ${{ inputs.model_id }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
@@ -94,6 +103,7 @@ jobs:
           profile_id = os.environ["INTERACTION_PROFILE_ID"]
           strict_forbidden_scan = os.environ["STRICT_FORBIDDEN_SCAN"].lower() == "true"
           run_analysis = os.environ["RUN_ANALYSIS"].lower() == "true"
+          analysis_mode = os.environ["ANALYSIS_MODE"]
           model_id = os.environ["MODEL_ID"]
 
           routes_path = pathlib.Path("configs/real-staging-approved-routes.json")
@@ -102,6 +112,7 @@ jobs:
           model_profiles_path = pathlib.Path("configs/model-profiles.json")
 
           errors = []
+          model_analysis_errors = []
           warnings = []
           forbidden_scan_matches = []
           console_errors = []
@@ -287,8 +298,12 @@ jobs:
 
               if profile_id == "homepage-primary-cta-presence":
                   joined_visible_text = "\n".join(visible_text)
+                  normalized_visible_text = " ".join(joined_visible_text.lower().split())
                   candidates = profile.get("primary_cta_detection", {}).get("acceptable_cta_text_candidates", [])
-                  cta_matches = [candidate for candidate in candidates if candidate in joined_visible_text]
+                  cta_matches = [
+                      candidate for candidate in candidates
+                      if " ".join(str(candidate).lower().split()) in normalized_visible_text
+                  ]
                   cta_present = bool(cta_matches)
                   if cta_present:
                       interactions.append("Detected primary CTA candidate from sanitized visible text.")
@@ -344,7 +359,12 @@ jobs:
               generated_summary["primary_cta_presence"] = {
                   "present": cta_present,
                   "matched_candidates": cta_matches,
-                  "method": "sanitized visible text only"
+                  "method": "normalized sanitized visible text only",
+                  "limitations": [
+                      "CTA false may mean the CTA is absent or unclear in captured visible text.",
+                      "CTA false may mean the CTA text differs from approved candidates.",
+                      "CTA false may mean the CTA is rendered in a way safe text-only capture does not see."
+                  ]
               }
 
           generated_path = artifact_dir / "generated-summary.json"
@@ -433,6 +453,9 @@ jobs:
                   "generated-summary.json",
                   "validation-report.json",
                   "model-report.json",
+                  "model-report-qwen.json",
+                  "model-report-deepseek.json",
+                  "model-comparison-report.json",
                   "summary.md",
                   "report.html",
                   "report.pdf"
@@ -450,6 +473,9 @@ jobs:
           recommendation = None
           attempts = None
           model_report_data = None
+          qwen_report_data = None
+          deepseek_report_data = None
+          comparison_report = None
 
           def validate_model_report(report):
               report_errors = []
@@ -477,30 +503,30 @@ jobs:
                   report_errors.append("`recommendation` must be string.")
               return report_errors
 
-          def call_model_after_validation():
+          def call_model_after_validation(target_model_id, output_name):
               allowed_models = route.get("model_analysis", {}).get(
                   "allowed_models",
                   routes_config.get("model_analysis", {}).get("allowed_models", []),
               )
-              if model_id not in allowed_models:
-                  raise SystemExit(f"Selected model is not approved for this route: {model_id}")
+              if target_model_id not in allowed_models:
+                  raise SystemExit(f"Selected model is not approved for this route: {target_model_id}")
 
-              model = model_profiles.get("models", {}).get(model_id) if model_profiles else None
+              model = model_profiles.get("models", {}).get(target_model_id) if model_profiles else None
               if model is None:
-                  raise SystemExit(f"Model not found in configs/model-profiles.json: {model_id}")
+                  raise SystemExit(f"Model not found in configs/model-profiles.json: {target_model_id}")
 
               provider = model.get("provider")
               if provider not in ("qwen", "deepseek"):
                   raise SystemExit("Only Qwen and DeepSeek models are allowed in this workflow.")
-              if provider == "gemini" or model_id.startswith("gemini/"):
+              if provider == "gemini" or target_model_id.startswith("gemini/"):
                   raise SystemExit("Gemini is excluded from the first real public browser analysis flow.")
               modality = model.get("modality", "")
               if "text" not in [part.strip() for part in modality.split(",")]:
-                  raise SystemExit(f"Model is not text-capable: {model_id}")
+                  raise SystemExit(f"Model is not text-capable: {target_model_id}")
               if model.get("smoke_status") == "not_tested":
-                  raise SystemExit(f"Model has not passed smoke: {model_id}")
+                  raise SystemExit(f"Model has not passed smoke: {target_model_id}")
               if str(model.get("status", "")).startswith("candidate"):
-                  raise SystemExit(f"Model is not active for this flow: {model_id}")
+                  raise SystemExit(f"Model is not active for this flow: {target_model_id}")
 
               report_schema = contract.get("model_report_schema", {})
               system_prompt = (
@@ -611,11 +637,12 @@ jobs:
               if model_report_matches:
                   raise SystemExit("Model report failed forbidden-pattern scan.")
 
-              (artifact_dir / "model-report.json").write_text(
+              (artifact_dir / output_name).write_text(
                   json.dumps(parsed_report, ensure_ascii=False, indent=2),
                   encoding="utf-8",
               )
               return {
+                  "model_id": target_model_id,
                   "provider": provider,
                   "passed": parsed_report.get("passed"),
                   "score": parsed_report.get("score"),
@@ -624,22 +651,166 @@ jobs:
                   "report": parsed_report,
               }
 
+          def report_issue_texts(report):
+              texts = []
+              for issue in report.get("issues", []):
+                  pieces = [
+                      str(issue.get("severity", "")),
+                      str(issue.get("description", "")),
+                      str(issue.get("evidence", "")),
+                  ]
+                  texts.append(" ".join(pieces).lower())
+              return texts
+
+          def has_topic(report, topic_words):
+              haystack = " ".join(report_issue_texts(report) + [
+                  str(report.get("summary", "")).lower(),
+                  str(report.get("recommendation", "")).lower(),
+              ])
+              return any(word in haystack for word in topic_words)
+
+          def recommendation_alignment(first, second):
+              first_words = set(re.findall(r"[a-zа-яё0-9]+", str(first or "").lower()))
+              second_words = set(re.findall(r"[a-zа-яё0-9]+", str(second or "").lower()))
+              if not first_words or not second_words:
+                  return "partially_aligned"
+              overlap = len(first_words.intersection(second_words))
+              ratio = overlap / max(1, min(len(first_words), len(second_words)))
+              if ratio >= 0.45:
+                  return "aligned"
+              if ratio >= 0.2:
+                  return "partially_aligned"
+              return "diverged"
+
+          def build_comparison(qwen_report, deepseek_report):
+              qwen_score = float(qwen_report.get("score", 0))
+              deepseek_score = float(deepseek_report.get("score", 0))
+              score_delta = abs(qwen_score - deepseek_score)
+              shared_findings = []
+              differences = []
+              qwen_topics = report_issue_texts(qwen_report)
+              deepseek_topics = report_issue_texts(deepseek_report)
+              topic_checks = [
+                  ("CTA issue", ["cta", "call-to-action", "кноп", "призыв"]),
+                  ("technical or network issue", ["network", "console", "401", "http", "error", "ошиб"]),
+                  ("visible text issue", ["visible", "text", "контент", "текст"]),
+              ]
+              for label, words in topic_checks:
+                  qwen_has = has_topic(qwen_report, words)
+                  deepseek_has = has_topic(deepseek_report, words)
+                  if qwen_has and deepseek_has:
+                      shared_findings.append(f"Both reports mention a {label}.")
+                  elif qwen_has != deepseek_has:
+                      differences.append(f"Only one report mentions a {label}.")
+              for qwen_issue in qwen_topics:
+                  qwen_words = set(re.findall(r"[a-zа-яё0-9]+", qwen_issue))
+                  if not qwen_words:
+                      continue
+                  for deepseek_issue in deepseek_topics:
+                      deepseek_words = set(re.findall(r"[a-zа-яё0-9]+", deepseek_issue))
+                      if len(qwen_words.intersection(deepseek_words)) >= 3:
+                          shared_findings.append(sanitize_text(qwen_issue)[:180])
+                          break
+                  if len(shared_findings) >= 8:
+                      break
+              if qwen_report.get("passed") != deepseek_report.get("passed"):
+                  differences.append("Model pass/fail results differ.")
+              if score_delta >= 0.2:
+                  differences.append(f"Model scores differ materially: delta {score_delta:.2f}.")
+              alignment = recommendation_alignment(
+                  qwen_report.get("recommendation"),
+                  deepseek_report.get("recommendation"),
+              )
+              if not shared_findings:
+                  shared_findings.append("No conservative shared finding identified by deterministic text matching.")
+              if not differences:
+                  differences.append("No notable deterministic difference identified.")
+              if qwen_report.get("passed") and deepseek_report.get("passed"):
+                  combined_recommendation = "Both approved models passed the sanitized summary; review artifacts for details before relying on the result."
+              elif not qwen_report.get("passed") and not deepseek_report.get("passed"):
+                  combined_recommendation = "Both approved models found issues; review CTA, console, and network evidence before expanding this flow."
+              else:
+                  combined_recommendation = "Approved models disagreed; treat this as needing human review before any follow-up decision."
+              return {
+                  "analysis_mode": "dual-model-comparison",
+                  "models_compared": [
+                      "qwen/qwen-plus",
+                      "deepseek/deepseek-v4-flash",
+                  ],
+                  "agreement": {
+                      "both_passed": bool(qwen_report.get("passed") and deepseek_report.get("passed")),
+                      "both_failed": bool(not qwen_report.get("passed") and not deepseek_report.get("passed")),
+                      "passed_agreement": qwen_report.get("passed") == deepseek_report.get("passed"),
+                      "score_delta": round(score_delta, 4),
+                      "recommendation_alignment": alignment,
+                  },
+                  "qwen_result": {
+                      "passed": qwen_report.get("passed"),
+                      "score": qwen_report.get("score"),
+                      "recommendation": qwen_report.get("recommendation"),
+                      "issue_count": len(qwen_report.get("issues", [])),
+                  },
+                  "deepseek_result": {
+                      "passed": deepseek_report.get("passed"),
+                      "score": deepseek_report.get("score"),
+                      "recommendation": deepseek_report.get("recommendation"),
+                      "issue_count": len(deepseek_report.get("issues", [])),
+                  },
+                  "shared_findings": shared_findings[:8],
+                  "differences": differences[:8],
+                  "combined_recommendation": combined_recommendation,
+                  "confidence_note": "Agreement between Qwen and DeepSeek is stronger evidence; disagreement requires human review.",
+              }
+
           if errors:
               analysis_note = "not run; validation failed"
           elif forbidden_scan_matches:
               analysis_note = "not run; forbidden scan matched"
           elif run_analysis:
-              analysis_result = call_model_after_validation()
               analysis_ran = True
-              analysis_provider = analysis_result["provider"]
-              analysis_passed = analysis_result["passed"]
-              analysis_score = analysis_result["score"]
-              recommendation = analysis_result["recommendation"]
-              attempts = analysis_result["attempts"]
-              model_report_data = analysis_result["report"]
-              analysis_note = "run"
+              try:
+                  if analysis_mode == "dual-model-comparison":
+                      qwen_result = call_model_after_validation("qwen/qwen-plus", "model-report-qwen.json")
+                      deepseek_result = call_model_after_validation("deepseek/deepseek-v4-flash", "model-report-deepseek.json")
+                      qwen_report_data = qwen_result["report"]
+                      deepseek_report_data = deepseek_result["report"]
+                      model_report_data = qwen_report_data
+                      analysis_provider = "qwen/deepseek"
+                      analysis_passed = bool(qwen_report_data.get("passed") and deepseek_report_data.get("passed"))
+                      analysis_score = round((float(qwen_report_data.get("score", 0)) + float(deepseek_report_data.get("score", 0))) / 2, 4)
+                      recommendation = "See model-comparison-report.json for combined recommendation."
+                      attempts = qwen_result["attempts"] + deepseek_result["attempts"]
+                      comparison_report = build_comparison(qwen_report_data, deepseek_report_data)
+                      (artifact_dir / "model-comparison-report.json").write_text(
+                          json.dumps(comparison_report, ensure_ascii=False, indent=2),
+                          encoding="utf-8",
+                      )
+                      (artifact_dir / "model-report.json").write_text(
+                          json.dumps(qwen_report_data, ensure_ascii=False, indent=2),
+                          encoding="utf-8",
+                      )
+                      analysis_note = "run; dual-model comparison"
+                  else:
+                      analysis_result = call_model_after_validation(model_id, "model-report.json")
+                      analysis_provider = analysis_result["provider"]
+                      analysis_passed = analysis_result["passed"]
+                      analysis_score = analysis_result["score"]
+                      recommendation = analysis_result["recommendation"]
+                      attempts = analysis_result["attempts"]
+                      model_report_data = analysis_result["report"]
+                      analysis_note = "run; single-model"
+              except SystemExit as exc:
+                  model_analysis_errors.append(f"Model analysis failed: {exc}")
+                  analysis_note = "failed"
           else:
               analysis_note = "not run; disabled by input"
+
+          if model_analysis_errors:
+              validation_report["model_analysis_errors"] = model_analysis_errors
+              (artifact_dir / "validation-report.json").write_text(
+                  json.dumps(validation_report, ensure_ascii=False, indent=2),
+                  encoding="utf-8",
+              )
 
           def clip(value, limit=180):
               text = sanitize_text(value)
@@ -653,9 +824,15 @@ jobs:
                   return "not available"
               return str(cta.get("present"))
 
+          def cta_limitation_note():
+              cta = generated_summary.get("primary_cta_presence")
+              if not isinstance(cta, dict) or cta.get("present") is not False:
+                  return None
+              return "CTA detection is sanitized visible-text only; false can mean the CTA is absent, uses unexpected text, or is not exposed to safe text capture."
+
           validation_passed = not errors
           forbidden_count = len(forbidden_scan_matches)
-          if not validation_passed or forbidden_count:
+          if not validation_passed or forbidden_count or model_analysis_errors:
               overall_label = "Technical failure"
           elif not analysis_ran or model_report_data is None:
               overall_label = "Analysis not run"
@@ -672,7 +849,14 @@ jobs:
               "generated-summary.json",
               "validation-report.json",
           ]
-          if analysis_ran and model_report_data is not None:
+          if analysis_ran and comparison_report is not None:
+              artifact_names.extend([
+                  "model-report-qwen.json",
+                  "model-report-deepseek.json",
+                  "model-comparison-report.json",
+                  "model-report.json",
+              ])
+          elif analysis_ran and model_report_data is not None:
               artifact_names.append("model-report.json")
           artifact_names.extend(["summary.md", "report.html", "report.pdf"])
 
@@ -680,6 +864,62 @@ jobs:
           matched_criteria = model_report_data.get("matched_criteria", []) if model_report_data else []
           missing_criteria = model_report_data.get("missing_criteria", []) if model_report_data else []
           model_issues = model_report_data.get("issues", []) if model_report_data else []
+
+          def markdown_model_section(title, report):
+              lines = ["", f"## {title}", ""]
+              if not report:
+                  lines.append("Model analysis was not available.")
+                  return lines
+              lines.extend([
+                  f"- Model report passed: `{report.get('passed')}`",
+                  f"- Score: `{report.get('score')}`",
+                  f"- Summary: {clip(report.get('summary'), 260)}",
+                  "",
+                  "Matched criteria:",
+              ])
+              for item in report.get("matched_criteria", []):
+                  lines.append(f"- {clip(item, 180)}")
+              if not report.get("matched_criteria", []):
+                  lines.append("- none")
+              lines.extend(["", "Missing criteria:"])
+              for item in report.get("missing_criteria", []):
+                  lines.append(f"- {clip(item, 180)}")
+              if not report.get("missing_criteria", []):
+                  lines.append("- none")
+              lines.extend(["", "Issues:"])
+              for issue in report.get("issues", [])[:10]:
+                  severity = clip(issue.get("severity", "unknown"), 40)
+                  description = clip(issue.get("description", "no description"), 180)
+                  evidence = clip(issue.get("evidence", "no evidence"), 160)
+                  lines.append(f"- `{severity}`: {description} Evidence: {evidence}")
+              if not report.get("issues", []):
+                  lines.append("- none")
+              lines.extend(["", f"Recommendation: {clip(report.get('recommendation'), 260)}"])
+              return lines
+
+          def markdown_comparison_section():
+              lines = ["", "## Model Comparison", ""]
+              if not comparison_report:
+                  lines.append("Dual-model comparison was not available.")
+                  return lines
+              agreement = comparison_report.get("agreement", {})
+              lines.extend([
+                  f"- Passed agreement: `{agreement.get('passed_agreement')}`",
+                  f"- Both passed: `{agreement.get('both_passed')}`",
+                  f"- Both failed: `{agreement.get('both_failed')}`",
+                  f"- Score delta: `{agreement.get('score_delta')}`",
+                  f"- Recommendation alignment: `{agreement.get('recommendation_alignment')}`",
+                  f"- Combined recommendation: {clip(comparison_report.get('combined_recommendation'), 260)}",
+                  f"- Confidence note: {clip(comparison_report.get('confidence_note'), 260)}",
+                  "",
+                  "Shared findings:",
+              ])
+              for item in comparison_report.get("shared_findings", [])[:8]:
+                  lines.append(f"- {clip(item, 180)}")
+              lines.extend(["", "Differences:"])
+              for item in comparison_report.get("differences", [])[:8]:
+                  lines.append(f"- {clip(item, 180)}")
+              return lines
 
           summary_lines = [
               "# Real Public Browser Summary Report",
@@ -690,9 +930,17 @@ jobs:
               f"- Route id: `{route_id}`",
               f"- Route label: `{route['route_label']}`",
               f"- Interaction profile: `{profile_id}`",
+              f"- Analysis mode: `{analysis_mode}`",
               f"- Model analysis: `{analysis_note}`",
           ]
-          if analysis_ran and model_report_data is not None:
+          if comparison_report:
+              summary_lines.extend([
+                  "- Models: `qwen/qwen-plus`, `deepseek/deepseek-v4-flash`",
+                  f"- Score delta: `{comparison_report.get('agreement', {}).get('score_delta')}`",
+                  f"- Recommendation: {clip(comparison_report.get('combined_recommendation'), 220)}",
+                  "- Compatibility note: `model-report.json` is a Qwen alias in dual-model mode.",
+              ])
+          elif analysis_ran and model_report_data is not None:
               summary_lines.extend([
                   f"- Model id: `{model_id}`",
                   f"- Provider: `{analysis_provider}`",
@@ -715,8 +963,12 @@ jobs:
           ])
           if errors:
               summary_lines.append(f"- Validation errors: `{len(errors)}`")
+          if model_analysis_errors:
+              summary_lines.append(f"- Model analysis errors: `{len(model_analysis_errors)}`")
           if not model_report_data:
               summary_lines.append("- Model report: `not available`")
+          if cta_limitation_note():
+              summary_lines.append(f"- CTA detection note: {cta_limitation_note()}")
 
           summary_lines.extend([
               "",
@@ -729,40 +981,14 @@ jobs:
           for item in visible_sample:
               summary_lines.append(f"- {item}")
 
-          summary_lines.extend(["", "## Model Analysis", ""])
-          if model_report_data:
-              summary_lines.extend([
-                  f"- Model report passed: `{analysis_passed}`",
-                  f"- Score: `{analysis_score}`",
-                  f"- Summary: {clip(model_summary, 260)}",
-                  "",
-                  "Matched criteria:",
-              ])
-              for item in matched_criteria:
-                  summary_lines.append(f"- {clip(item, 180)}")
-              if not matched_criteria:
-                  summary_lines.append("- none")
-              summary_lines.append("")
-              summary_lines.append("Missing criteria:")
-              for item in missing_criteria:
-                  summary_lines.append(f"- {clip(item, 180)}")
-              if not missing_criteria:
-                  summary_lines.append("- none")
-              summary_lines.append("")
-              summary_lines.append("Issues:")
-              for issue in model_issues[:10]:
-                  severity = clip(issue.get("severity", "unknown"), 40)
-                  description = clip(issue.get("description", "no description"), 180)
-                  evidence = clip(issue.get("evidence", "no evidence"), 160)
-                  summary_lines.append(f"- `{severity}`: {description} Evidence: {evidence}")
-              if not model_issues:
-                  summary_lines.append("- none")
-              summary_lines.extend([
-                  "",
-                  f"Recommendation: {clip(recommendation, 260)}",
-              ])
+          if comparison_report:
+              summary_lines.extend(markdown_model_section("Qwen Analysis", qwen_report_data))
+              summary_lines.extend(markdown_model_section("DeepSeek Analysis", deepseek_report_data))
+              summary_lines.extend(markdown_comparison_section())
           else:
-              summary_lines.append("Model analysis was not available.")
+              summary_lines.extend(markdown_model_section("Qwen Analysis", model_report_data if analysis_provider == "qwen" else None))
+              summary_lines.extend(markdown_model_section("DeepSeek Analysis", model_report_data if analysis_provider == "deepseek" else None))
+              summary_lines.extend(markdown_comparison_section())
 
           summary_lines.extend([
               "",
@@ -787,21 +1013,53 @@ jobs:
           def html_list(items):
               return "<ul>" + "".join(f"<li>{html.escape(str(item))}</li>" for item in items) + "</ul>"
 
-          model_analysis_html = "<p>Model analysis was not available.</p>"
-          if model_report_data:
+          def html_model_section(title, report):
+              if not report:
+                  return f"<h2>{html.escape(title)}</h2><p>Model analysis was not available.</p>"
               issues_html = html_list([
                   f"{clip(issue.get('severity', 'unknown'), 40)}: {clip(issue.get('description', 'no description'), 180)} Evidence: {clip(issue.get('evidence', 'no evidence'), 160)}"
-                  for issue in model_issues[:10]
+                  for issue in report.get("issues", [])[:10]
               ] or ["none"])
-              model_analysis_html = f"""
-              <p><strong>Model report passed:</strong> {html.escape(str(analysis_passed))}</p>
-              <p><strong>Score:</strong> {html.escape(str(analysis_score))}</p>
-              <p><strong>Summary:</strong> {html.escape(clip(model_summary, 260))}</p>
-              <h3>Matched Criteria</h3>{html_list([clip(item, 180) for item in matched_criteria] or ["none"])}
-              <h3>Missing Criteria</h3>{html_list([clip(item, 180) for item in missing_criteria] or ["none"])}
+              return f"""
+              <h2>{html.escape(title)}</h2>
+              <p><strong>Model report passed:</strong> {html.escape(str(report.get("passed")))}</p>
+              <p><strong>Score:</strong> {html.escape(str(report.get("score")))}</p>
+              <p><strong>Summary:</strong> {html.escape(clip(report.get("summary"), 260))}</p>
+              <h3>Matched Criteria</h3>{html_list([clip(item, 180) for item in report.get("matched_criteria", [])] or ["none"])}
+              <h3>Missing Criteria</h3>{html_list([clip(item, 180) for item in report.get("missing_criteria", [])] or ["none"])}
               <h3>Issues</h3>{issues_html}
-              <p><strong>Recommendation:</strong> {html.escape(clip(recommendation, 260))}</p>
+              <p><strong>Recommendation:</strong> {html.escape(clip(report.get("recommendation"), 260))}</p>
               """
+
+          def html_comparison_section():
+              if not comparison_report:
+                  return "<h2>Model Comparison</h2><p>Dual-model comparison was not available.</p>"
+              agreement = comparison_report.get("agreement", {})
+              return f"""
+              <h2>Model Comparison</h2>
+              <p><strong>Passed agreement:</strong> {html.escape(str(agreement.get("passed_agreement")))}</p>
+              <p><strong>Both passed:</strong> {html.escape(str(agreement.get("both_passed")))}</p>
+              <p><strong>Both failed:</strong> {html.escape(str(agreement.get("both_failed")))}</p>
+              <p><strong>Score delta:</strong> {html.escape(str(agreement.get("score_delta")))}</p>
+              <p><strong>Recommendation alignment:</strong> {html.escape(str(agreement.get("recommendation_alignment")))}</p>
+              <p><strong>Combined recommendation:</strong> {html.escape(clip(comparison_report.get("combined_recommendation"), 260))}</p>
+              <p><strong>Confidence note:</strong> {html.escape(clip(comparison_report.get("confidence_note"), 260))}</p>
+              <h3>Shared Findings</h3>{html_list([clip(item, 180) for item in comparison_report.get("shared_findings", [])[:8]] or ["none"])}
+              <h3>Differences</h3>{html_list([clip(item, 180) for item in comparison_report.get("differences", [])[:8]] or ["none"])}
+              """
+
+          if comparison_report:
+              model_analysis_html = (
+                  html_model_section("Qwen Analysis", qwen_report_data)
+                  + html_model_section("DeepSeek Analysis", deepseek_report_data)
+                  + html_comparison_section()
+              )
+          else:
+              model_analysis_html = (
+                  html_model_section("Qwen Analysis", model_report_data if analysis_provider == "qwen" else None)
+                  + html_model_section("DeepSeek Analysis", model_report_data if analysis_provider == "deepseek" else None)
+                  + html_comparison_section()
+              )
 
           report_html = f"""<!doctype html>
           <html lang="en">
@@ -825,10 +1083,11 @@ jobs:
               <p><strong>Route id:</strong> {html.escape(route_id)}</p>
               <p><strong>Route label:</strong> {html.escape(route["route_label"])}</p>
               <p><strong>Interaction profile:</strong> {html.escape(profile_id)}</p>
-              <p><strong>Model:</strong> {html.escape(model_id if analysis_ran else "not available")}</p>
+              <p><strong>Analysis mode:</strong> {html.escape(analysis_mode)}</p>
+              <p><strong>Model:</strong> {html.escape("qwen/qwen-plus and deepseek/deepseek-v4-flash" if comparison_report else (model_id if analysis_ran else "not available"))}</p>
               <p><strong>Provider:</strong> {html.escape(analysis_provider or "not available")}</p>
               <p><strong>Score:</strong> {html.escape(str(analysis_score if analysis_score is not None else "not available"))}</p>
-              <p><strong>Recommendation:</strong> {html.escape(clip(recommendation, 260) if recommendation else "not available")}</p>
+              <p><strong>Recommendation:</strong> {html.escape(clip(comparison_report.get("combined_recommendation"), 260) if comparison_report else (clip(recommendation, 260) if recommendation else "not available"))}</p>
             </div>
             <h2>Technical Health</h2>
             <table>
@@ -838,12 +1097,12 @@ jobs:
               <tr><th>Console error summary count</th><td>{html.escape(str(len(generated_summary["console_errors"])))}</td></tr>
               <tr><th>Network error summary count</th><td>{html.escape(str(len(generated_summary["network_errors"])))}</td></tr>
               <tr><th>CTA presence</th><td>{html.escape(cta_status())}</td></tr>
+              <tr><th>CTA detection note</th><td>{html.escape(cta_limitation_note() or "not applicable")}</td></tr>
             </table>
             <h2>Page Understanding</h2>
             <p><strong>Page title:</strong> {html.escape(clip(generated_summary.get("page_title"), 180))}</p>
             <h3>Visible Text Sample</h3>
             {html_list(visible_sample)}
-            <h2>Model Analysis</h2>
             {model_analysis_html}
             <h2>Safety Boundaries</h2>
             {html_list([
@@ -896,10 +1155,11 @@ jobs:
               f"Route id: {route_id}",
               f"Route label: {route['route_label']}",
               f"Interaction profile: {profile_id}",
-              f"Model id: {model_id if analysis_ran else 'not available'}",
+              f"Analysis mode: {analysis_mode}",
+              f"Model id: {'qwen/qwen-plus and deepseek/deepseek-v4-flash' if comparison_report else (model_id if analysis_ran else 'not available')}",
               f"Provider: {analysis_provider or 'not available'}",
               f"Score: {analysis_score if analysis_score is not None else 'not available'}",
-              f"Recommendation: {clip(recommendation, 260) if recommendation else 'not available'}",
+              f"Recommendation: {clip(comparison_report.get('combined_recommendation'), 260) if comparison_report else (clip(recommendation, 260) if recommendation else 'not available')}",
           ])
           add_pdf_heading(story, styles, "Technical Health")
           add_pdf_bullets(story, styles, [
@@ -909,29 +1169,55 @@ jobs:
               f"Console error summary count: {len(generated_summary['console_errors'])}",
               f"Network error summary count: {len(generated_summary['network_errors'])}",
               f"CTA presence: {cta_status()}",
+              f"CTA detection note: {cta_limitation_note() or 'not applicable'}",
           ])
           add_pdf_heading(story, styles, "Page Understanding")
           add_pdf_paragraph(story, styles, f"Page title: {clip(generated_summary.get('page_title'), 180)}")
           add_pdf_bullets(story, styles, visible_sample)
-          add_pdf_heading(story, styles, "Model Analysis")
-          if model_report_data:
+          def add_pdf_model_section(title, report):
+              add_pdf_heading(story, styles, title)
+              if not report:
+                  add_pdf_paragraph(story, styles, "Model analysis was not available.")
+                  return
               add_pdf_bullets(story, styles, [
-                  f"Model report passed: {analysis_passed}",
-                  f"Score: {analysis_score}",
-                  f"Summary: {clip(model_summary, 260)}",
+                  f"Model report passed: {report.get('passed')}",
+                  f"Score: {report.get('score')}",
+                  f"Summary: {clip(report.get('summary'), 260)}",
               ])
               add_pdf_paragraph(story, styles, "Matched criteria:")
-              add_pdf_bullets(story, styles, [clip(item, 180) for item in matched_criteria] or ["none"])
+              add_pdf_bullets(story, styles, [clip(item, 180) for item in report.get("matched_criteria", [])] or ["none"])
               add_pdf_paragraph(story, styles, "Missing criteria:")
-              add_pdf_bullets(story, styles, [clip(item, 180) for item in missing_criteria] or ["none"])
+              add_pdf_bullets(story, styles, [clip(item, 180) for item in report.get("missing_criteria", [])] or ["none"])
               add_pdf_paragraph(story, styles, "Issues:")
               add_pdf_bullets(story, styles, [
                   f"{clip(issue.get('severity', 'unknown'), 40)}: {clip(issue.get('description', 'no description'), 180)} Evidence: {clip(issue.get('evidence', 'no evidence'), 160)}"
-                  for issue in model_issues[:10]
+                  for issue in report.get("issues", [])[:10]
               ] or ["none"])
-              add_pdf_paragraph(story, styles, f"Recommendation: {clip(recommendation, 260)}")
+              add_pdf_paragraph(story, styles, f"Recommendation: {clip(report.get('recommendation'), 260)}")
+
+          if comparison_report:
+              add_pdf_model_section("Qwen Analysis", qwen_report_data)
+              add_pdf_model_section("DeepSeek Analysis", deepseek_report_data)
+              add_pdf_heading(story, styles, "Model Comparison")
+              agreement = comparison_report.get("agreement", {})
+              add_pdf_bullets(story, styles, [
+                  f"Passed agreement: {agreement.get('passed_agreement')}",
+                  f"Both passed: {agreement.get('both_passed')}",
+                  f"Both failed: {agreement.get('both_failed')}",
+                  f"Score delta: {agreement.get('score_delta')}",
+                  f"Recommendation alignment: {agreement.get('recommendation_alignment')}",
+                  f"Combined recommendation: {clip(comparison_report.get('combined_recommendation'), 260)}",
+                  f"Confidence note: {clip(comparison_report.get('confidence_note'), 260)}",
+              ])
+              add_pdf_paragraph(story, styles, "Shared findings:")
+              add_pdf_bullets(story, styles, [clip(item, 180) for item in comparison_report.get("shared_findings", [])[:8]] or ["none"])
+              add_pdf_paragraph(story, styles, "Differences:")
+              add_pdf_bullets(story, styles, [clip(item, 180) for item in comparison_report.get("differences", [])[:8]] or ["none"])
           else:
-              add_pdf_paragraph(story, styles, "Model analysis was not available.")
+              add_pdf_model_section("Qwen Analysis", model_report_data if analysis_provider == "qwen" else None)
+              add_pdf_model_section("DeepSeek Analysis", model_report_data if analysis_provider == "deepseek" else None)
+              add_pdf_heading(story, styles, "Model Comparison")
+              add_pdf_paragraph(story, styles, "Dual-model comparison was not available.")
           add_pdf_heading(story, styles, "Safety Boundaries")
           add_pdf_bullets(story, styles, [
               "Sanitized summary only.",
@@ -962,9 +1248,11 @@ jobs:
               print(f"Score: {analysis_score}")
               print(f"Recommendation: {recommendation}")
 
-          if errors:
+          if errors or model_analysis_errors:
               for error in errors:
                   print(f"Validation error: {error}")
+              for error in model_analysis_errors:
+                  print(f"Model analysis error: {error}")
               sys.exit(1)
           PY
 
@@ -973,6 +1261,7 @@ jobs:
         env:
           ROUTE_ID: ${{ inputs.route_id }}
           INTERACTION_PROFILE_ID: ${{ inputs.interaction_profile_id }}
+          ANALYSIS_MODE: ${{ inputs.analysis_mode }}
           MODEL_ID: ${{ inputs.model_id }}
         run: |
           set -euo pipefail
@@ -986,6 +1275,7 @@ jobs:
           summary_path = pathlib.Path(os.environ["GITHUB_STEP_SUMMARY"])
           route_id_input = os.environ.get("ROUTE_ID", "unknown")
           profile_id_input = os.environ.get("INTERACTION_PROFILE_ID", "unknown")
+          analysis_mode_input = os.environ.get("ANALYSIS_MODE", "single-model")
           model_id_input = os.environ.get("MODEL_ID", "not selected")
 
           def load_json(path):
@@ -1004,15 +1294,21 @@ jobs:
           generated = load_json(artifact_dir / "generated-summary.json")
           validation = load_json(artifact_dir / "validation-report.json")
           model_report = load_json(artifact_dir / "model-report.json")
+          qwen_report = load_json(artifact_dir / "model-report-qwen.json")
+          deepseek_report = load_json(artifact_dir / "model-report-deepseek.json")
+          comparison_report = load_json(artifact_dir / "model-comparison-report.json")
           existing_summary = (artifact_dir / "summary.md").exists()
 
           validation_passed = validation.get("valid") if validation else False
           forbidden_matches = validation.get("forbidden_scan_matches", []) if validation else []
           forbidden_count = len(forbidden_matches)
-          model_analysis_ran = model_report is not None
+          model_analysis_errors = validation.get("model_analysis_errors", []) if validation else []
+          model_analysis_ran = model_report is not None or qwen_report is not None or deepseek_report is not None
           model_passed = model_report.get("passed") if model_report else None
           model_score = model_report.get("score") if model_report else None
           recommendation = model_report.get("recommendation") if model_report else None
+          agreement = comparison_report.get("agreement", {}) if comparison_report else {}
+          combined_recommendation = comparison_report.get("combined_recommendation") if comparison_report else recommendation
 
           route_id = validation.get("route_id", route_id_input) if validation else route_id_input
           route_label = validation.get("route_label") if validation else None
@@ -1024,7 +1320,9 @@ jobs:
           )
 
           provider = "not available"
-          if model_analysis_ran:
+          if comparison_report:
+              provider = "qwen/deepseek"
+          elif model_analysis_ran:
               if model_id_input.startswith("qwen/"):
                   provider = "qwen"
               elif model_id_input.startswith("deepseek/"):
@@ -1035,8 +1333,11 @@ jobs:
           network_count = len(generated.get("network_errors", [])) if generated else 0
           cta = generated.get("primary_cta_presence") if generated else None
           cta_value = "not available"
+          cta_note = "not applicable"
           if isinstance(cta, dict):
               cta_value = str(cta.get("present"))
+              if cta.get("present") is False:
+                  cta_note = "CTA detection is sanitized visible-text only; false can mean absent, unexpected text, or not exposed to safe text capture."
 
           lines = [
               "# Real Public Browser Summary",
@@ -1046,8 +1347,19 @@ jobs:
               f"- Validation passed: `{validation_passed}`",
               f"- Forbidden scan match groups: `{forbidden_count}`",
               f"- Model analysis ran: `{model_analysis_ran}`",
+              f"- Analysis mode: `{safe_text(analysis_mode_input)}`",
+              f"- Model analysis error count: `{len(model_analysis_errors)}`",
           ]
-          if model_analysis_ran:
+          if comparison_report:
+              lines.extend([
+                  f"- Qwen passed: `{qwen_report.get('passed') if qwen_report else 'not available'}`",
+                  f"- Qwen score: `{qwen_report.get('score') if qwen_report else 'not available'}`",
+                  f"- DeepSeek passed: `{deepseek_report.get('passed') if deepseek_report else 'not available'}`",
+                  f"- DeepSeek score: `{deepseek_report.get('score') if deepseek_report else 'not available'}`",
+                  f"- Score delta: `{agreement.get('score_delta', 'not available')}`",
+                  f"- Passed agreement: `{agreement.get('passed_agreement', 'not available')}`",
+              ])
+          elif model_analysis_ran:
               lines.extend([
                   f"- Model report passed: `{model_passed}`",
                   f"- Score: `{model_score}`",
@@ -1062,8 +1374,15 @@ jobs:
               f"- Route id: `{safe_text(route_id)}`",
               f"- Route label: `{safe_text(route_label)}`",
               f"- Interaction profile: `{safe_text(interaction_profile)}`",
+              f"- Analysis mode: `{safe_text(analysis_mode_input)}`",
           ])
-          if model_analysis_ran:
+          if comparison_report:
+              lines.extend([
+                  "- Models: `qwen/qwen-plus`, `deepseek/deepseek-v4-flash`",
+                  "- Provider: `qwen/deepseek`",
+                  "- Compatibility note: `model-report.json` is a Qwen alias in dual-model mode.",
+              ])
+          elif model_analysis_ran:
               lines.extend([
                   f"- Model id: `{safe_text(model_id_input)}`",
                   f"- Provider: `{safe_text(provider)}`",
@@ -1077,9 +1396,24 @@ jobs:
               f"- Console error summary count: `{console_count}`",
               f"- Network error summary count: `{network_count}`",
               f"- CTA presence: `{safe_text(cta_value)}`",
+              f"- CTA detection note: {safe_text(cta_note)}",
           ])
 
-          if model_analysis_ran:
+          if comparison_report:
+              lines.extend([
+                  "",
+                  "## Model Comparison",
+                  "",
+                  f"- Combined recommendation: {safe_text(combined_recommendation)}",
+                  "",
+                  "Top shared findings:",
+              ])
+              for item in comparison_report.get("shared_findings", [])[:5]:
+                  lines.append(f"- {safe_text(item)}")
+              lines.extend(["", "Top differences:"])
+              for item in comparison_report.get("differences", [])[:5]:
+                  lines.append(f"- {safe_text(item)}")
+          elif model_analysis_ran:
               lines.extend([
                   "",
                   "## Model Recommendation",
@@ -1099,6 +1433,10 @@ jobs:
               lines.extend(["", "## Validation Errors", ""])
               for error in validation.get("errors", [])[:10]:
                   lines.append(f"- {safe_text(error)}")
+          if model_analysis_errors:
+              lines.extend(["", "## Model Analysis Errors", ""])
+              for error in model_analysis_errors[:10]:
+                  lines.append(f"- {safe_text(error)}")
 
           artifacts = [
               "generated-summary.json",
@@ -1106,6 +1444,12 @@ jobs:
           ]
           if model_analysis_ran:
               artifacts.append("model-report.json")
+          if qwen_report:
+              artifacts.append("model-report-qwen.json")
+          if deepseek_report:
+              artifacts.append("model-report-deepseek.json")
+          if comparison_report:
+              artifacts.append("model-comparison-report.json")
           if existing_summary:
               artifacts.append("summary.md")
           if (artifact_dir / "report.html").exists():
@@ -1145,6 +1489,9 @@ jobs:
             /tmp/real-public-browser-summary/generated-summary.json
             /tmp/real-public-browser-summary/validation-report.json
             /tmp/real-public-browser-summary/model-report.json
+            /tmp/real-public-browser-summary/model-report-qwen.json
+            /tmp/real-public-browser-summary/model-report-deepseek.json
+            /tmp/real-public-browser-summary/model-comparison-report.json
             /tmp/real-public-browser-summary/summary.md
             /tmp/real-public-browser-summary/report.html
             /tmp/real-public-browser-summary/report.pdf
