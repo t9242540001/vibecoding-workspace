@@ -18,6 +18,7 @@ on:
         options:
           - homepage-load-only
           - homepage-primary-cta-presence
+          - homepage-content-audit-v1
       strict_forbidden_scan:
         description: Fail on suspicious forbidden patterns
         required: true
@@ -367,6 +368,120 @@ jobs:
                   ]
               }
 
+          def detect_terms(text, terms):
+              normalized_text = " ".join(str(text or "").lower().split())
+              detected = []
+              for term in terms:
+                  normalized_term = " ".join(str(term).lower().split())
+                  if normalized_term and normalized_term in normalized_text:
+                      detected.append(term)
+              return detected
+
+          def build_content_audit_signals():
+              joined_text = "\n".join(generated_summary.get("visible_text", []))
+              target_terms = [
+                  "юрист",
+                  "юрид",
+                  "документ",
+                  "договор",
+                  "иск",
+                  "претенз",
+                  "консультац",
+                  "помощь",
+                  "вопрос",
+                  "задача"
+              ]
+              offer_terms = [
+                  "ассистент",
+                  "помощник",
+                  "подготов",
+                  "создать",
+                  "сгенер",
+                  "разобрать",
+                  "проверить",
+                  "получить"
+              ]
+              cta_terms = [
+                  "начать",
+                  "попробовать",
+                  "спросить",
+                  "задать вопрос",
+                  "создать документ",
+                  "получить консультацию",
+                  "открыть помощника",
+                  "запустить"
+              ]
+              trust_terms = [
+                  "безопас",
+                  "конфиденц",
+                  "провер",
+                  "эксперт",
+                  "опыт",
+                  "качество",
+                  "надеж",
+                  "закон",
+                  "бесплатно"
+              ]
+              legal_terms = [
+                  "иск",
+                  "претенз",
+                  "договор",
+                  "заявление",
+                  "жалоба",
+                  "суд",
+                  "право",
+                  "юрид",
+                  "документ"
+              ]
+              jurisdiction_terms = [
+                  "рф",
+                  "россия",
+                  "российск",
+                  "закон",
+                  "суд"
+              ]
+              long_text_block_risk = any(len(item) > 260 for item in generated_summary.get("visible_text", []))
+              heading_like_text_present = any(0 < len(item) <= 90 for item in generated_summary.get("visible_text", [])[:12])
+              cta_detected = detect_terms(joined_text, cta_terms)
+              service_keywords = detect_terms(joined_text, legal_terms)
+              generated_summary["content_audit_signals"] = {
+                  "target_audience_terms_detected": detect_terms(joined_text, target_terms),
+                  "offer_terms_detected": detect_terms(joined_text, offer_terms),
+                  "cta_terms_detected": cta_detected,
+                  "trust_signal_terms_detected": detect_terms(joined_text, trust_terms),
+                  "legal_service_terms_detected": service_keywords,
+                  "long_text_block_risk": long_text_block_risk,
+                  "visible_text_snippet_count": len(generated_summary.get("visible_text", [])),
+                  "limitations": [
+                      "Signals are derived from sanitized visible text only.",
+                      "No screenshots, DOM dump, visual recognition, clicks, or form interactions were used.",
+                      "Detected terms are deterministic input signals, not final content judgment."
+                  ]
+              }
+              generated_summary["seo_basic_signals"] = {
+                  "page_title_present": bool(generated_summary.get("page_title")),
+                  "heading_like_text_present": heading_like_text_present,
+                  "service_keywords_detected": service_keywords,
+                  "jurisdiction_terms_detected": detect_terms(joined_text, jurisdiction_terms),
+                  "limitations": [
+                      "Meta description was not checked.",
+                      "SEO signals are text-only and do not inspect page source or structured data."
+                  ]
+              }
+              generated_summary["mobile_readiness_signals"] = {
+                  "text_only_mobile_readiness_checked": True,
+                  "visual_mobile_layout_checked": False,
+                  "cta_text_visible_in_text_capture": bool(cta_detected),
+                  "long_text_blocks_risk": long_text_block_risk,
+                  "limitations": [
+                      "Mobile readiness is text/signal-based only.",
+                      "No real mobile screenshot or visual layout proof was collected."
+                  ]
+              }
+
+          if profile_id == "homepage-content-audit-v1":
+              build_content_audit_signals()
+
           generated_path = artifact_dir / "generated-summary.json"
           generated_path.write_text(
               json.dumps(generated_summary, ensure_ascii=False, indent=2),
@@ -538,8 +653,9 @@ jobs:
                   "acceptance_criteria": generated_summary.get("acceptance_criteria", []),
                   "report_schema": report_schema,
               }
+              analysis_frame = "content audit from sanitized visible text" if profile_id == "homepage-content-audit-v1" else "public browser summary"
               user_prompt = (
-                  "Analyze this sanitized public browser summary against the acceptance criteria. "
+                  f"Analyze this sanitized {analysis_frame} against the acceptance criteria. "
                   "Return JSON with fields: passed, score, summary, matched_criteria, "
                   "missing_criteria, issues, recommendation.\n\n"
                   + json.dumps(user_payload, ensure_ascii=False, indent=2)
@@ -921,6 +1037,48 @@ jobs:
                   lines.append(f"- {clip(item, 180)}")
               return lines
 
+          def markdown_content_audit_section():
+              content = generated_summary.get("content_audit_signals")
+              seo = generated_summary.get("seo_basic_signals")
+              mobile = generated_summary.get("mobile_readiness_signals")
+              if not content:
+                  return []
+              lines = ["", "## Content Audit Signals", ""]
+              signal_fields = [
+                  ("Target audience terms", content.get("target_audience_terms_detected", [])),
+                  ("Offer terms", content.get("offer_terms_detected", [])),
+                  ("CTA terms", content.get("cta_terms_detected", [])),
+                  ("Trust signal terms", content.get("trust_signal_terms_detected", [])),
+                  ("Legal service terms", content.get("legal_service_terms_detected", [])),
+              ]
+              for label, items in signal_fields:
+                  lines.append(f"- {label}: {', '.join(items) if items else 'none detected'}")
+              lines.extend([
+                  f"- Long text block risk: `{content.get('long_text_block_risk')}`",
+                  f"- Visible text snippet count: `{content.get('visible_text_snippet_count')}`",
+                  "",
+                  "SEO basic signals:",
+                  f"- Page title present: `{seo.get('page_title_present') if seo else 'not available'}`",
+                  f"- Heading-like text present: `{seo.get('heading_like_text_present') if seo else 'not available'}`",
+                  f"- Service keywords: {', '.join(seo.get('service_keywords_detected', [])) if seo and seo.get('service_keywords_detected') else 'none detected'}",
+                  f"- Jurisdiction terms: {', '.join(seo.get('jurisdiction_terms_detected', [])) if seo and seo.get('jurisdiction_terms_detected') else 'none detected'}",
+                  "",
+                  "Mobile readiness signals:",
+                  f"- Text-only mobile readiness checked: `{mobile.get('text_only_mobile_readiness_checked') if mobile else 'not available'}`",
+                  f"- Visual mobile layout checked: `{mobile.get('visual_mobile_layout_checked') if mobile else 'not available'}`",
+                  f"- CTA text visible in text capture: `{mobile.get('cta_text_visible_in_text_capture') if mobile else 'not available'}`",
+                  f"- Long text blocks risk: `{mobile.get('long_text_blocks_risk') if mobile else 'not available'}`",
+                  "",
+                  "Limitations:",
+              ])
+              for item in content.get("limitations", []):
+                  lines.append(f"- {clip(item, 180)}")
+              for item in (seo or {}).get("limitations", []):
+                  lines.append(f"- {clip(item, 180)}")
+              for item in (mobile or {}).get("limitations", []):
+                  lines.append(f"- {clip(item, 180)}")
+              return lines
+
           summary_lines = [
               "# Real Public Browser Summary Report",
               "",
@@ -980,6 +1138,8 @@ jobs:
           ])
           for item in visible_sample:
               summary_lines.append(f"- {item}")
+
+          summary_lines.extend(markdown_content_audit_section())
 
           if comparison_report:
               summary_lines.extend(markdown_model_section("Qwen Analysis", qwen_report_data))
@@ -1048,6 +1208,44 @@ jobs:
               <h3>Differences</h3>{html_list([clip(item, 180) for item in comparison_report.get("differences", [])[:8]] or ["none"])}
               """
 
+          def html_content_audit_section():
+              content = generated_summary.get("content_audit_signals")
+              seo = generated_summary.get("seo_basic_signals")
+              mobile = generated_summary.get("mobile_readiness_signals")
+              if not content:
+                  return ""
+              limitations = (
+                  content.get("limitations", [])
+                  + (seo or {}).get("limitations", [])
+                  + (mobile or {}).get("limitations", [])
+              )
+              return f"""
+              <h2>Content Audit Signals</h2>
+              <table>
+                <tr><th>Target audience terms</th><td>{html.escape(", ".join(content.get("target_audience_terms_detected", [])) or "none detected")}</td></tr>
+                <tr><th>Offer terms</th><td>{html.escape(", ".join(content.get("offer_terms_detected", [])) or "none detected")}</td></tr>
+                <tr><th>CTA terms</th><td>{html.escape(", ".join(content.get("cta_terms_detected", [])) or "none detected")}</td></tr>
+                <tr><th>Trust signal terms</th><td>{html.escape(", ".join(content.get("trust_signal_terms_detected", [])) or "none detected")}</td></tr>
+                <tr><th>Legal service terms</th><td>{html.escape(", ".join(content.get("legal_service_terms_detected", [])) or "none detected")}</td></tr>
+                <tr><th>Long text block risk</th><td>{html.escape(str(content.get("long_text_block_risk")))}</td></tr>
+              </table>
+              <h3>SEO Basic Signals</h3>
+              <table>
+                <tr><th>Page title present</th><td>{html.escape(str((seo or {}).get("page_title_present", "not available")))}</td></tr>
+                <tr><th>Heading-like text present</th><td>{html.escape(str((seo or {}).get("heading_like_text_present", "not available")))}</td></tr>
+                <tr><th>Service keywords</th><td>{html.escape(", ".join((seo or {}).get("service_keywords_detected", [])) or "none detected")}</td></tr>
+                <tr><th>Jurisdiction terms</th><td>{html.escape(", ".join((seo or {}).get("jurisdiction_terms_detected", [])) or "none detected")}</td></tr>
+              </table>
+              <h3>Mobile Readiness Signals</h3>
+              <table>
+                <tr><th>Text-only mobile readiness checked</th><td>{html.escape(str((mobile or {}).get("text_only_mobile_readiness_checked", "not available")))}</td></tr>
+                <tr><th>Visual mobile layout checked</th><td>{html.escape(str((mobile or {}).get("visual_mobile_layout_checked", "not available")))}</td></tr>
+                <tr><th>CTA text visible in text capture</th><td>{html.escape(str((mobile or {}).get("cta_text_visible_in_text_capture", "not available")))}</td></tr>
+                <tr><th>Long text blocks risk</th><td>{html.escape(str((mobile or {}).get("long_text_blocks_risk", "not available")))}</td></tr>
+              </table>
+              <h3>Limitations</h3>{html_list([clip(item, 180) for item in limitations] or ["none"])}
+              """
+
           if comparison_report:
               model_analysis_html = (
                   html_model_section("Qwen Analysis", qwen_report_data)
@@ -1103,6 +1301,7 @@ jobs:
             <p><strong>Page title:</strong> {html.escape(clip(generated_summary.get("page_title"), 180))}</p>
             <h3>Visible Text Sample</h3>
             {html_list(visible_sample)}
+            {html_content_audit_section()}
             {model_analysis_html}
             <h2>Safety Boundaries</h2>
             {html_list([
@@ -1174,6 +1373,45 @@ jobs:
           add_pdf_heading(story, styles, "Page Understanding")
           add_pdf_paragraph(story, styles, f"Page title: {clip(generated_summary.get('page_title'), 180)}")
           add_pdf_bullets(story, styles, visible_sample)
+          def add_pdf_content_audit_section():
+              content = generated_summary.get("content_audit_signals")
+              seo = generated_summary.get("seo_basic_signals")
+              mobile = generated_summary.get("mobile_readiness_signals")
+              if not content:
+                  return
+              add_pdf_heading(story, styles, "Content Audit Signals")
+              add_pdf_bullets(story, styles, [
+                  f"Target audience terms: {', '.join(content.get('target_audience_terms_detected', [])) or 'none detected'}",
+                  f"Offer terms: {', '.join(content.get('offer_terms_detected', [])) or 'none detected'}",
+                  f"CTA terms: {', '.join(content.get('cta_terms_detected', [])) or 'none detected'}",
+                  f"Trust signal terms: {', '.join(content.get('trust_signal_terms_detected', [])) or 'none detected'}",
+                  f"Legal service terms: {', '.join(content.get('legal_service_terms_detected', [])) or 'none detected'}",
+                  f"Long text block risk: {content.get('long_text_block_risk')}",
+                  f"Visible text snippet count: {content.get('visible_text_snippet_count')}",
+              ])
+              add_pdf_paragraph(story, styles, "SEO basic signals:")
+              add_pdf_bullets(story, styles, [
+                  f"Page title present: {(seo or {}).get('page_title_present', 'not available')}",
+                  f"Heading-like text present: {(seo or {}).get('heading_like_text_present', 'not available')}",
+                  f"Service keywords: {', '.join((seo or {}).get('service_keywords_detected', [])) or 'none detected'}",
+                  f"Jurisdiction terms: {', '.join((seo or {}).get('jurisdiction_terms_detected', [])) or 'none detected'}",
+              ])
+              add_pdf_paragraph(story, styles, "Mobile readiness signals:")
+              add_pdf_bullets(story, styles, [
+                  f"Text-only mobile readiness checked: {(mobile or {}).get('text_only_mobile_readiness_checked', 'not available')}",
+                  f"Visual mobile layout checked: {(mobile or {}).get('visual_mobile_layout_checked', 'not available')}",
+                  f"CTA text visible in text capture: {(mobile or {}).get('cta_text_visible_in_text_capture', 'not available')}",
+                  f"Long text blocks risk: {(mobile or {}).get('long_text_blocks_risk', 'not available')}",
+              ])
+              limitations = (
+                  content.get("limitations", [])
+                  + (seo or {}).get("limitations", [])
+                  + (mobile or {}).get("limitations", [])
+              )
+              add_pdf_paragraph(story, styles, "Limitations:")
+              add_pdf_bullets(story, styles, [clip(item, 180) for item in limitations] or ["none"])
+
+          add_pdf_content_audit_section()
           def add_pdf_model_section(title, report):
               add_pdf_heading(story, styles, title)
               if not report:
@@ -1332,6 +1570,9 @@ jobs:
           console_count = len(generated.get("console_errors", [])) if generated else 0
           network_count = len(generated.get("network_errors", [])) if generated else 0
           cta = generated.get("primary_cta_presence") if generated else None
+          content_audit = generated.get("content_audit_signals") if generated else None
+          seo_signals = generated.get("seo_basic_signals") if generated else None
+          mobile_signals = generated.get("mobile_readiness_signals") if generated else None
           cta_value = "not available"
           cta_note = "not applicable"
           if isinstance(cta, dict):
@@ -1398,6 +1639,24 @@ jobs:
               f"- CTA presence: `{safe_text(cta_value)}`",
               f"- CTA detection note: {safe_text(cta_note)}",
           ])
+
+          if content_audit:
+              lines.extend([
+                  "",
+                  "## Content Audit Signals",
+                  "",
+                  f"- Target audience terms: `{safe_text(', '.join(content_audit.get('target_audience_terms_detected', [])) or 'none detected')}`",
+                  f"- Offer terms: `{safe_text(', '.join(content_audit.get('offer_terms_detected', [])) or 'none detected')}`",
+                  f"- CTA terms: `{safe_text(', '.join(content_audit.get('cta_terms_detected', [])) or 'none detected')}`",
+                  f"- Trust signal terms: `{safe_text(', '.join(content_audit.get('trust_signal_terms_detected', [])) or 'none detected')}`",
+                  f"- Legal service terms: `{safe_text(', '.join(content_audit.get('legal_service_terms_detected', [])) or 'none detected')}`",
+                  f"- Long text block risk: `{content_audit.get('long_text_block_risk')}`",
+                  f"- SEO page title present: `{(seo_signals or {}).get('page_title_present', 'not available')}`",
+                  f"- SEO heading-like text present: `{(seo_signals or {}).get('heading_like_text_present', 'not available')}`",
+                  f"- Mobile text-only readiness checked: `{(mobile_signals or {}).get('text_only_mobile_readiness_checked', 'not available')}`",
+                  f"- Mobile visual layout checked: `{(mobile_signals or {}).get('visual_mobile_layout_checked', 'not available')}`",
+                  f"- Mobile CTA text visible in text capture: `{(mobile_signals or {}).get('cta_text_visible_in_text_capture', 'not available')}`",
+              ])
 
           if comparison_report:
               lines.extend([

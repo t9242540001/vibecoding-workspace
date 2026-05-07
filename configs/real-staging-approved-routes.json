@@ -1,6 +1,6 @@
 {
   "version": "0.1",
-  "updated": "2026-05-06",
+  "updated": "2026-05-07",
   "purpose": "Approved route registry for future manual real public/no-auth browser summary workflows.",
   "status": "routes_config_added_no_workflow",
   "rules": [
@@ -31,7 +31,8 @@
       "route_type": "public_no_auth_homepage",
       "allowed_interaction_profile_ids": [
         "homepage-load-only",
-        "homepage-primary-cta-presence"
+        "homepage-primary-cta-presence",
+        "homepage-content-audit-v1"
       ],
       "forbidden_interaction_classes": [
         "login",
@@ -50,7 +51,10 @@
         "high_level_console_errors",
         "high_level_network_errors",
         "accessibility_notes",
-        "performance_notes"
+        "performance_notes",
+        "content_audit_signals",
+        "seo_basic_signals",
+        "mobile_readiness_signals"
       ],
       "forbidden_artifact_types": [
         "cookies",

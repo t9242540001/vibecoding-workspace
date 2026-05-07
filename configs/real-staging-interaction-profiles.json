@@ -1,8 +1,8 @@
 {
   "version": "0.1",
-  "updated": "2026-05-06",
+  "updated": "2026-05-07",
   "purpose": "Approved interaction and acceptance profiles for future manual real public/no-auth browser summary workflows.",
-  "status": "interaction_profiles_config_added_no_workflow",
+  "status": "interaction_profiles_content_audit_v1_added_no_new_browser_actions",
   "rules": [
     "interaction profile must be selected from this config",
     "profile must be allowed by the selected route config",
@@ -119,6 +119,83 @@
         "no high-level console errors are present",
         "no high-level network errors are present",
         "sanitized summary contains no forbidden artifacts"
+      ]
+    },
+    {
+      "profile_id": "homepage-content-audit-v1",
+      "route_compatibility": [
+        "yurassistent-home"
+      ],
+      "purpose": "Audit the public homepage content from the target audience perspective using sanitized visible text only.",
+      "allowed_actions": [
+        "navigate_to_route",
+        "wait_for_page_load",
+        "collect_sanitized_visible_text",
+        "collect_high_level_console_errors",
+        "collect_high_level_network_errors",
+        "derive_content_audit_signals",
+        "derive_seo_basic_signals",
+        "derive_mobile_readiness_signals"
+      ],
+      "forbidden_actions": [
+        "click",
+        "type",
+        "submit_form",
+        "upload_file",
+        "login",
+        "payment",
+        "account_creation",
+        "screenshot",
+        "video",
+        "trace",
+        "raw_har",
+        "follow_link",
+        "dom_dump",
+        "visual_recognition"
+      ],
+      "content_audit_dimensions": [
+        "target_audience_clarity",
+        "offer_clarity",
+        "headline_strength",
+        "first_screen_clarity",
+        "trust_signals",
+        "objection_handling",
+        "text_readability",
+        "next_step_clarity",
+        "legal_service_relevance"
+      ],
+      "seo_basic_dimensions": [
+        "page_title_present",
+        "heading_like_text_present",
+        "service_keywords_present",
+        "locality_or_jurisdiction_clarity",
+        "duplicate_or_thin_text_risk",
+        "meta_description_not_checked"
+      ],
+      "mobile_readiness_dimensions": [
+        "visible_text_short_enough_for_mobile",
+        "CTA_text_visible_in_text_capture",
+        "long_text_blocks_risk",
+        "mobile_layout_not_visually_checked"
+      ],
+      "acceptance_criteria": [
+        "page loads successfully",
+        "visible text is not empty",
+        "target audience can understand who the page is for",
+        "offer is understandable from visible text",
+        "a next step or CTA is understandable from visible text",
+        "page title or heading-like text is present",
+        "no high-level console errors are present",
+        "no high-level network errors are present",
+        "sanitized summary contains no forbidden artifacts"
+      ],
+      "rules": [
+        "analysis must use sanitized visible text only",
+        "no screenshot-based layout judgement",
+        "no real mobile screenshot",
+        "no form interaction",
+        "no click/follow-link testing",
+        "mobile readiness is text/signal-based only, not visual proof"
       ]
     }
   ]
