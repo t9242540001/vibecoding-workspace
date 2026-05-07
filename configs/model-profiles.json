@@ -513,6 +513,45 @@
           }
         }
       },
+      "content_audit_v1_result": {
+        "status": "content_audit_v1_run_completed_needs_review",
+        "date_reported": "2026-05-07",
+        "workflow": ".github/workflows/real-public-browser-summary.yml",
+        "route": "yurassistent-home",
+        "profile": "homepage-content-audit-v1",
+        "analysis_mode": "dual-model-comparison",
+        "validation_passed": true,
+        "forbidden_scan_match_groups": 0,
+        "models": {
+          "qwen/qwen-plus": {
+            "passed": false,
+            "score": 0.67
+          },
+          "deepseek/deepseek-v4-flash": {
+            "passed": false,
+            "score": 0.67
+          }
+        },
+        "comparison": {
+          "passed_agreement": true,
+          "score_delta": 0.0,
+          "both_failed": true
+        },
+        "signals": {
+          "cta_presence": false,
+          "cta_terms_detected": [],
+          "mobile_cta_text_visible_in_text_capture": false,
+          "console_error_summary_count": 1,
+          "network_error_summary_count": 1
+        },
+        "interpretation": [
+          "content audit profile works",
+          "page needs review for CTA clarity, trust signals, and technical console/network errors",
+          "no forbidden data leakage detected",
+          "no screenshots/HAR/cookies/auth headers/raw request-response bodies were collected"
+        ],
+        "next_step": "prepare product-level homepage improvement plan before expanding browser interactions"
+      },
       "safety_boundaries": [
         "no arbitrary URL input",
         "no arbitrary browser commands",

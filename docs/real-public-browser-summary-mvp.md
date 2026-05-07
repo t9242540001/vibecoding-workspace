@@ -35,6 +35,14 @@ Known-green MVP run combinations:
 | `yurassistent-home` | `homepage-load-only` | `deepseek/deepseek-v4-flash` | Passed |
 | `yurassistent-home` | `homepage-primary-cta-presence` | `deepseek/deepseek-v4-flash` | Passed |
 
+## Content Audit V1
+
+Content Audit Profile v1 exists as `homepage-content-audit-v1` and has been run safely on `yurassistent-home`.
+
+The first run produced a useful product signal: Qwen and DeepSeek agreed the page needs review. The primary CTA was not detected in sanitized visible text, trust signals appear weak/limited, and console/network errors need inspection.
+
+This remains text-only sanitized analysis: no clicks, forms, login, screenshots, HAR, or raw browser artifacts.
+
 ## How The Flow Works
 
 1. The operator starts the manual workflow from GitHub Actions.
