@@ -43,11 +43,19 @@ The first run produced a useful product signal: Qwen and DeepSeek agreed the pag
 
 This remains text-only sanitized analysis: no clicks, forms, login, screenshots, HAR, or raw browser artifacts.
 
+## Link Check V1
+
+Link Check v1 exists as `homepage-link-check-v1` for the approved `yurassistent-home` route.
+
+It checks public links and contact-link signals using sanitized link metadata only. It does not include full URLs, raw email addresses, raw phone numbers, query strings, headers, or response bodies in reports.
+
+It does not submit forms, login, follow private/auth/payment flows, click links in the browser, send contact messages, collect screenshots, or collect HAR.
+
 ## Test Intent Taxonomy
 
-The browser MVP now uses a test intent taxonomy: `health_check`, `acceptance_check`, and `content_audit` are implemented through the current safe profiles.
+The browser MVP now uses a test intent taxonomy: `health_check`, `acceptance_check`, `content_audit`, and `link_check` are implemented through the current safe profiles.
 
-Future intents such as `link_check`, `form_check`, `dialogue_e2e`, and `document_result_review` remain approval-gated because they may require higher-risk browser actions, data handling, or artifacts.
+Future intents such as `form_check`, `dialogue_e2e`, and `document_result_review` remain approval-gated because they may require higher-risk browser actions, data handling, or artifacts.
 
 ## How The Flow Works
 

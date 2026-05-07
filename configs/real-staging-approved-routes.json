@@ -32,7 +32,8 @@
       "allowed_interaction_profile_ids": [
         "homepage-load-only",
         "homepage-primary-cta-presence",
-        "homepage-content-audit-v1"
+        "homepage-content-audit-v1",
+        "homepage-link-check-v1"
       ],
       "forbidden_interaction_classes": [
         "login",
@@ -54,7 +55,11 @@
         "performance_notes",
         "content_audit_signals",
         "seo_basic_signals",
-        "mobile_readiness_signals"
+        "mobile_readiness_signals",
+        "public_link_inventory",
+        "public_link_check_results",
+        "contact_link_signals",
+        "redirect_summaries"
       ],
       "forbidden_artifact_types": [
         "cookies",

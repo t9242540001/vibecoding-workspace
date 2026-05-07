@@ -17,10 +17,10 @@ Do not mix intents in one profile unless the profile is explicitly designed and 
 - `health_check`
 - `acceptance_check`
 - `content_audit`
+- `link_check`
 
 ## Planned Or Future Intents
 
-- `link_check`
 - `form_check`
 - `dialogue_e2e`
 - `document_result_review`
@@ -120,7 +120,7 @@ Browser actions:
 
 Purpose:
 
-- Verify public links and contact buttons.
+- Verify public links and contact-style links without entering data or submitting forms.
 
 Typical result:
 
@@ -131,11 +131,11 @@ Typical result:
 
 Current profile:
 
-- none yet.
+- `homepage-link-check-v1`
 
 Current status:
 
-- planned.
+- implemented for public homepage links.
 
 Risk level:
 
@@ -143,10 +143,12 @@ Risk level:
 
 Browser actions:
 
-- may require safe link extraction and possibly HEAD/GET checks;
-- should not submit forms;
-- should not login;
-- should not follow private/auth/payment links without approval.
+- extracts sanitized link metadata from the loaded public page;
+- checks public-looking HTTP/HTTPS links with safe status-only HEAD/GET requests;
+- classifies contact links without opening them or sending messages;
+- does not submit forms;
+- does not login;
+- does not follow private/auth/payment/logout links.
 
 ## `form_check`
 
@@ -254,7 +256,7 @@ Choose planned or future intents only after their route scope, browser actions, 
 
 Low-risk text-only intents can use route load, visible text, high-level console summaries, high-level network summaries, and derived text signals.
 
-Medium-risk intents such as link and form checks need separate approval for safe link extraction, redirects, synthetic input, and submission boundaries.
+Medium-risk intents need approved profiles for their added behavior. Link checks require safe link extraction and redirect boundaries; form checks require separate approval for synthetic input and submission boundaries.
 
 High-risk intents such as dialogue E2E and document result review need separate approval for session handling, credentials, synthetic task data, generated content handling, and artifact retention.
 

@@ -19,6 +19,7 @@ on:
           - homepage-load-only
           - homepage-primary-cta-presence
           - homepage-content-audit-v1
+          - homepage-link-check-v1
       strict_forbidden_scan:
         description: Fail on suspicious forbidden patterns
         required: true
@@ -83,12 +84,14 @@ jobs:
           python - <<'PY'
           import json
           import html
+          import hashlib
           import os
           import pathlib
           import re
           import sys
           import time
           import urllib.error
+          import urllib.parse
           import urllib.request
           from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
           from playwright.sync_api import sync_playwright
@@ -268,6 +271,7 @@ jobs:
           visible_text = []
           accessibility_notes = []
           performance_notes = []
+          raw_links = []
 
           with sync_playwright() as playwright:
               browser = playwright.chromium.launch(headless=True)
@@ -310,6 +314,15 @@ jobs:
                       interactions.append("Detected primary CTA candidate from sanitized visible text.")
                   else:
                       interactions.append("No primary CTA candidate was detected in sanitized visible text.")
+
+              if profile_id == "homepage-link-check-v1":
+                  raw_links = page.locator("a").evaluate_all(
+                      """links => links.slice(0, 120).map(link => ({
+                          label: (link.innerText || link.getAttribute('aria-label') || link.textContent || '').trim(),
+                          href: link.href || link.getAttribute('href') || ''
+                      }))"""
+                  )
+                  interactions.append("Extracted public link metadata from the loaded page without clicking links.")
 
               browser.close()
 
@@ -482,6 +495,200 @@ jobs:
           if profile_id == "homepage-content-audit-v1":
               build_content_audit_signals()
 
+          def short_url_hash(value):
+              return hashlib.sha256(str(value or "").encode("utf-8")).hexdigest()[:12]
+
+          def sanitize_link_label(value):
+              label = sanitize_text(value)
+              label = re.sub(
+                  r"\b[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:/[^\s]*)?",
+                  "[redacted-domain-like-text]",
+                  label,
+              )
+              return label
+
+          def public_domain_label(parsed):
+              host = (parsed.hostname or "").lower()
+              if not host:
+                  return "not available"
+              if re.match(r"^(10|127)\.", host) or host.startswith("192.168.") or re.match(r"^172\.(1[6-9]|2[0-9]|3[0-1])\.", host):
+                  return "[redacted-private-endpoint]"
+              if host in ("localhost", "0.0.0.0") or host.endswith(".local"):
+                  return "[redacted-private-endpoint]"
+              return sanitize_text(host)
+
+          def classify_link(href, route_origin):
+              href = str(href or "").strip()
+              lowered = href.lower()
+              parsed = urllib.parse.urlparse(href)
+              suspicious_words = [
+                  "login",
+                  "auth",
+                  "admin",
+                  "logout",
+                  "token",
+                  "session",
+                  "password",
+                  "private"
+              ]
+              payment_words = [
+                  "payment",
+                  "billing",
+                  "checkout"
+              ]
+              if not href:
+                  return "unknown_or_unsupported", "empty href"
+              if lowered.startswith("mailto:"):
+                  return "contact_email", "contact email link redacted"
+              if lowered.startswith("tel:"):
+                  return "contact_phone", "contact phone link redacted"
+              if any(name in lowered for name in ("t.me", "telegram", "whatsapp", "wa.me")):
+                  return "contact_messenger", "contact messenger link skipped"
+              if lowered.startswith("#"):
+                  return "anchor", "same-page anchor skipped"
+              if parsed.scheme not in ("http", "https"):
+                  return "unknown_or_unsupported", "unsupported scheme skipped"
+              if any(word in lowered for word in payment_words):
+                  return "payment_like", "payment-like link skipped"
+              if any(word in lowered for word in suspicious_words):
+                  return "private_or_auth_like", "private/auth-like link skipped"
+              path = (parsed.path or "").lower()
+              if re.search(r"\.(png|jpg|jpeg|gif|svg|webp|ico|css|js|pdf|zip)$", path):
+                  return "asset", "asset link skipped"
+              host_label = public_domain_label(parsed)
+              if host_label == "[redacted-private-endpoint]":
+                  return "private_or_auth_like", "private endpoint skipped"
+              if f"{parsed.scheme}://{parsed.netloc}".lower() == route_origin.lower():
+                  return "internal_public_http", "public same-origin link"
+              return "external_public_http", "public external link"
+
+          def check_public_link(href):
+              class CappedRedirectHandler(urllib.request.HTTPRedirectHandler):
+                  def __init__(self):
+                      self.redirect_count = 0
+
+                  def redirect_request(self, req, fp, code, msg, headers, newurl):
+                      self.redirect_count += 1
+                      if self.redirect_count > 3:
+                          raise urllib.error.HTTPError(req.full_url, code, "redirect limit exceeded", headers, fp)
+                      return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+              redirect_handler = CappedRedirectHandler()
+              opener = urllib.request.build_opener(redirect_handler)
+              headers = {"User-Agent": "vibe-coding-public-link-check/1.0"}
+
+              def request_status(method):
+                  request = urllib.request.Request(href, headers=headers, method=method)
+                  with opener.open(request, timeout=8) as response:
+                      return response.status
+
+              try:
+                  status = request_status("HEAD")
+              except urllib.error.HTTPError as exc:
+                  if exc.code in (403, 405):
+                      try:
+                          status = request_status("GET")
+                      except TimeoutError:
+                          return None, redirect_handler.redirect_count, "timeout", "public link check timed out"
+                      except Exception as get_exc:
+                          return getattr(get_exc, "code", None), redirect_handler.redirect_count, "error", sanitize_text(type(get_exc).__name__)
+                  else:
+                      status = exc.code
+              except TimeoutError:
+                  return None, redirect_handler.redirect_count, "timeout", "public link check timed out"
+              except Exception as exc:
+                  return None, redirect_handler.redirect_count, "error", sanitize_text(type(exc).__name__)
+
+              if status is None:
+                  return None, redirect_handler.redirect_count, "error", "no status returned"
+              if status >= 400:
+                  return status, redirect_handler.redirect_count, "broken", f"HTTP status {status}"
+              if redirect_handler.redirect_count:
+                  return status, redirect_handler.redirect_count, "redirected", f"HTTP status {status} after redirect"
+              return status, redirect_handler.redirect_count, "ok", f"HTTP status {status}"
+
+          def build_link_check_signals():
+              route_parsed = urllib.parse.urlparse(route_url)
+              route_origin = f"{route_parsed.scheme}://{route_parsed.netloc}"
+              inventory = []
+              check_results = []
+              checked_count = 0
+              for raw_link in raw_links[:50]:
+                  href = str(raw_link.get("href", "") if isinstance(raw_link, dict) else "")
+                  label = sanitize_link_label(raw_link.get("label", "") if isinstance(raw_link, dict) else "")[:120]
+                  link_type, reason = classify_link(href, route_origin)
+                  parsed = urllib.parse.urlparse(href)
+                  same_origin = parsed.scheme in ("http", "https") and f"{parsed.scheme}://{parsed.netloc}".lower() == route_origin.lower()
+                  entry = {
+                      "label": label or "unlabeled link",
+                      "url_hash": short_url_hash(href),
+                      "domain_label": public_domain_label(parsed) if parsed.scheme in ("http", "https") else "not applicable",
+                      "same_origin": bool(same_origin),
+                      "link_type": link_type,
+                      "checked": False,
+                      "status_code": None,
+                      "redirect_count": 0,
+                      "result": "skipped_unsupported",
+                      "reason": sanitize_text(reason)[:180]
+                  }
+                  if link_type in ("contact_email", "contact_phone", "contact_messenger"):
+                      entry["result"] = "skipped_contact_link"
+                  elif link_type == "private_or_auth_like":
+                      entry["result"] = "skipped_private_or_auth_like"
+                  elif link_type == "payment_like":
+                      entry["result"] = "skipped_payment_like"
+                  elif link_type in ("anchor", "asset", "unknown_or_unsupported"):
+                      entry["result"] = "skipped_unsupported"
+                  elif link_type in ("internal_public_http", "external_public_http") and checked_count < 30:
+                      status_code, redirect_count, result, check_reason = check_public_link(href)
+                      entry.update({
+                          "checked": True,
+                          "status_code": status_code,
+                          "redirect_count": redirect_count,
+                          "result": result,
+                          "reason": sanitize_text(check_reason)[:180]
+                      })
+                      checked_count += 1
+                      check_results.append(dict(entry))
+                  inventory.append(entry)
+
+              ok_count = sum(1 for item in inventory if item.get("result") == "ok")
+              broken_count = sum(1 for item in inventory if item.get("result") == "broken")
+              redirected_count = sum(1 for item in inventory if item.get("result") == "redirected")
+              skipped_count = sum(1 for item in inventory if str(item.get("result", "")).startswith("skipped_"))
+              contact_count = sum(1 for item in inventory if item.get("link_type") in ("contact_email", "contact_phone", "contact_messenger"))
+              private_count = sum(1 for item in inventory if item.get("link_type") == "private_or_auth_like")
+              payment_count = sum(1 for item in inventory if item.get("link_type") == "payment_like")
+              generated_summary["link_check_summary"] = {
+                  "total_links_seen": len(raw_links),
+                  "links_checked_count": checked_count,
+                  "ok_count": ok_count,
+                  "broken_count": broken_count,
+                  "redirected_count": redirected_count,
+                  "skipped_count": skipped_count,
+                  "contact_link_count": contact_count,
+                  "private_or_auth_like_count": private_count,
+                  "payment_like_count": payment_count,
+                  "limitations": [
+                      "Full URLs, query strings, fragments, headers, and bodies are not stored.",
+                      "Links are checked with status-only HEAD or GET requests where safe.",
+                      "Private/auth/payment/logout-like links are classified and skipped.",
+                      "Contact links are classified but not opened."
+                  ]
+              }
+              generated_summary["public_link_inventory"] = inventory
+              generated_summary["public_link_check_results"] = check_results[:30]
+              generated_summary["contact_link_signals"] = {
+                  "has_email_link": any(item.get("link_type") == "contact_email" for item in inventory),
+                  "has_phone_link": any(item.get("link_type") == "contact_phone" for item in inventory),
+                  "has_messenger_link": any(item.get("link_type") == "contact_messenger" for item in inventory),
+                  "contact_link_count": contact_count,
+                  "redaction_note": "Email addresses, phone numbers, and messenger targets are not stored in raw form."
+              }
+
+          if profile_id == "homepage-link-check-v1":
+              build_link_check_signals()
+
           generated_path = artifact_dir / "generated-summary.json"
           generated_path.write_text(
               json.dumps(generated_summary, ensure_ascii=False, indent=2),
@@ -653,7 +860,12 @@ jobs:
                   "acceptance_criteria": generated_summary.get("acceptance_criteria", []),
                   "report_schema": report_schema,
               }
-              analysis_frame = "content audit from sanitized visible text" if profile_id == "homepage-content-audit-v1" else "public browser summary"
+              if profile_id == "homepage-content-audit-v1":
+                  analysis_frame = "content audit from sanitized visible text"
+              elif profile_id == "homepage-link-check-v1":
+                  analysis_frame = "public link check from sanitized link metadata"
+              else:
+                  analysis_frame = "public browser summary"
               user_prompt = (
                   f"Analyze this sanitized {analysis_frame} against the acceptance criteria. "
                   "Return JSON with fields: passed, score, summary, matched_criteria, "
@@ -1079,6 +1291,62 @@ jobs:
                   lines.append(f"- {clip(item, 180)}")
               return lines
 
+          def markdown_link_check_section():
+              link_summary = generated_summary.get("link_check_summary")
+              if not link_summary:
+                  return []
+              inventory = generated_summary.get("public_link_inventory", [])
+              results = generated_summary.get("public_link_check_results", [])
+              contact = generated_summary.get("contact_link_signals", {})
+              broken = [item for item in results if item.get("result") in ("broken", "timeout", "error")][:8]
+              skipped_sensitive = [
+                  item for item in inventory
+                  if item.get("result") in ("skipped_private_or_auth_like", "skipped_payment_like")
+              ][:8]
+              lines = [
+                  "",
+                  "## Link Check Results",
+                  "",
+                  f"- Total links seen: `{link_summary.get('total_links_seen')}`",
+                  f"- Links checked: `{link_summary.get('links_checked_count')}`",
+                  f"- OK links: `{link_summary.get('ok_count')}`",
+                  f"- Broken links: `{link_summary.get('broken_count')}`",
+                  f"- Redirected links: `{link_summary.get('redirected_count')}`",
+                  f"- Skipped links: `{link_summary.get('skipped_count')}`",
+                  f"- Contact links found: `{link_summary.get('contact_link_count')}`",
+                  f"- Private/auth-like links skipped: `{link_summary.get('private_or_auth_like_count')}`",
+                  f"- Payment-like links skipped: `{link_summary.get('payment_like_count')}`",
+                  "",
+                  "Contact link signals:",
+                  f"- Email link present: `{contact.get('has_email_link', 'not available')}`",
+                  f"- Phone link present: `{contact.get('has_phone_link', 'not available')}`",
+                  f"- Messenger link present: `{contact.get('has_messenger_link', 'not available')}`",
+                  f"- Redaction note: {clip(contact.get('redaction_note', 'not available'), 180)}",
+                  "",
+                  "Top broken/error links:",
+              ]
+              if broken:
+                  for item in broken:
+                      lines.append(
+                          f"- `{item.get('result')}` label `{clip(item.get('label'), 80)}` hash `{item.get('url_hash')}` "
+                          f"status `{item.get('status_code')}` reason {clip(item.get('reason'), 120)}"
+                      )
+              else:
+                  lines.append("- none")
+              lines.extend(["", "Top skipped private/auth/payment-like links:"])
+              if skipped_sensitive:
+                  for item in skipped_sensitive:
+                      lines.append(
+                          f"- `{item.get('result')}` label `{clip(item.get('label'), 80)}` "
+                          f"type `{item.get('link_type')}` hash `{item.get('url_hash')}`"
+                      )
+              else:
+                  lines.append("- none")
+              lines.extend(["", "Limitations:"])
+              for item in link_summary.get("limitations", []):
+                  lines.append(f"- {clip(item, 180)}")
+              return lines
+
           summary_lines = [
               "# Real Public Browser Summary Report",
               "",
@@ -1140,6 +1408,7 @@ jobs:
               summary_lines.append(f"- {item}")
 
           summary_lines.extend(markdown_content_audit_section())
+          summary_lines.extend(markdown_link_check_section())
 
           if comparison_report:
               summary_lines.extend(markdown_model_section("Qwen Analysis", qwen_report_data))
@@ -1246,6 +1515,51 @@ jobs:
               <h3>Limitations</h3>{html_list([clip(item, 180) for item in limitations] or ["none"])}
               """
 
+          def html_link_check_section():
+              link_summary = generated_summary.get("link_check_summary")
+              if not link_summary:
+                  return ""
+              inventory = generated_summary.get("public_link_inventory", [])
+              results = generated_summary.get("public_link_check_results", [])
+              contact = generated_summary.get("contact_link_signals", {})
+              broken = [item for item in results if item.get("result") in ("broken", "timeout", "error")][:8]
+              skipped_sensitive = [
+                  item for item in inventory
+                  if item.get("result") in ("skipped_private_or_auth_like", "skipped_payment_like")
+              ][:8]
+              broken_items = [
+                  f"{item.get('result')} label {clip(item.get('label'), 80)} hash {item.get('url_hash')} status {item.get('status_code')} reason {clip(item.get('reason'), 120)}"
+                  for item in broken
+              ]
+              skipped_items = [
+                  f"{item.get('result')} label {clip(item.get('label'), 80)} type {item.get('link_type')} hash {item.get('url_hash')}"
+                  for item in skipped_sensitive
+              ]
+              return f"""
+              <h2>Link Check Results</h2>
+              <table>
+                <tr><th>Total links seen</th><td>{html.escape(str(link_summary.get("total_links_seen")))}</td></tr>
+                <tr><th>Links checked</th><td>{html.escape(str(link_summary.get("links_checked_count")))}</td></tr>
+                <tr><th>OK links</th><td>{html.escape(str(link_summary.get("ok_count")))}</td></tr>
+                <tr><th>Broken links</th><td>{html.escape(str(link_summary.get("broken_count")))}</td></tr>
+                <tr><th>Redirected links</th><td>{html.escape(str(link_summary.get("redirected_count")))}</td></tr>
+                <tr><th>Skipped links</th><td>{html.escape(str(link_summary.get("skipped_count")))}</td></tr>
+                <tr><th>Contact links found</th><td>{html.escape(str(link_summary.get("contact_link_count")))}</td></tr>
+                <tr><th>Private/auth-like links skipped</th><td>{html.escape(str(link_summary.get("private_or_auth_like_count")))}</td></tr>
+                <tr><th>Payment-like links skipped</th><td>{html.escape(str(link_summary.get("payment_like_count")))}</td></tr>
+              </table>
+              <h3>Contact Link Signals</h3>
+              <table>
+                <tr><th>Email link present</th><td>{html.escape(str(contact.get("has_email_link", "not available")))}</td></tr>
+                <tr><th>Phone link present</th><td>{html.escape(str(contact.get("has_phone_link", "not available")))}</td></tr>
+                <tr><th>Messenger link present</th><td>{html.escape(str(contact.get("has_messenger_link", "not available")))}</td></tr>
+                <tr><th>Redaction note</th><td>{html.escape(clip(contact.get("redaction_note", "not available"), 180))}</td></tr>
+              </table>
+              <h3>Top Broken/Error Links</h3>{html_list(broken_items or ["none"])}
+              <h3>Top Skipped Private/Auth/Payment-like Links</h3>{html_list(skipped_items or ["none"])}
+              <h3>Limitations</h3>{html_list([clip(item, 180) for item in link_summary.get("limitations", [])] or ["none"])}
+              """
+
           if comparison_report:
               model_analysis_html = (
                   html_model_section("Qwen Analysis", qwen_report_data)
@@ -1302,6 +1616,7 @@ jobs:
             <h3>Visible Text Sample</h3>
             {html_list(visible_sample)}
             {html_content_audit_section()}
+            {html_link_check_section()}
             {model_analysis_html}
             <h2>Safety Boundaries</h2>
             {html_list([
@@ -1412,6 +1727,51 @@ jobs:
               add_pdf_bullets(story, styles, [clip(item, 180) for item in limitations] or ["none"])
 
           add_pdf_content_audit_section()
+          def add_pdf_link_check_section():
+              link_summary = generated_summary.get("link_check_summary")
+              if not link_summary:
+                  return
+              inventory = generated_summary.get("public_link_inventory", [])
+              results = generated_summary.get("public_link_check_results", [])
+              contact = generated_summary.get("contact_link_signals", {})
+              broken = [item for item in results if item.get("result") in ("broken", "timeout", "error")][:8]
+              skipped_sensitive = [
+                  item for item in inventory
+                  if item.get("result") in ("skipped_private_or_auth_like", "skipped_payment_like")
+              ][:8]
+              add_pdf_heading(story, styles, "Link Check Results")
+              add_pdf_bullets(story, styles, [
+                  f"Total links seen: {link_summary.get('total_links_seen')}",
+                  f"Links checked: {link_summary.get('links_checked_count')}",
+                  f"OK links: {link_summary.get('ok_count')}",
+                  f"Broken links: {link_summary.get('broken_count')}",
+                  f"Redirected links: {link_summary.get('redirected_count')}",
+                  f"Skipped links: {link_summary.get('skipped_count')}",
+                  f"Contact links found: {link_summary.get('contact_link_count')}",
+                  f"Private/auth-like links skipped: {link_summary.get('private_or_auth_like_count')}",
+                  f"Payment-like links skipped: {link_summary.get('payment_like_count')}",
+              ])
+              add_pdf_paragraph(story, styles, "Contact link signals:")
+              add_pdf_bullets(story, styles, [
+                  f"Email link present: {contact.get('has_email_link', 'not available')}",
+                  f"Phone link present: {contact.get('has_phone_link', 'not available')}",
+                  f"Messenger link present: {contact.get('has_messenger_link', 'not available')}",
+                  f"Redaction note: {clip(contact.get('redaction_note', 'not available'), 180)}",
+              ])
+              add_pdf_paragraph(story, styles, "Top broken/error links:")
+              add_pdf_bullets(story, styles, [
+                  f"{item.get('result')} label {clip(item.get('label'), 80)} hash {item.get('url_hash')} status {item.get('status_code')} reason {clip(item.get('reason'), 120)}"
+                  for item in broken
+              ] or ["none"])
+              add_pdf_paragraph(story, styles, "Top skipped private/auth/payment-like links:")
+              add_pdf_bullets(story, styles, [
+                  f"{item.get('result')} label {clip(item.get('label'), 80)} type {item.get('link_type')} hash {item.get('url_hash')}"
+                  for item in skipped_sensitive
+              ] or ["none"])
+              add_pdf_paragraph(story, styles, "Limitations:")
+              add_pdf_bullets(story, styles, [clip(item, 180) for item in link_summary.get("limitations", [])] or ["none"])
+
+          add_pdf_link_check_section()
           def add_pdf_model_section(title, report):
               add_pdf_heading(story, styles, title)
               if not report:
@@ -1573,6 +1933,10 @@ jobs:
           content_audit = generated.get("content_audit_signals") if generated else None
           seo_signals = generated.get("seo_basic_signals") if generated else None
           mobile_signals = generated.get("mobile_readiness_signals") if generated else None
+          link_summary = generated.get("link_check_summary") if generated else None
+          link_inventory = generated.get("public_link_inventory", []) if generated else []
+          link_results = generated.get("public_link_check_results", []) if generated else []
+          contact_signals = generated.get("contact_link_signals") if generated else None
           cta_value = "not available"
           cta_note = "not applicable"
           if isinstance(cta, dict):
@@ -1657,6 +2021,50 @@ jobs:
                   f"- Mobile visual layout checked: `{(mobile_signals or {}).get('visual_mobile_layout_checked', 'not available')}`",
                   f"- Mobile CTA text visible in text capture: `{(mobile_signals or {}).get('cta_text_visible_in_text_capture', 'not available')}`",
               ])
+
+          if link_summary:
+              broken = [item for item in link_results if item.get("result") in ("broken", "timeout", "error")][:5]
+              skipped_sensitive = [
+                  item for item in link_inventory
+                  if item.get("result") in ("skipped_private_or_auth_like", "skipped_payment_like")
+              ][:5]
+              lines.extend([
+                  "",
+                  "## Link Check Results",
+                  "",
+                  f"- Total links seen: `{link_summary.get('total_links_seen')}`",
+                  f"- Links checked: `{link_summary.get('links_checked_count')}`",
+                  f"- OK links: `{link_summary.get('ok_count')}`",
+                  f"- Broken links: `{link_summary.get('broken_count')}`",
+                  f"- Redirected links: `{link_summary.get('redirected_count')}`",
+                  f"- Skipped links: `{link_summary.get('skipped_count')}`",
+                  f"- Contact links found: `{link_summary.get('contact_link_count')}`",
+                  f"- Private/auth-like links skipped: `{link_summary.get('private_or_auth_like_count')}`",
+                  f"- Payment-like links skipped: `{link_summary.get('payment_like_count')}`",
+                  f"- Email link present: `{(contact_signals or {}).get('has_email_link', 'not available')}`",
+                  f"- Phone link present: `{(contact_signals or {}).get('has_phone_link', 'not available')}`",
+                  f"- Messenger link present: `{(contact_signals or {}).get('has_messenger_link', 'not available')}`",
+                  "",
+                  "Top broken/error links:",
+              ])
+              if broken:
+                  for item in broken:
+                      label = safe_text(item.get("label", "unlabeled link"))[:80]
+                      lines.append(
+                          f"- `{safe_text(item.get('result'))}` label `{label}` hash `{safe_text(item.get('url_hash'))}` "
+                          f"status `{safe_text(item.get('status_code'))}`"
+                      )
+              else:
+                  lines.append("- none")
+              lines.extend(["", "Top skipped private/auth/payment-like links:"])
+              if skipped_sensitive:
+                  for item in skipped_sensitive:
+                      label = safe_text(item.get("label", "unlabeled link"))[:80]
+                      lines.append(
+                          f"- `{safe_text(item.get('result'))}` label `{label}` type `{safe_text(item.get('link_type'))}`"
+                      )
+              else:
+                  lines.append("- none")
 
           if comparison_report:
               lines.extend([

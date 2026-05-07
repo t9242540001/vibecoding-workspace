@@ -2,7 +2,7 @@
   "version": "0.1",
   "updated": "2026-05-07",
   "purpose": "Approved interaction and acceptance profiles for future manual real public/no-auth browser summary workflows.",
-  "status": "interaction_profiles_content_audit_v1_added_no_new_browser_actions",
+  "status": "interaction_profiles_link_check_v1_added_no_new_browser_actions",
   "rules": [
     "interaction profile must be selected from this config",
     "profile must be allowed by the selected route config",
@@ -17,10 +17,10 @@
   "supported_test_intents": [
     "health_check",
     "acceptance_check",
-    "content_audit"
+    "content_audit",
+    "link_check"
   ],
   "planned_test_intents": [
-    "link_check",
     "form_check",
     "dialogue_e2e",
     "document_result_review"
@@ -217,6 +217,72 @@
         "no form interaction",
         "no click/follow-link testing",
         "mobile readiness is text/signal-based only, not visual proof"
+      ]
+    },
+    {
+      "profile_id": "homepage-link-check-v1",
+      "route_compatibility": [
+        "yurassistent-home"
+      ],
+      "purpose": "Verify public links and contact-style links exposed by the public homepage without submitting forms or entering data.",
+      "test_intent": "link_check",
+      "result_type": "link_status_report",
+      "risk_level": "medium_public_links_only",
+      "allowed_actions": [
+        "navigate_to_route",
+        "wait_for_page_load",
+        "collect_sanitized_visible_text",
+        "extract_public_links_safely",
+        "classify_public_links",
+        "check_public_links_head_or_get",
+        "collect_high_level_console_errors",
+        "collect_high_level_network_errors",
+        "derive_contact_link_signals"
+      ],
+      "forbidden_actions": [
+        "click",
+        "type",
+        "submit_form",
+        "upload_file",
+        "login",
+        "payment",
+        "account_creation",
+        "screenshot",
+        "video",
+        "trace",
+        "raw_har",
+        "follow_private_link",
+        "follow_auth_link",
+        "follow_payment_link",
+        "collect_raw_request_body",
+        "collect_raw_response_body",
+        "dom_dump",
+        "visual_recognition"
+      ],
+      "link_policy": [
+        "only extract link metadata from the loaded public page",
+        "do not click links in browser",
+        "do not execute arbitrary browser commands",
+        "check public HTTP/HTTPS links using safe HEAD or GET requests with redirects limited",
+        "allow mailto/tel/telegram/whatsapp links to be classified but not opened",
+        "do not check or follow private/auth/admin/payment/logout links",
+        "do not include full URLs in reports by default",
+        "do not collect response bodies",
+        "do not collect headers except status and sanitized high-level metadata",
+        "cap checked links to 30",
+        "use timeouts"
+      ],
+      "acceptance_criteria": [
+        "page loads successfully",
+        "visible text is not empty",
+        "link inventory is generated",
+        "public HTTP/HTTPS links are classified",
+        "safe public links return non-error statuses where checked",
+        "contact-style links are detected or explicitly reported as not detected",
+        "no private/auth/payment/logout links are followed",
+        "no high-level console errors are present",
+        "no high-level network errors are present",
+        "sanitized summary contains no forbidden artifacts"
       ]
     }
   ]
