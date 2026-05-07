@@ -23,6 +23,19 @@ on:
         required: true
         default: true
         type: boolean
+      run_analysis:
+        description: Run model analysis after validation
+        required: true
+        default: true
+        type: boolean
+      model_id:
+        description: Model id for optional analysis
+        required: true
+        default: qwen/qwen-plus
+        type: choice
+        options:
+          - qwen/qwen-plus
+          - deepseek/deepseek-v4-flash
 
 permissions:
   contents: read
@@ -47,6 +60,10 @@ jobs:
           ROUTE_ID: ${{ inputs.route_id }}
           INTERACTION_PROFILE_ID: ${{ inputs.interaction_profile_id }}
           STRICT_FORBIDDEN_SCAN: ${{ inputs.strict_forbidden_scan }}
+          RUN_ANALYSIS: ${{ inputs.run_analysis }}
+          MODEL_ID: ${{ inputs.model_id }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
         run: |
           set -euo pipefail
 
@@ -58,6 +75,9 @@ jobs:
           import pathlib
           import re
           import sys
+          import time
+          import urllib.error
+          import urllib.request
           from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
           from playwright.sync_api import sync_playwright
 
@@ -65,10 +85,13 @@ jobs:
           route_id = os.environ["ROUTE_ID"]
           profile_id = os.environ["INTERACTION_PROFILE_ID"]
           strict_forbidden_scan = os.environ["STRICT_FORBIDDEN_SCAN"].lower() == "true"
+          run_analysis = os.environ["RUN_ANALYSIS"].lower() == "true"
+          model_id = os.environ["MODEL_ID"]
 
           routes_path = pathlib.Path("configs/real-staging-approved-routes.json")
           profiles_path = pathlib.Path("configs/real-staging-interaction-profiles.json")
           contract_path = pathlib.Path("configs/e2e-staging-summary-contract.json")
+          model_profiles_path = pathlib.Path("configs/model-profiles.json")
 
           errors = []
           warnings = []
@@ -89,6 +112,7 @@ jobs:
           routes_config = load_json(routes_path, "approved route config")
           profiles_config = load_json(profiles_path, "interaction profile config")
           contract = load_json(contract_path, "staging summary contract")
+          model_profiles = load_json(model_profiles_path, "model profiles")
 
           route = None
           profile = None
@@ -305,7 +329,7 @@ jobs:
               "known_limitations": [
                   "Public no-auth observation only.",
                   "No clicks, link following, form submission, login, or account creation were performed.",
-                  "No model analysis is performed by this workflow."
+                  "Model analysis, when enabled, receives only this sanitized summary."
               ],
           }
           if cta_present is not None:
@@ -400,6 +424,7 @@ jobs:
               "artifacts": [
                   "generated-summary.json",
                   "validation-report.json",
+                  "model-report.json",
                   "summary.md"
               ]
           }
@@ -407,6 +432,201 @@ jobs:
               json.dumps(validation_report, ensure_ascii=False, indent=2),
               encoding="utf-8",
           )
+
+          analysis_ran = False
+          analysis_provider = None
+          analysis_passed = None
+          analysis_score = None
+          recommendation = None
+          attempts = None
+
+          def validate_model_report(report):
+              report_errors = []
+              if not isinstance(report.get("passed"), bool):
+                  report_errors.append("`passed` must be boolean.")
+              if not isinstance(report.get("score"), (int, float)):
+                  report_errors.append("`score` must be numeric.")
+              elif report["score"] < 0 or report["score"] > 1:
+                  report_errors.append("`score` must be between 0 and 1.")
+              if not isinstance(report.get("summary"), str):
+                  report_errors.append("`summary` must be string.")
+              for field in ("matched_criteria", "missing_criteria", "issues"):
+                  if not isinstance(report.get(field), list):
+                      report_errors.append(f"`{field}` must be array.")
+              for issue in report.get("issues", []):
+                  if not isinstance(issue, dict):
+                      report_errors.append("Each issue must be an object.")
+                      continue
+                  for field in ("severity", "description", "evidence"):
+                      if field not in issue:
+                          report_errors.append(f"Each issue must include `{field}`.")
+                      elif not isinstance(issue[field], str):
+                          report_errors.append(f"Issue field `{field}` must be string.")
+              if not isinstance(report.get("recommendation"), str):
+                  report_errors.append("`recommendation` must be string.")
+              return report_errors
+
+          def call_model_after_validation():
+              allowed_models = route.get("model_analysis", {}).get(
+                  "allowed_models",
+                  routes_config.get("model_analysis", {}).get("allowed_models", []),
+              )
+              if model_id not in allowed_models:
+                  raise SystemExit(f"Selected model is not approved for this route: {model_id}")
+
+              model = model_profiles.get("models", {}).get(model_id) if model_profiles else None
+              if model is None:
+                  raise SystemExit(f"Model not found in configs/model-profiles.json: {model_id}")
+
+              provider = model.get("provider")
+              if provider not in ("qwen", "deepseek"):
+                  raise SystemExit("Only Qwen and DeepSeek models are allowed in this workflow.")
+              if provider == "gemini" or model_id.startswith("gemini/"):
+                  raise SystemExit("Gemini is excluded from the first real public browser analysis flow.")
+              modality = model.get("modality", "")
+              if "text" not in [part.strip() for part in modality.split(",")]:
+                  raise SystemExit(f"Model is not text-capable: {model_id}")
+              if model.get("smoke_status") == "not_tested":
+                  raise SystemExit(f"Model has not passed smoke: {model_id}")
+              if str(model.get("status", "")).startswith("candidate"):
+                  raise SystemExit(f"Model is not active for this flow: {model_id}")
+
+              report_schema = contract.get("model_report_schema", {})
+              system_prompt = (
+                  "You evaluate sanitized public Browser/E2E summaries. "
+                  "Return strict JSON only. Do not use markdown fences."
+              )
+              user_payload = {
+                  "sanitized_summary": generated_summary,
+                  "acceptance_criteria": generated_summary.get("acceptance_criteria", []),
+                  "report_schema": report_schema,
+              }
+              user_prompt = (
+                  "Analyze this sanitized public browser summary against the acceptance criteria. "
+                  "Return JSON with fields: passed, score, summary, matched_criteria, "
+                  "missing_criteria, issues, recommendation.\n\n"
+                  + json.dumps(user_payload, ensure_ascii=False, indent=2)
+              )
+
+              model_name = model["model"]
+              if provider == "deepseek":
+                  endpoint = "https://api.deepseek.com/chat/completions"
+                  api_key = os.environ["DEEPSEEK_API_KEY"]
+                  payload = {
+                      "model": model_name,
+                      "messages": [
+                          {"role": "system", "content": system_prompt},
+                          {"role": "user", "content": user_prompt},
+                      ],
+                      "temperature": 0,
+                      "max_tokens": 900,
+                      "thinking": {"type": "disabled"},
+                  }
+              else:
+                  endpoint = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
+                  api_key = os.environ["DASHSCOPE_API_KEY"]
+                  payload = {
+                      "model": model_name,
+                      "messages": [
+                          {"role": "system", "content": system_prompt},
+                          {"role": "user", "content": user_prompt},
+                      ],
+                      "temperature": 0,
+                      "max_tokens": 900,
+                  }
+
+              transient_statuses = {429, 500, 502, 503, 504}
+              delays = [3, 6]
+
+              def post_with_retry():
+                  last_status = None
+                  last_body = None
+                  last_error = None
+                  headers = {
+                      "Authorization": f"Bearer {api_key}",
+                      "Content-Type": "application/json",
+                  }
+                  for attempt_index in range(3):
+                      body = json.dumps(payload).encode("utf-8")
+                      request = urllib.request.Request(endpoint, data=body, headers=headers, method="POST")
+                      try:
+                          with urllib.request.urlopen(request, timeout=60) as response:
+                              return attempt_index + 1, response.status, response.read().decode("utf-8"), None
+                      except urllib.error.HTTPError as exc:
+                          last_status = exc.code
+                          last_body = exc.read().decode("utf-8", errors="replace")
+                          last_error = f"HTTP {exc.code}"
+                      except urllib.error.URLError as exc:
+                          last_error = f"URL error: {exc.reason}"
+
+                      if last_status in transient_statuses and attempt_index < 2:
+                          time.sleep(delays[attempt_index])
+                          continue
+                      break
+
+                  return attempt_index + 1, last_status, last_body, last_error
+
+              attempt_count, http_status, raw_body, request_error = post_with_retry()
+              if request_error or not http_status or http_status < 200 or http_status >= 300:
+                  raise SystemExit(f"Provider request failed after {attempt_count} attempt(s): {request_error or http_status}")
+
+              try:
+                  parsed_response = json.loads(raw_body)
+              except json.JSONDecodeError:
+                  raise SystemExit("Provider response was not valid JSON.")
+
+              choices = parsed_response.get("choices") or []
+              message = choices[0].get("message", {}) if choices else {}
+              model_text = (message.get("content") or "").strip()
+              if not model_text:
+                  raise SystemExit("Model output content was empty.")
+
+              try:
+                  parsed_report = json.loads(model_text)
+              except json.JSONDecodeError as exc:
+                  raise SystemExit(f"Model output was not strict JSON: {exc}")
+
+              report_errors = validate_model_report(parsed_report)
+              if report_errors:
+                  for error in report_errors:
+                      print(f"Report schema error: {error}")
+                  sys.exit(1)
+              serialized_report = json.dumps(parsed_report, ensure_ascii=False, sort_keys=True)
+              model_report_matches = []
+              for name, pattern in forbidden_patterns:
+                  matches = re.findall(pattern, serialized_report)
+                  if matches:
+                      model_report_matches.append({"pattern": name, "count": len(matches)})
+              if model_report_matches:
+                  raise SystemExit("Model report failed forbidden-pattern scan.")
+
+              (artifact_dir / "model-report.json").write_text(
+                  json.dumps(parsed_report, ensure_ascii=False, indent=2),
+                  encoding="utf-8",
+              )
+              return {
+                  "provider": provider,
+                  "passed": parsed_report.get("passed"),
+                  "score": parsed_report.get("score"),
+                  "recommendation": parsed_report.get("recommendation"),
+                  "attempts": attempt_count,
+              }
+
+          if errors:
+              analysis_note = "not run; validation failed"
+          elif forbidden_scan_matches:
+              analysis_note = "not run; forbidden scan matched"
+          elif run_analysis:
+              analysis_result = call_model_after_validation()
+              analysis_ran = True
+              analysis_provider = analysis_result["provider"]
+              analysis_passed = analysis_result["passed"]
+              analysis_score = analysis_result["score"]
+              recommendation = analysis_result["recommendation"]
+              attempts = analysis_result["attempts"]
+              analysis_note = "run"
+          else:
+              analysis_note = "not run; disabled by input"
 
           summary_lines = [
               "# Real Public Browser Summary",
@@ -420,10 +640,22 @@ jobs:
               f"- Console error summaries: `{len(generated_summary['console_errors'])}`",
               f"- Network error summaries: `{len(generated_summary['network_errors'])}`",
               f"- Forbidden scan matches: `{len(forbidden_scan_matches)}`",
-              "- Model analysis: `not run`",
+              f"- Model analysis: `{analysis_note}`",
               "",
               "Only sanitized summary artifacts were generated.",
           ]
+          if analysis_ran:
+              summary_lines.extend([
+                  "",
+                  "## Model Analysis",
+                  "",
+                  f"- Model id: `{model_id}`",
+                  f"- Provider: `{analysis_provider}`",
+                  f"- Model report passed: `{analysis_passed}`",
+                  f"- Score: `{analysis_score}`",
+                  f"- Recommendation: {recommendation}",
+                  f"- Attempts: `{attempts}`",
+              ])
           (artifact_dir / "summary.md").write_text("\n".join(summary_lines) + "\n", encoding="utf-8")
 
           print(f"Route id: {route_id}")
@@ -435,7 +667,13 @@ jobs:
           print(f"Console error summaries: {len(generated_summary['console_errors'])}")
           print(f"Network error summaries: {len(generated_summary['network_errors'])}")
           print(f"Forbidden scan matches: {len(forbidden_scan_matches)}")
-          print("Model analysis: not run")
+          print(f"Model analysis: {analysis_note}")
+          if analysis_ran:
+              print(f"Model id: {model_id}")
+              print(f"Provider: {analysis_provider}")
+              print(f"Model report passed: {analysis_passed}")
+              print(f"Score: {analysis_score}")
+              print(f"Recommendation: {recommendation}")
 
           if errors:
               for error in errors:
@@ -451,6 +689,7 @@ jobs:
           path: |
             /tmp/real-public-browser-summary/generated-summary.json
             /tmp/real-public-browser-summary/validation-report.json
+            /tmp/real-public-browser-summary/model-report.json
             /tmp/real-public-browser-summary/summary.md
           if-no-files-found: error
           retention-days: 3
