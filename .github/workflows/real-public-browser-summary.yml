@@ -53,6 +53,7 @@ jobs:
           set -euo pipefail
           python -m pip install --upgrade pip
           python -m pip install playwright
+          python -m pip install reportlab
           python -m playwright install --with-deps chromium
 
       - name: Generate sanitized public browser summary
@@ -71,6 +72,7 @@ jobs:
 
           python - <<'PY'
           import json
+          import html
           import os
           import pathlib
           import re
@@ -80,6 +82,12 @@ jobs:
           import urllib.request
           from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
           from playwright.sync_api import sync_playwright
+          from reportlab.lib.pagesizes import letter
+          from reportlab.lib.styles import getSampleStyleSheet
+          from reportlab.lib.units import inch
+          from reportlab.pdfbase import pdfmetrics
+          from reportlab.pdfbase.ttfonts import TTFont
+          from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
           artifact_dir = pathlib.Path("/tmp/real-public-browser-summary")
           route_id = os.environ["ROUTE_ID"]
@@ -425,7 +433,9 @@ jobs:
                   "generated-summary.json",
                   "validation-report.json",
                   "model-report.json",
-                  "summary.md"
+                  "summary.md",
+                  "report.html",
+                  "report.pdf"
               ]
           }
           (artifact_dir / "validation-report.json").write_text(
@@ -439,6 +449,7 @@ jobs:
           analysis_score = None
           recommendation = None
           attempts = None
+          model_report_data = None
 
           def validate_model_report(report):
               report_errors = []
@@ -610,6 +621,7 @@ jobs:
                   "score": parsed_report.get("score"),
                   "recommendation": parsed_report.get("recommendation"),
                   "attempts": attempt_count,
+                  "report": parsed_report,
               }
 
           if errors:
@@ -624,39 +636,314 @@ jobs:
               analysis_score = analysis_result["score"]
               recommendation = analysis_result["recommendation"]
               attempts = analysis_result["attempts"]
+              model_report_data = analysis_result["report"]
               analysis_note = "run"
           else:
               analysis_note = "not run; disabled by input"
 
+          def clip(value, limit=180):
+              text = sanitize_text(value)
+              if len(text) <= limit:
+                  return text
+              return text[: max(0, limit - 1)].rstrip() + "..."
+
+          def cta_status():
+              cta = generated_summary.get("primary_cta_presence")
+              if not isinstance(cta, dict):
+                  return "not available"
+              return str(cta.get("present"))
+
+          validation_passed = not errors
+          forbidden_count = len(forbidden_scan_matches)
+          if not validation_passed or forbidden_count:
+              overall_label = "Technical failure"
+          elif not analysis_ran or model_report_data is None:
+              overall_label = "Analysis not run"
+          elif analysis_passed is True:
+              overall_label = "Passed"
+          else:
+              overall_label = "Needs review"
+
+          visible_sample = [clip(item, 160) for item in generated_summary.get("visible_text", [])[:8]]
+          if not visible_sample:
+              visible_sample = ["not available"]
+
+          artifact_names = [
+              "generated-summary.json",
+              "validation-report.json",
+          ]
+          if analysis_ran and model_report_data is not None:
+              artifact_names.append("model-report.json")
+          artifact_names.extend(["summary.md", "report.html", "report.pdf"])
+
+          model_summary = model_report_data.get("summary") if model_report_data else None
+          matched_criteria = model_report_data.get("matched_criteria", []) if model_report_data else []
+          missing_criteria = model_report_data.get("missing_criteria", []) if model_report_data else []
+          model_issues = model_report_data.get("issues", []) if model_report_data else []
+
           summary_lines = [
-              "# Real Public Browser Summary",
+              "# Real Public Browser Summary Report",
               "",
+              "## Executive Summary",
+              "",
+              f"- Overall result: `{overall_label}`",
               f"- Route id: `{route_id}`",
               f"- Route label: `{route['route_label']}`",
               f"- Interaction profile: `{profile_id}`",
-              "- Generated summary artifact: `generated-summary.json`",
-              f"- Validation passed: `{not errors}`",
-              f"- Visible text snippets: `{len(visible_text)}`",
-              f"- Console error summaries: `{len(generated_summary['console_errors'])}`",
-              f"- Network error summaries: `{len(generated_summary['network_errors'])}`",
-              f"- Forbidden scan matches: `{len(forbidden_scan_matches)}`",
               f"- Model analysis: `{analysis_note}`",
-              "",
-              "Only sanitized summary artifacts were generated.",
           ]
-          if analysis_ran:
+          if analysis_ran and model_report_data is not None:
               summary_lines.extend([
-                  "",
-                  "## Model Analysis",
-                  "",
                   f"- Model id: `{model_id}`",
                   f"- Provider: `{analysis_provider}`",
+                  f"- Score: `{analysis_score}`",
+                  f"- Recommendation: {clip(recommendation, 220)}",
+              ])
+          else:
+              summary_lines.append("- Recommendation: not available")
+
+          summary_lines.extend([
+              "",
+              "## Technical Health",
+              "",
+              f"- Validation passed: `{validation_passed}`",
+              f"- Forbidden scan match groups: `{forbidden_count}`",
+              f"- Visible text snippet count: `{len(generated_summary.get('visible_text', []))}`",
+              f"- Console error summary count: `{len(generated_summary['console_errors'])}`",
+              f"- Network error summary count: `{len(generated_summary['network_errors'])}`",
+              f"- CTA presence: `{cta_status()}`",
+          ])
+          if errors:
+              summary_lines.append(f"- Validation errors: `{len(errors)}`")
+          if not model_report_data:
+              summary_lines.append("- Model report: `not available`")
+
+          summary_lines.extend([
+              "",
+              "## Page Understanding",
+              "",
+              f"- Page title: {clip(generated_summary.get('page_title'), 180)}",
+              "",
+              "Visible text sample:",
+          ])
+          for item in visible_sample:
+              summary_lines.append(f"- {item}")
+
+          summary_lines.extend(["", "## Model Analysis", ""])
+          if model_report_data:
+              summary_lines.extend([
                   f"- Model report passed: `{analysis_passed}`",
                   f"- Score: `{analysis_score}`",
-                  f"- Recommendation: {recommendation}",
-                  f"- Attempts: `{attempts}`",
+                  f"- Summary: {clip(model_summary, 260)}",
+                  "",
+                  "Matched criteria:",
               ])
-          (artifact_dir / "summary.md").write_text("\n".join(summary_lines) + "\n", encoding="utf-8")
+              for item in matched_criteria:
+                  summary_lines.append(f"- {clip(item, 180)}")
+              if not matched_criteria:
+                  summary_lines.append("- none")
+              summary_lines.append("")
+              summary_lines.append("Missing criteria:")
+              for item in missing_criteria:
+                  summary_lines.append(f"- {clip(item, 180)}")
+              if not missing_criteria:
+                  summary_lines.append("- none")
+              summary_lines.append("")
+              summary_lines.append("Issues:")
+              for issue in model_issues[:10]:
+                  severity = clip(issue.get("severity", "unknown"), 40)
+                  description = clip(issue.get("description", "no description"), 180)
+                  evidence = clip(issue.get("evidence", "no evidence"), 160)
+                  summary_lines.append(f"- `{severity}`: {description} Evidence: {evidence}")
+              if not model_issues:
+                  summary_lines.append("- none")
+              summary_lines.extend([
+                  "",
+                  f"Recommendation: {clip(recommendation, 260)}",
+              ])
+          else:
+              summary_lines.append("Model analysis was not available.")
+
+          summary_lines.extend([
+              "",
+              "## Safety Boundaries",
+              "",
+              "- Sanitized summary only.",
+              "- No screenshots, videos, traces, or raw HAR.",
+              "- No cookies, storage state, or auth headers.",
+              "- No raw request or response bodies.",
+              "- No raw provider response.",
+              "- No credentials or private data.",
+              "",
+              "## Artifacts",
+              "",
+          ])
+          for artifact_name in artifact_names:
+              summary_lines.append(f"- `{artifact_name}`")
+
+          summary_md = "\n".join(summary_lines) + "\n"
+          (artifact_dir / "summary.md").write_text(summary_md, encoding="utf-8")
+
+          def html_list(items):
+              return "<ul>" + "".join(f"<li>{html.escape(str(item))}</li>" for item in items) + "</ul>"
+
+          model_analysis_html = "<p>Model analysis was not available.</p>"
+          if model_report_data:
+              issues_html = html_list([
+                  f"{clip(issue.get('severity', 'unknown'), 40)}: {clip(issue.get('description', 'no description'), 180)} Evidence: {clip(issue.get('evidence', 'no evidence'), 160)}"
+                  for issue in model_issues[:10]
+              ] or ["none"])
+              model_analysis_html = f"""
+              <p><strong>Model report passed:</strong> {html.escape(str(analysis_passed))}</p>
+              <p><strong>Score:</strong> {html.escape(str(analysis_score))}</p>
+              <p><strong>Summary:</strong> {html.escape(clip(model_summary, 260))}</p>
+              <h3>Matched Criteria</h3>{html_list([clip(item, 180) for item in matched_criteria] or ["none"])}
+              <h3>Missing Criteria</h3>{html_list([clip(item, 180) for item in missing_criteria] or ["none"])}
+              <h3>Issues</h3>{issues_html}
+              <p><strong>Recommendation:</strong> {html.escape(clip(recommendation, 260))}</p>
+              """
+
+          report_html = f"""<!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <title>Real Public Browser Summary Report</title>
+            <style>
+              body {{ font-family: Arial, sans-serif; color: #1f2937; line-height: 1.45; margin: 32px; }}
+              h1, h2, h3 {{ color: #111827; }}
+              table {{ border-collapse: collapse; width: 100%; margin: 12px 0; }}
+              th, td {{ border: 1px solid #d1d5db; padding: 8px; text-align: left; vertical-align: top; }}
+              th {{ background: #f3f4f6; }}
+              .status {{ border: 1px solid #d1d5db; padding: 12px; background: #f9fafb; }}
+            </style>
+          </head>
+          <body>
+            <h1>Real Public Browser Summary Report</h1>
+            <h2>Executive Summary</h2>
+            <div class="status">
+              <p><strong>Overall result:</strong> {html.escape(overall_label)}</p>
+              <p><strong>Route id:</strong> {html.escape(route_id)}</p>
+              <p><strong>Route label:</strong> {html.escape(route["route_label"])}</p>
+              <p><strong>Interaction profile:</strong> {html.escape(profile_id)}</p>
+              <p><strong>Model:</strong> {html.escape(model_id if analysis_ran else "not available")}</p>
+              <p><strong>Provider:</strong> {html.escape(analysis_provider or "not available")}</p>
+              <p><strong>Score:</strong> {html.escape(str(analysis_score if analysis_score is not None else "not available"))}</p>
+              <p><strong>Recommendation:</strong> {html.escape(clip(recommendation, 260) if recommendation else "not available")}</p>
+            </div>
+            <h2>Technical Health</h2>
+            <table>
+              <tr><th>Validation passed</th><td>{html.escape(str(validation_passed))}</td></tr>
+              <tr><th>Forbidden scan match groups</th><td>{html.escape(str(forbidden_count))}</td></tr>
+              <tr><th>Visible text snippet count</th><td>{html.escape(str(len(generated_summary.get("visible_text", []))))}</td></tr>
+              <tr><th>Console error summary count</th><td>{html.escape(str(len(generated_summary["console_errors"])))}</td></tr>
+              <tr><th>Network error summary count</th><td>{html.escape(str(len(generated_summary["network_errors"])))}</td></tr>
+              <tr><th>CTA presence</th><td>{html.escape(cta_status())}</td></tr>
+            </table>
+            <h2>Page Understanding</h2>
+            <p><strong>Page title:</strong> {html.escape(clip(generated_summary.get("page_title"), 180))}</p>
+            <h3>Visible Text Sample</h3>
+            {html_list(visible_sample)}
+            <h2>Model Analysis</h2>
+            {model_analysis_html}
+            <h2>Safety Boundaries</h2>
+            {html_list([
+                "Sanitized summary only.",
+                "No screenshots, videos, traces, or raw HAR.",
+                "No cookies, storage state, or auth headers.",
+                "No raw request or response bodies.",
+                "No raw provider response.",
+                "No credentials or private data.",
+            ])}
+            <h2>Artifacts</h2>
+            {html_list(artifact_names)}
+          </body>
+          </html>
+          """
+          (artifact_dir / "report.html").write_text(report_html, encoding="utf-8")
+
+          def add_pdf_heading(story, styles, text):
+              story.append(Paragraph(html.escape(text), styles["Heading2"]))
+              story.append(Spacer(1, 0.08 * inch))
+
+          def add_pdf_paragraph(story, styles, text):
+              story.append(Paragraph(html.escape(str(text)), styles["BodyText"]))
+              story.append(Spacer(1, 0.05 * inch))
+
+          def add_pdf_bullets(story, styles, items):
+              for item in items:
+                  story.append(Paragraph(f"&bull; {html.escape(str(item))}", styles["BodyText"]))
+              story.append(Spacer(1, 0.08 * inch))
+
+          pdf_path = artifact_dir / "report.pdf"
+          pdf_font = "Helvetica"
+          pdf_bold_font = "Helvetica-Bold"
+          font_path = pathlib.Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+          bold_font_path = pathlib.Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
+          if font_path.exists():
+              pdfmetrics.registerFont(TTFont("DejaVuSans", str(font_path)))
+              pdf_font = "DejaVuSans"
+          if bold_font_path.exists():
+              pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", str(bold_font_path)))
+              pdf_bold_font = "DejaVuSans-Bold"
+          styles = getSampleStyleSheet()
+          styles["BodyText"].fontName = pdf_font
+          styles["Title"].fontName = pdf_bold_font
+          styles["Heading2"].fontName = pdf_bold_font
+          story = [Paragraph("Real Public Browser Summary Report", styles["Title"]), Spacer(1, 0.12 * inch)]
+          add_pdf_heading(story, styles, "Executive Summary")
+          add_pdf_bullets(story, styles, [
+              f"Overall result: {overall_label}",
+              f"Route id: {route_id}",
+              f"Route label: {route['route_label']}",
+              f"Interaction profile: {profile_id}",
+              f"Model id: {model_id if analysis_ran else 'not available'}",
+              f"Provider: {analysis_provider or 'not available'}",
+              f"Score: {analysis_score if analysis_score is not None else 'not available'}",
+              f"Recommendation: {clip(recommendation, 260) if recommendation else 'not available'}",
+          ])
+          add_pdf_heading(story, styles, "Technical Health")
+          add_pdf_bullets(story, styles, [
+              f"Validation passed: {validation_passed}",
+              f"Forbidden scan match groups: {forbidden_count}",
+              f"Visible text snippet count: {len(generated_summary.get('visible_text', []))}",
+              f"Console error summary count: {len(generated_summary['console_errors'])}",
+              f"Network error summary count: {len(generated_summary['network_errors'])}",
+              f"CTA presence: {cta_status()}",
+          ])
+          add_pdf_heading(story, styles, "Page Understanding")
+          add_pdf_paragraph(story, styles, f"Page title: {clip(generated_summary.get('page_title'), 180)}")
+          add_pdf_bullets(story, styles, visible_sample)
+          add_pdf_heading(story, styles, "Model Analysis")
+          if model_report_data:
+              add_pdf_bullets(story, styles, [
+                  f"Model report passed: {analysis_passed}",
+                  f"Score: {analysis_score}",
+                  f"Summary: {clip(model_summary, 260)}",
+              ])
+              add_pdf_paragraph(story, styles, "Matched criteria:")
+              add_pdf_bullets(story, styles, [clip(item, 180) for item in matched_criteria] or ["none"])
+              add_pdf_paragraph(story, styles, "Missing criteria:")
+              add_pdf_bullets(story, styles, [clip(item, 180) for item in missing_criteria] or ["none"])
+              add_pdf_paragraph(story, styles, "Issues:")
+              add_pdf_bullets(story, styles, [
+                  f"{clip(issue.get('severity', 'unknown'), 40)}: {clip(issue.get('description', 'no description'), 180)} Evidence: {clip(issue.get('evidence', 'no evidence'), 160)}"
+                  for issue in model_issues[:10]
+              ] or ["none"])
+              add_pdf_paragraph(story, styles, f"Recommendation: {clip(recommendation, 260)}")
+          else:
+              add_pdf_paragraph(story, styles, "Model analysis was not available.")
+          add_pdf_heading(story, styles, "Safety Boundaries")
+          add_pdf_bullets(story, styles, [
+              "Sanitized summary only.",
+              "No screenshots, videos, traces, or raw HAR.",
+              "No cookies, storage state, or auth headers.",
+              "No raw request or response bodies.",
+              "No raw provider response.",
+              "No credentials or private data.",
+          ])
+          add_pdf_heading(story, styles, "Artifacts")
+          add_pdf_bullets(story, styles, artifact_names)
+          SimpleDocTemplate(str(pdf_path), pagesize=letter, rightMargin=0.55 * inch, leftMargin=0.55 * inch, topMargin=0.55 * inch, bottomMargin=0.55 * inch).build(story)
 
           print(f"Route id: {route_id}")
           print(f"Route label: {route['route_label']}")
@@ -821,6 +1108,10 @@ jobs:
               artifacts.append("model-report.json")
           if existing_summary:
               artifacts.append("summary.md")
+          if (artifact_dir / "report.html").exists():
+              artifacts.append("report.html")
+          if (artifact_dir / "report.pdf").exists():
+              artifacts.append("report.pdf")
 
           lines.extend([
               "",
@@ -855,5 +1146,7 @@ jobs:
             /tmp/real-public-browser-summary/validation-report.json
             /tmp/real-public-browser-summary/model-report.json
             /tmp/real-public-browser-summary/summary.md
+            /tmp/real-public-browser-summary/report.html
+            /tmp/real-public-browser-summary/report.pdf
           if-no-files-found: error
           retention-days: 3
