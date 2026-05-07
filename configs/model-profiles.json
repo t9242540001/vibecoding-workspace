@@ -1,6 +1,6 @@
 {
   "version": "0.1",
-  "updated": "2026-05-06",
+  "updated": "2026-05-07",
   "purpose": "Shared machine-readable model profiles for Vibe Coding agent runners, smoke tests, and provider selection.",
   "providers": {
     "openai": {
@@ -489,6 +489,46 @@
         "generated summaries must pass validator before analysis",
         "validator must pass before model analysis"
       ]
+    },
+    "real-public-browser-summary": {
+      "status": "mvp_required_run_set_passed",
+      "workflow": ".github/workflows/real-public-browser-summary.yml",
+      "approved_routes_config": "configs/real-staging-approved-routes.json",
+      "interaction_profiles_config": "configs/real-staging-interaction-profiles.json",
+      "summary_contract": "configs/e2e-staging-summary-contract.json",
+      "route": "yurassistent-home",
+      "route_scope": "public-production-no-auth",
+      "scope": "real public no-auth browser observation with sanitized summary and model analysis",
+      "run_result": {
+        "date_reported": "2026-05-07",
+        "status": "passed",
+        "runs": {
+          "qwen/qwen-plus": {
+            "homepage-load-only": "passed",
+            "homepage-primary-cta-presence": "passed"
+          },
+          "deepseek/deepseek-v4-flash": {
+            "homepage-load-only": "passed",
+            "homepage-primary-cta-presence": "passed"
+          }
+        }
+      },
+      "safety_boundaries": [
+        "no arbitrary URL input",
+        "no arbitrary browser commands",
+        "no login/auth",
+        "no forms",
+        "no clicks/follow-links",
+        "no uploads",
+        "no payment/account creation/destructive actions",
+        "no screenshots/videos/traces/raw HAR",
+        "no cookies/storage state/auth headers",
+        "no raw request/response bodies",
+        "sanitized summary validation before model analysis",
+        "Qwen/DeepSeek only",
+        "Gemini excluded"
+      ],
+      "next_step": "document and harden MVP results before adding broader routes or interactions"
     }
   },
   "rules": [
