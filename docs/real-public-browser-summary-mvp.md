@@ -20,7 +20,7 @@ Workflow: `.github/workflows/real-public-browser-summary.yml`.
 
 Current approved route: `yurassistent-home`, public no-auth route for `https://yurassistent.ru/`.
 
-Current approved interaction profiles: `homepage-load-only`, `homepage-primary-cta-presence`.
+Current approved interaction profiles: `homepage-load-only`, `homepage-primary-cta-presence`, `homepage-content-audit-v1`.
 
 Current first-flow models: `qwen/qwen-plus`, `deepseek/deepseek-v4-flash`.
 
@@ -42,6 +42,12 @@ Content Audit Profile v1 exists as `homepage-content-audit-v1` and has been run 
 The first run produced a useful product signal: Qwen and DeepSeek agreed the page needs review. The primary CTA was not detected in sanitized visible text, trust signals appear weak/limited, and console/network errors need inspection.
 
 This remains text-only sanitized analysis: no clicks, forms, login, screenshots, HAR, or raw browser artifacts.
+
+## Test Intent Taxonomy
+
+The browser MVP now uses a test intent taxonomy: `health_check`, `acceptance_check`, and `content_audit` are implemented through the current safe profiles.
+
+Future intents such as `link_check`, `form_check`, `dialogue_e2e`, and `document_result_review` remain approval-gated because they may require higher-risk browser actions, data handling, or artifacts.
 
 ## How The Flow Works
 

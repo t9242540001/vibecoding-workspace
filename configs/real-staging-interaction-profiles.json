@@ -13,6 +13,18 @@
     "sanitized summary validation must pass before model analysis",
     "browser workflow implementation is not added by this config"
   ],
+  "test_intent_taxonomy_doc": "docs/browser-test-intent-taxonomy.md",
+  "supported_test_intents": [
+    "health_check",
+    "acceptance_check",
+    "content_audit"
+  ],
+  "planned_test_intents": [
+    "link_check",
+    "form_check",
+    "dialogue_e2e",
+    "document_result_review"
+  ],
   "shared_forbidden_artifact_types": [
     "cookies",
     "auth_headers",
@@ -38,6 +50,9 @@
         "yurassistent-home"
       ],
       "purpose": "Verify that the public homepage loads and produces a safe sanitized summary.",
+      "test_intent": "health_check",
+      "result_type": "technical_status",
+      "risk_level": "low",
       "allowed_actions": [
         "navigate_to_route",
         "wait_for_page_load",
@@ -73,6 +88,9 @@
         "yurassistent-home"
       ],
       "purpose": "Verify that the public homepage exposes a primary call-to-action without clicking or submitting anything.",
+      "test_intent": "acceptance_check",
+      "result_type": "criteria_pass_fail",
+      "risk_level": "low",
       "allowed_actions": [
         "navigate_to_route",
         "wait_for_page_load",
@@ -127,6 +145,9 @@
         "yurassistent-home"
       ],
       "purpose": "Audit the public homepage content from the target audience perspective using sanitized visible text only.",
+      "test_intent": "content_audit",
+      "result_type": "product_recommendations",
+      "risk_level": "low_text_only",
       "allowed_actions": [
         "navigate_to_route",
         "wait_for_page_load",
