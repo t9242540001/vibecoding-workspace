@@ -1,0 +1,456 @@
+name: Real Public Browser Summary
+
+on:
+  workflow_dispatch:
+    inputs:
+      route_id:
+        description: Approved route id
+        required: true
+        default: yurassistent-home
+        type: choice
+        options:
+          - yurassistent-home
+      interaction_profile_id:
+        description: Approved interaction profile id
+        required: true
+        default: homepage-load-only
+        type: choice
+        options:
+          - homepage-load-only
+          - homepage-primary-cta-presence
+      strict_forbidden_scan:
+        description: Fail on suspicious forbidden patterns
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  generate-summary:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install temporary browser runtime
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Generate sanitized public browser summary
+        env:
+          ROUTE_ID: ${{ inputs.route_id }}
+          INTERACTION_PROFILE_ID: ${{ inputs.interaction_profile_id }}
+          STRICT_FORBIDDEN_SCAN: ${{ inputs.strict_forbidden_scan }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p /tmp/real-public-browser-summary
+
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+          import re
+          import sys
+          from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+          from playwright.sync_api import sync_playwright
+
+          artifact_dir = pathlib.Path("/tmp/real-public-browser-summary")
+          route_id = os.environ["ROUTE_ID"]
+          profile_id = os.environ["INTERACTION_PROFILE_ID"]
+          strict_forbidden_scan = os.environ["STRICT_FORBIDDEN_SCAN"].lower() == "true"
+
+          routes_path = pathlib.Path("configs/real-staging-approved-routes.json")
+          profiles_path = pathlib.Path("configs/real-staging-interaction-profiles.json")
+          contract_path = pathlib.Path("configs/e2e-staging-summary-contract.json")
+
+          errors = []
+          warnings = []
+          forbidden_scan_matches = []
+          console_errors = []
+          network_errors = []
+
+          def load_json(path, label):
+              try:
+                  with path.open("r", encoding="utf-8") as f:
+                      return json.load(f)
+              except FileNotFoundError:
+                  errors.append(f"{label} does not exist: {path}")
+              except json.JSONDecodeError as exc:
+                  errors.append(f"{label} is not valid JSON: {exc}")
+              return None
+
+          routes_config = load_json(routes_path, "approved route config")
+          profiles_config = load_json(profiles_path, "interaction profile config")
+          contract = load_json(contract_path, "staging summary contract")
+
+          route = None
+          profile = None
+          if routes_config is not None:
+              for candidate in routes_config.get("routes", []):
+                  if candidate.get("route_id") == route_id:
+                      route = candidate
+                      break
+              if route is None:
+                  errors.append(f"Selected route does not exist: {route_id}")
+
+          if profiles_config is not None:
+              for candidate in profiles_config.get("profiles", []):
+                  if candidate.get("profile_id") == profile_id:
+                      profile = candidate
+                      break
+              if profile is None:
+                  errors.append(f"Selected interaction profile does not exist: {profile_id}")
+
+          if route is not None and profile is not None:
+              allowed_profiles = route.get("allowed_interaction_profile_ids", [])
+              compatible_routes = profile.get("route_compatibility", [])
+              if profile_id not in allowed_profiles:
+                  errors.append(f"Profile `{profile_id}` is not allowed by route `{route_id}`.")
+              if route_id not in compatible_routes:
+                  errors.append(f"Profile `{profile_id}` is not compatible with route `{route_id}`.")
+              if route.get("auth_required") is not False:
+                  errors.append("Selected route must be public no-auth.")
+              if route.get("route_type") != "public_no_auth_homepage":
+                  errors.append("Selected route must be a public no-auth homepage route.")
+
+              forbidden_actions = set(profile.get("forbidden_actions", []))
+              allowed_actions = set(profile.get("allowed_actions", []))
+              requested_forbidden = sorted(forbidden_actions.intersection(allowed_actions))
+              if requested_forbidden:
+                  errors.append(f"Profile requests forbidden actions: {requested_forbidden}")
+
+              globally_blocked_actions = {
+                  "click",
+                  "type",
+                  "submit_form",
+                  "upload_file",
+                  "login",
+                  "payment",
+                  "account_creation",
+                  "screenshot",
+                  "video",
+                  "trace",
+                  "raw_har",
+                  "follow_link",
+                  "destructive_action",
+              }
+              blocked_requested = sorted(globally_blocked_actions.intersection(allowed_actions))
+              if blocked_requested:
+                  errors.append(f"Profile includes globally blocked actions: {blocked_requested}")
+
+          if errors:
+              print("Validation failed before browser launch.")
+              for error in errors:
+                  print(f"- {error}")
+              sys.exit(1)
+
+          def sanitize_text(value):
+              text = str(value or "")
+              replacements = [
+                  (r"https?://\S+", "[redacted-url]"),
+                  (r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", "[redacted-email]"),
+                  (r"\+?\d[\d\s().-]{7,}\d", "[redacted-phone]"),
+                  (r"Bearer\s+[A-Za-z0-9._~+/=-]+", "[redacted-bearer]"),
+                  (r"\b[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b", "[redacted-token]"),
+                  (r"(?i)\b(authorization|cookie|set-cookie|api[_-]?key|token|password|secret)\b\s*[:=][^\s,;]+", "[redacted-header]"),
+                  (r"\b10\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", "[redacted-private-ip]"),
+                  (r"\b192\.168\.\d{1,3}\.\d{1,3}\b", "[redacted-private-ip]"),
+                  (r"\b172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}\b", "[redacted-private-ip]"),
+                  (r"C:\\[^\s]+", "[redacted-local-path]"),
+                  (r"/home/[^\s]+", "[redacted-local-path]"),
+                  (r"\.env", "[redacted-env-file]"),
+              ]
+              for pattern, replacement in replacements:
+                  text = re.sub(pattern, replacement, text)
+              return " ".join(text.split())
+
+          def compact_list(items, limit=40, item_limit=240):
+              compacted = []
+              for item in items:
+                  clean = sanitize_text(item)[:item_limit].strip()
+                  if clean and clean not in compacted:
+                      compacted.append(clean)
+                  if len(compacted) >= limit:
+                      break
+              return compacted
+
+          def add_console_message(message):
+              if message.type not in ("error", "warning"):
+                  return
+              console_errors.append({
+                  "level": message.type,
+                  "summary": sanitize_text(message.text)[:300],
+              })
+
+          def add_request_failure(request):
+              failure = request.failure
+              if isinstance(failure, dict):
+                  failure_text = failure.get("errorText", "request failed")
+              else:
+                  failure_text = failure or "request failed"
+              network_errors.append({
+                  "resource_type": request.resource_type,
+                  "summary": sanitize_text(failure_text)[:240],
+              })
+
+          def add_response_status(response):
+              if response.status >= 400:
+                  network_errors.append({
+                      "resource_type": "response",
+                      "status": response.status,
+                      "summary": f"HTTP status {response.status}",
+                  })
+
+          route_url = route["url"]
+          interactions = [
+              f"Selected approved route label `{route['route_label']}`.",
+              f"Selected approved interaction profile `{profile_id}`.",
+              "Opened approved public no-auth route.",
+              "Waited for page load.",
+              "Collected sanitized visible text.",
+              "Collected high-level console and network error summaries.",
+          ]
+
+          cta_present = None
+          cta_matches = []
+          page_title = ""
+          visible_text = []
+          accessibility_notes = []
+          performance_notes = []
+
+          with sync_playwright() as playwright:
+              browser = playwright.chromium.launch(headless=True)
+              context = browser.new_context(
+                  viewport={"width": 1365, "height": 768},
+                  ignore_https_errors=False,
+              )
+              page = context.new_page()
+              page.on("console", add_console_message)
+              page.on("requestfailed", add_request_failure)
+              page.on("response", add_response_status)
+
+              response = page.goto(route_url, wait_until="domcontentloaded", timeout=45000)
+              try:
+                  page.wait_for_load_state("networkidle", timeout=15000)
+              except PlaywrightTimeoutError:
+                  performance_notes.append("Network idle wait timed out; summary uses DOM content loaded state.")
+
+              page_title = sanitize_text(page.title())
+              body_text = page.locator("body").inner_text(timeout=10000)
+              visible_text = compact_list(body_text.splitlines(), limit=80, item_limit=300)
+
+              if response is not None and response.status >= 400:
+                  network_errors.append({
+                      "resource_type": "document",
+                      "status": response.status,
+                      "summary": f"Document returned HTTP status {response.status}",
+                  })
+
+              if profile_id == "homepage-primary-cta-presence":
+                  joined_visible_text = "\n".join(visible_text)
+                  candidates = profile.get("primary_cta_detection", {}).get("acceptable_cta_text_candidates", [])
+                  cta_matches = [candidate for candidate in candidates if candidate in joined_visible_text]
+                  cta_present = bool(cta_matches)
+                  if cta_present:
+                      interactions.append("Detected primary CTA candidate from sanitized visible text.")
+                  else:
+                      interactions.append("No primary CTA candidate was detected in sanitized visible text.")
+
+              browser.close()
+
+          if visible_text:
+              accessibility_notes.append("Visible text was available for sanitized summary generation.")
+          if cta_present is not None:
+              accessibility_notes.append(f"Primary CTA candidate present: {cta_present}.")
+          performance_notes.append("Real public no-auth browser observation; raw timing artifacts were not collected.")
+
+          generated_summary = {
+              "summary_id": f"real-public-browser-{route['route_label']}-{profile_id}",
+              "source": "real-public-browser-summary",
+              "environment_label": route["environment_label"],
+              "route_label": route["route_label"],
+              "page_title": page_title,
+              "visible_text": visible_text,
+              "interactions": interactions,
+              "acceptance_criteria": profile.get("acceptance_criteria", []),
+              "console_errors": compact_list(
+                  [item["summary"] for item in console_errors if item.get("level") == "error"],
+                  limit=20,
+                  item_limit=300,
+              ),
+              "network_errors": compact_list(
+                  [item.get("summary", "") for item in network_errors],
+                  limit=20,
+                  item_limit=240,
+              ),
+              "sanitization_notes": [
+                  "Approved route label used; full URL omitted from summary artifacts.",
+                  "No credentials, cookies, headers, storage state, or session dumps collected.",
+                  "No screenshots, videos, traces, or raw HAR collected.",
+                  "No request or response bodies collected.",
+                  "Visible text and error summaries were sanitized before artifact upload."
+              ],
+              "accessibility_notes": accessibility_notes,
+              "performance_notes": performance_notes,
+              "browser": "chromium-headless",
+              "viewport": "1365x768",
+              "test_timestamp_label": "real-public-browser-run",
+              "known_limitations": [
+                  "Public no-auth observation only.",
+                  "No clicks, link following, form submission, login, or account creation were performed.",
+                  "No model analysis is performed by this workflow."
+              ],
+          }
+          if cta_present is not None:
+              generated_summary["primary_cta_presence"] = {
+                  "present": cta_present,
+                  "matched_candidates": cta_matches,
+                  "method": "sanitized visible text only"
+              }
+
+          generated_path = artifact_dir / "generated-summary.json"
+          generated_path.write_text(
+              json.dumps(generated_summary, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+
+          required_fields_checked = []
+          required_types = {
+              "summary_id": str,
+              "source": str,
+              "environment_label": str,
+              "route_label": str,
+              "page_title": str,
+              "visible_text": list,
+              "interactions": list,
+              "acceptance_criteria": list,
+              "console_errors": list,
+              "network_errors": list,
+              "sanitization_notes": list,
+          }
+
+          for field in contract.get("required_summary_fields", []):
+              required_fields_checked.append(field)
+              if field not in generated_summary:
+                  errors.append(f"Missing required field: {field}")
+
+          for field, expected_type in required_types.items():
+              if field in generated_summary and not isinstance(generated_summary[field], expected_type):
+                  errors.append(f"Field `{field}` has wrong type.")
+
+          for field in ("acceptance_criteria", "visible_text", "sanitization_notes"):
+              value = generated_summary.get(field)
+              if isinstance(value, list):
+                  if not value:
+                      errors.append(f"`{field}` must not be empty.")
+                  if not all(isinstance(item, str) and item.strip() for item in value):
+                      errors.append(f"`{field}` must contain non-empty strings.")
+
+          serialized = json.dumps(generated_summary, ensure_ascii=False, sort_keys=True)
+          forbidden_patterns = [
+              ("http-url", r"http://"),
+              ("https-url", r"https://"),
+              ("bearer-token", r"Bearer\s+"),
+              ("authorization-header", r"Authorization"),
+              ("cookie-header", r"Cookie"),
+              ("set-cookie-header", r"Set-Cookie"),
+              ("api-key", r"api_key"),
+              ("apikey", r"apikey"),
+              ("token-assignment", r"\btoken\s*[:=]"),
+              ("password", r"password"),
+              ("secret", r"secret"),
+              ("private-ip-10", r"\b10\."),
+              ("private-ip-192", r"\b192\.168\."),
+              ("private-ip-172", r"\b172\.(1[6-9]|2[0-9]|3[0-1])\."),
+              ("email-like", r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
+              ("jwt-like", r"\b[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b"),
+              ("windows-local-path", r"C:\\"),
+              ("unix-home-path", r"/home/"),
+              ("env-file", r"\.env"),
+          ]
+          for name, pattern in forbidden_patterns:
+              matches = re.findall(pattern, serialized)
+              if matches:
+                  forbidden_scan_matches.append({"pattern": name, "count": len(matches)})
+
+          if forbidden_scan_matches:
+              message = f"Forbidden scan found {len(forbidden_scan_matches)} suspicious pattern groups."
+              if strict_forbidden_scan:
+                  errors.append(message)
+              else:
+                  warnings.append(message)
+
+          validation_report = {
+              "route_id": route_id,
+              "route_label": route["route_label"],
+              "interaction_profile_id": profile_id,
+              "valid": not errors,
+              "errors": errors,
+              "warnings": warnings,
+              "required_fields_checked": required_fields_checked,
+              "forbidden_scan_matches": forbidden_scan_matches,
+              "strict_forbidden_scan": strict_forbidden_scan,
+              "artifacts": [
+                  "generated-summary.json",
+                  "validation-report.json",
+                  "summary.md"
+              ]
+          }
+          (artifact_dir / "validation-report.json").write_text(
+              json.dumps(validation_report, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+
+          summary_lines = [
+              "# Real Public Browser Summary",
+              "",
+              f"- Route id: `{route_id}`",
+              f"- Route label: `{route['route_label']}`",
+              f"- Interaction profile: `{profile_id}`",
+              "- Generated summary artifact: `generated-summary.json`",
+              f"- Validation passed: `{not errors}`",
+              f"- Visible text snippets: `{len(visible_text)}`",
+              f"- Console error summaries: `{len(generated_summary['console_errors'])}`",
+              f"- Network error summaries: `{len(generated_summary['network_errors'])}`",
+              f"- Forbidden scan matches: `{len(forbidden_scan_matches)}`",
+              "- Model analysis: `not run`",
+              "",
+              "Only sanitized summary artifacts were generated.",
+          ]
+          (artifact_dir / "summary.md").write_text("\n".join(summary_lines) + "\n", encoding="utf-8")
+
+          print(f"Route id: {route_id}")
+          print(f"Route label: {route['route_label']}")
+          print(f"Interaction profile: {profile_id}")
+          print("Generated summary artifact: generated-summary.json")
+          print(f"Validation passed: {not errors}")
+          print(f"Visible text snippets: {len(visible_text)}")
+          print(f"Console error summaries: {len(generated_summary['console_errors'])}")
+          print(f"Network error summaries: {len(generated_summary['network_errors'])}")
+          print(f"Forbidden scan matches: {len(forbidden_scan_matches)}")
+          print("Model analysis: not run")
+
+          if errors:
+              for error in errors:
+                  print(f"Validation error: {error}")
+              sys.exit(1)
+          PY
+
+      - name: Upload sanitized browser summary artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-public-browser-summary
+          path: |
+            /tmp/real-public-browser-summary/generated-summary.json
+            /tmp/real-public-browser-summary/validation-report.json
+            /tmp/real-public-browser-summary/summary.md
+          if-no-files-found: error
+          retention-days: 3
