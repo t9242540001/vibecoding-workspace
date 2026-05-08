@@ -48,7 +48,7 @@
     }
   ],
 
-  "_comment_prompt_status_values": "Allowed status values: pending (not yet started), running (currently executing), done (completed successfully), failed (execution failed), skipped (skipped due to earlier failure when stop_on_failure was true).",
+  "_comment_prompt_status_values": "Allowed status values: pending (not yet started), running (currently executing), done (completed successfully), failed (execution failed or health check returned bad state), unverified (health check could not run for reasons unrelated to system state, e.g. network error or egress denial — batch continues, never stops on this status), skipped (skipped due to earlier failure when stop_on_failure was true).",
 
   "_comment_prompt_id_format": "Sequential two-digit number starting from 01. Matches the file prefix.",
 
