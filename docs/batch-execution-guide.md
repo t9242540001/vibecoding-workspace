@@ -5,7 +5,7 @@
   @description: Step-by-step guide for connecting a product repository to batch execution
   @owner:       Claude (Anthropic)
   @updated:     2026-05-08
-  @version:     1.0
+  @version:     1.0.1
 -->
 
 This guide is for Vasily. It explains how to connect a product repository to the batch execution system so that prompt series can run automatically without manual intervention between prompts.
@@ -31,9 +31,14 @@ These steps are done once for each product (jckauto, whatscan, deepvest, yurassi
 
 ### Step 1 — Add Queue Folder To Product Repository
 
-Create the folder `prompts/queue/` at the **git root** of the product repository (not inside the code folder). This is where individual batches will live.
+Create the folder `prompts/queue/` at the **git root** of the product repository. This is where individual batches will live.
 
-For products with legacy multi-folder layouts (like jckauto where git root is `app/` and code root is `app/jck-auto/`): the folder goes at git root level — `app/prompts/queue/`. The routine reads from git root after `git clone`.
+The routine reads `prompts/queue/{batch_id}/manifest.json` from git root after `git clone`. This is a fixed behavior of the routine — the folder must be at git root regardless of how the rest of the repository is organized (single Next.js app, monorepo, multi-folder layout, etc.).
+
+Examples:
+- `JCK-AUTO/` (git root) → `JCK-AUTO/prompts/queue/{batch_id}/`
+- Code lives in subfolder `JCK-AUTO/jck-auto/`? Still `JCK-AUTO/prompts/queue/`, not `JCK-AUTO/jck-auto/prompts/queue/`.
+- Monorepo with multiple apps? Still single `prompts/queue/` at git root, batch_id distinguishes between targets.
 
 Add a `.gitkeep` file inside `prompts/queue/` so the empty folder commits to git. Or add a `README.md` inside explaining what this folder is for (recommended).
 
@@ -163,5 +168,6 @@ When the batch routine is running: do not push manual commits to the product rep
 ## Changelog
 
 - 2026-05-08 — v1.0 initial version. DS-серия pilot in jckauto.
+- 2026-05-08 — v1.0.1: Removed reference to legacy `app/` layout in Step 1. Clarified that `prompts/queue/` is always at git root regardless of code organization, with examples.
 
 When updating this guide, increment the version, add an entry above with date and summary of changes.
