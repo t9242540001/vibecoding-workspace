@@ -3,8 +3,8 @@
 <!--
   @file:        workspace-index.md
   @description: Root navigation file for the Vibe Coding workspace infrastructure
-  @updated:     2026-05-07
-  @version:     0.2
+  @updated:     2026-05-08
+  @version:     0.3
 -->
 
 ## Purpose
@@ -57,10 +57,12 @@ Active standards files:
 
 - `standards/VIBECODER_STANDARDS.md`
 - `standards/VIBECODER_SYSTEM_INSTRUCTION.md`
+- `standards/batch-execution-standard.md`
 
 Active templates:
 
 - `templates/product-repo/` — includes Codex instructions and knowledge-structure-compliant starter files.
+- `templates/batch-execution/` — Claude-owned infrastructure for prompt batch execution via Routines (see folder's AGENTS.md).
 
 Active examples:
 
@@ -95,6 +97,7 @@ Active tools, rules, and docs:
 - `docs/agent-runner-github-actions.md`
 - `docs/agent-runner-model-providers.md`
 - `docs/model-capability-matrix.md`
+- `docs/batch-execution-guide.md`
 - `configs/model-profiles.json`
 - `configs/e2e-text-fixtures.json`
 - `docs/browser-e2e-text-fixtures.md`
@@ -124,6 +127,13 @@ Active prompt templates:
 
 - `prompts/project-inventory-audit.md`
 - `prompts/knowledge-repair.md`
+
+Active batch execution infrastructure (Claude-owned):
+
+- `templates/batch-execution/AGENTS.md`
+- `templates/batch-execution/routine-prompt.md`
+- `templates/batch-execution/manifest-template.json`
+- `templates/batch-execution/prompt-template.md`
 
 ### Product repositories
 
@@ -194,6 +204,7 @@ Current trigger map:
 | Two failed fixes, recurring bug, or production incident | `bug-hunting` |
 | T3 task, strategic decision, high reversal cost, or external facts | `research-protocol` |
 | Creating or editing skills | `skill-writing-standard` |
+| Composing or running multi-prompt batches via Claude Code Routines | `standards/batch-execution-standard.md` + `docs/batch-execution-guide.md` |
 
 ## Non-Negotiable Rules
 

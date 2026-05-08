@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "_comment_about_this_file": "This is a template for a batch manifest. Copy this file to prompts/queue/{batch_id}/manifest.json in a product repository and fill in the values. Remove the _comment_* fields when filling in.",
+
+  "batch_id": "batch-YYYY-MM-DD-short-description",
+  "_comment_batch_id": "Unique identifier. Format: batch-DATE-purpose. Example: batch-2026-05-08-design-system-finish. Must match folder name under prompts/queue/.",
+
+  "title": "Human-readable batch title",
+  "_comment_title": "Short description shown in Telegram start message and logs.",
+
+  "created_by": "Claude.ai (planning chat)",
+  "_comment_created_by": "Who composed the batch. Usually Claude.ai (planning chat) or Vasily.",
+
+  "created_at": "2026-05-08T12:00:00Z",
+  "_comment_created_at": "ISO 8601 timestamp when this manifest was committed to the repository.",
+
+  "completed_at": null,
+  "_comment_completed_at": "ISO 8601 timestamp when batch finished. Null until completion. Updated by routine.",
+
+  "stop_on_failure": true,
+  "_comment_stop_on_failure": "If true, batch stops on first failed prompt. If false, batch continues with remaining prompts. Default: true (recommended for pilots and any batch where prompts depend on each other).",
+
+  "telegram_notify": true,
+  "_comment_telegram_notify": "If true, send Telegram messages on start, each prompt completion, and batch end. Default: true.",
+
+  "inter_prompt_wait_minutes": 10,
+  "_comment_inter_prompt_wait_minutes": "Minutes to wait after each prompt push before health check. Allows auto-merge and deploy to complete. Default: 10. Only override if the product's deploy pipeline is consistently faster or slower.",
+
+  "health_url_override": null,
+  "_comment_health_url_override": "Optional override for HEALTH_URL env variable. Use null to use the routine's environment value. Useful when one batch needs to check a different endpoint than the default (e.g. staging vs production).",
+
+  "prompts": [
+    {
+      "_comment_about_prompts": "Array of prompts to execute in order. Each prompt is a separate file under prompts/queue/{batch_id}/.",
+
+      "id": "01",
+      "title": "Short title in English (2-5 words)",
+      "file": "01-short-title.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "02",
+      "title": "Next prompt title",
+      "file": "02-next-prompt.md",
+      "status": "pending",
+      "failure_reason": null
+    }
+  ],
+
+  "_comment_prompt_status_values": "Allowed status values: pending (not yet started), running (currently executing), done (completed successfully), failed (execution failed), skipped (skipped due to earlier failure when stop_on_failure was true).",
+
+  "_comment_prompt_id_format": "Sequential two-digit number starting from 01. Matches the file prefix.",
+
+  "_comment_prompt_file_format": "Filename relative to prompts/queue/{batch_id}/. Format: {id}-{kebab-case-title}.md. Example: 01-create-health-endpoint.md.",
+
+  "_comment_prompt_title_format": "Same as the title header inside the prompt file. 2-5 words in English. Used in Telegram messages and commit messages."
+}
