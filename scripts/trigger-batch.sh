@@ -17,6 +17,14 @@
 # Optional:
 #   ROUTINE_DRY_RUN=1  — print the curl command without sending it. Useful for verification.
 #
+# Required headers (per https://platform.claude.com/docs/en/api/claude-code/routines-fire):
+#   - Authorization: Bearer ${ROUTINE_API_TOKEN}
+#   - anthropic-version: 2023-06-01
+#   - anthropic-beta: experimental-cc-routine-2026-04-01   ← without this the API returns
+#                                                           404 not_found_error even with a
+#                                                           valid URL + token.
+#   - Content-Type: application/json
+#
 # Long-form rationale and source of truth:
 #   docs/batch-execution-guide.md → "Step C — Trigger The Routine"
 #   standards/batch-execution-standard.md
@@ -58,6 +66,8 @@ if [[ "${ROUTINE_DRY_RUN:-0}" == "1" ]]; then
   echo "[dry-run] Would POST to: ${ROUTINE_API_URL}"
   echo "[dry-run] Body: ${BODY}"
   echo "[dry-run] Auth header: Bearer <hidden>"
+  echo "[dry-run] anthropic-version: 2023-06-01"
+  echo "[dry-run] anthropic-beta: experimental-cc-routine-2026-04-01"
   exit 0
 fi
 
@@ -67,6 +77,8 @@ echo "Triggering batch '${BATCH_ID}'..."
 HTTP_OUTPUT=$(curl -sS -w '\n__HTTP_STATUS__:%{http_code}' \
   -X POST "${ROUTINE_API_URL}" \
   -H "Authorization: Bearer ${ROUTINE_API_TOKEN}" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
   -H "Content-Type: application/json" \
   -d "${BODY}")
 
@@ -89,7 +101,7 @@ case "${HTTP_STATUS}" in
     exit 4
     ;;
   404)
-    echo "ERROR: Routine not found. Check ROUTINE_API_URL — does the Routine still exist?" >&2
+    echo "ERROR: 404 from API. Most likely cause: missing 'anthropic-beta: experimental-cc-routine-2026-04-01' header (this script sends it by default — check your local copy is up to date). Other possible cause: ROUTINE_API_URL points at a deleted/regenerated Routine." >&2
     exit 5
     ;;
   *)
