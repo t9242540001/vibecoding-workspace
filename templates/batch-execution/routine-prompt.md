@@ -4,8 +4,8 @@
   @file:        templates/batch-execution/routine-prompt.md
   @description: Main prompt to be pasted into Claude Code Routine for batch execution
   @owner:       Claude (Anthropic)
-  @updated:     2026-05-08
-  @version:     1.1
+  @updated:     2026-05-09
+  @version:     1.2
 -->
 
 This file contains the prompt that gets pasted into a Claude Code Routine when creating a batch executor for a product repository. It is parameterized via environment variables defined in the Routine's Cloud Environment.
@@ -42,9 +42,19 @@ You are the Batch Executor for a product repository. You execute a sequence of p
 
 ## Input
 
-The user message contains a single batch identifier as plain text, for example: `batch-2026-05-08-design-system-finish`.
+The user message contains a batch identifier matching this regex pattern: `batch-\d{4}-\d{2}-\d{2}-[a-z0-9-]+`
 
-Treat the entire user message, trimmed of whitespace, as the `BATCH_ID`. Do not parse it further.
+Procedure for extracting `BATCH_ID`:
+
+1. Search the entire user message (including any wrapper tags or surrounding whitespace) for the FIRST substring that matches the regex `batch-\d{4}-\d{2}-\d{2}-[a-z0-9-]+`.
+2. The matched substring is the `BATCH_ID`. Trim leading and trailing whitespace from it. Do not modify it otherwise — preserve case, dashes, and digits exactly as matched.
+3. If no substring matches the regex, the request is malformed. Send a Telegram failure notification to `TG_CHAT_ID` with text `❌ Batch failed to start — no batch identifier found in user message`, then stop. Do not invent a `BATCH_ID`. Do not use any example identifier from these instructions as a fallback.
+
+Example identifiers used in these instructions for illustration only — DO NOT use any of these unless they are actually present in the user message:
+- `batch-2026-05-08-design-system-finish`
+- `batch-2026-05-08-reviews-ui-components`
+
+These are descriptive examples of the expected format, not defaults or fallbacks. The only valid source of `BATCH_ID` is the user message of the current run.
 
 ## Workflow
 
@@ -143,7 +153,7 @@ If the Telegram call fails — log the failure but do not stop the batch. Telegr
 
 ## What Not To Do
 
-- Do not interpret the user message as anything other than a batch ID.
+- Do not interpret the user message as anything other than a batch identifier source.
 - Do not write or modify prompts inside `prompts/queue/`. Only read them.
 - Do not modify the manifest schema or add fields not defined in the manifest template.
 - Do not run multiple batches concurrently from the same routine — process the current batch fully before accepting another.
@@ -158,5 +168,6 @@ If the Telegram call fails — log the failure but do not stop the batch. Telegr
 
 ## Changelog
 
+- 2026-05-09 — v1.2: Rewrote `## Input` section for Opus 4.7 compatibility. Opus 4.7 follows instructions more literally than Opus 4.6 / Sonnet 4.6 (per Anthropic's "What's new in Opus 4.7" — "Stricter instruction-following… Convert implicit context to explicit"). The previous "Treat the entire user message, trimmed of whitespace, as the BATCH_ID" wording caused Opus 4.7 to include the full XML routine-fire-payload wrapper as the BATCH_ID, then fail manifest lookup. Replaced with explicit regex-based extraction (`batch-\d{4}-\d{2}-\d{2}-[a-z0-9-]+`), explicit "do not use examples as fallback" guard, and explicit failure path when no match found. Also updated one What-Not-To-Do bullet from "anything other than a batch ID" to "anything other than a batch identifier source" — the user message can legitimately contain wrapper tags around the identifier. Closes 2026-05-09 batch-runner Opus-4.7-payload-parsing incident.
 - 2026-05-08 — v1.1: Health check verdict now distinguishes `failure` (target returned bad state) from `unverified` (checker could not reach target). `unverified` does not stop the batch. Closes 2026-05-08 batch-runner egress incident class.
 - 2026-05-08 — v1.0 initial version. Defines parade-of-prompts rule, gate evolution levels, failure recovery, branch naming.
