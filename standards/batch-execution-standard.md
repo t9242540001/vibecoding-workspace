@@ -4,8 +4,8 @@
   @file:        standards/batch-execution-standard.md
   @description: Standard for running prompt batches via Claude Code Routines
   @owner:       Claude (Anthropic)
-  @updated:     2026-05-08
-  @version:     1.0
+  @updated:     2026-05-10
+  @version:     1.1
 -->
 
 This standard supplements `standards/VIBECODER_STANDARDS.md`. It defines rules for composing and running batches of prompts via Claude Code Routines.
@@ -119,6 +119,8 @@ Why two namespaces (`prep/` and `claude/`):
 - The batch description (manifest + prompt files) is itself a code change to the repo. It should be reviewable as a unit before the batch starts.
 - The batch execution branch (`claude/{batch_id}`) starts from main after `prep/{batch_id}` is merged. This way the routine works on a clean main with the batch already declared, not on a moving target.
 
+**Default branch requirement.** The product repository's default branch on GitHub **must** be `main` (or whatever branch the deploy pipeline targets). Routines and the GitHub API both default to reading from the repo's configured default branch when no explicit `ref` is given. If the default branch points elsewhere — for example a stale `claude/init-*` branch left over from initial scaffolding — the Routine reads a stale tree and reports recently-created batches as "manifest not found." Before onboarding a new product, verify on the GitHub repo settings page that the default branch is set to the working branch.
+
 ---
 
 ## 7. Gate Mechanism Evolution
@@ -217,14 +219,88 @@ If hit (e.g. multiple parallel pilots in one day): use one-off scheduled runs (d
 - Knowledge structure: `skills/knowledge-structure-universal.md`
 - Bug hunting (when batches fail repeatedly): `skills/bug-hunting-universal.md`
 - Onboarding guide: `docs/batch-execution-guide.md`
+- Per-project launcher setup: `docs/routine-launcher-setup.md`
 - Routine prompt template: `templates/batch-execution/routine-prompt.md`
 - Manifest template: `templates/batch-execution/manifest-template.json`
 - Single-prompt template: `templates/batch-execution/prompt-template.md`
+- Wrapper script (per-project launcher): `scripts/routine.sh`
+- Underlying API primitive: `scripts/trigger-batch.sh`
+
+---
+
+## 12. Per-Project Launcher
+
+Section 1–11 cover *what* a batch is and *what* the Routine does with it. This section covers *how* batches are fired from the developer's machine when multiple products coexist.
+
+### 12.1 Problem
+
+Each product has its own Routine in `claude.ai/code/routines`, each with its own API URL and bearer token. The original launcher (`scripts/trigger-batch.sh`) reads these from two environment variables: `ROUTINE_API_URL` and `ROUTINE_API_TOKEN`. A single global pair of credentials worked for a single-product setup. It does not work for multi-product setups for two reasons:
+
+1. **Cross-project routing failures.** A token belonging to product A can silently route a trigger meant for product B into product A's Routine. The Anthropic API authenticates and dispatches based on the bearer token; URL is informational. If URL says "B's endpoint" but the token belongs to A, the API routes to A's Routine, which reports "manifest not found" because the batch_id was prepared in B's repo.
+
+2. **Stale shell state.** Even with the "correct" values in `.bashrc`, an earlier `export` in the live shell session shadows them. `env | grep ROUTINE` shows the stale values; `.bashrc` shows the fresh ones. The mismatch is invisible without explicit inspection.
+
+Both failures share a root cause: one global namespace for credentials of multiple distinct services.
+
+### 12.2 Design
+
+A wrapper script — `scripts/routine.sh`, installed as `~/bin/routine` on the developer machine — loads per-project credentials from `~/.config/routines/<project>.env` files in an isolated subshell, then invokes `trigger-batch`. The project name is the first argument to the wrapper, so routing is always explicit at the call site.
+
+Calling convention:
+
+```
+routine <project> <batch_id>
+```
+
+Examples:
+
+```
+routine jck batch-2026-05-10-rate-limit-gate-fix
+routine aks batch-2026-05-10-knowledge-init
+```
+
+Properties this design guarantees:
+
+- **No global env vars.** `~/.bashrc` does not declare `ROUTINE_API_URL` or `ROUTINE_API_TOKEN` at all. The wrapper handles all loading.
+- **No leakage between projects.** Credentials are loaded inside `( ... )` subshell; they exist only between `(` and `)`. After the subshell exits, no env state remains.
+- **Misrouting structurally impossible.** The project name is part of every command. There is no implicit default and no shell-state to forget.
+- **Audit trail.** Every fire is logged at `~/.local/state/routines/trigger.log` with timestamp, project, batch_id, HTTP status, and session_id.
+- **Adding a new project is one file.** Drop `~/.config/routines/<new>.env` containing `ROUTINE_API_URL` and `ROUTINE_API_TOKEN`. No wrapper changes.
+
+### 12.3 Rejected Alternatives
+
+Four approaches were considered. Three were rejected:
+
+- **Shell aliases per project** — `alias trigger-jck='ROUTINE_API_URL=... trigger-batch'`. Stores tokens in plaintext in `.bashrc`, which is often dotfile-managed and synced across machines. Editing tokens requires text-editor mode, which is incompatible with "setup via commands only."
+- **Shell functions per project** — `jck_env && trigger-batch <id>`. Two-step invocation. State leaks between commands in the same shell session. Forgetting the project-setting step or typing the wrong one routes to whatever was set previously — same failure mode as the original bug, just slightly delayed.
+- **Auto-detection by current working directory** — `trigger-batch <id>` infers project from `pwd`. Implicit magic. The developer often fires batches from `~`, not from project directories. Surprising failure modes when run from the wrong path.
+
+The wrapper-plus-per-project-config approach is the only one where misrouting cannot happen by construction — there is no shared mutable state and the project name is explicit in every command.
+
+### 12.4 Setup Steps
+
+Setup is one-time per developer machine. See `docs/routine-launcher-setup.md` for step-by-step instructions including:
+
+- Creating the config directory with correct permissions
+- Writing per-project `.env` files
+- Installing the wrapper script
+- Removing legacy global env vars from `.bashrc`
+- Smoke testing
+- Adding new projects later
+
+The setup guide also documents the failure modes that motivated the design and lists known troubleshooting steps for each error class.
+
+### 12.5 Integration With Section 6 (Branch Conventions)
+
+A common error class during initial launcher setup was "Routine reports manifest not found even though the batch was committed." Often this was a launcher issue (wrong credentials), but in one case it was a **default branch issue**: the product repository's default branch on GitHub was pointing at a stale `claude/init-*` branch instead of `main`. The Routine read the stale tree and saw none of the recent batches.
+
+Section 6 was updated in v1.1 to make the default branch requirement explicit. The launcher and the default branch are orthogonal — both need to be correct. When `routine <project> <batch_id>` returns "manifest not found", check both: the trigger log for which Routine actually received the fire, and the GitHub repo settings for the current default branch.
 
 ---
 
 ## Changelog
 
 - 2026-05-08 — v1.0 initial version. Defines parade-of-prompts rule, gate evolution levels, failure recovery, branch naming.
+- 2026-05-10 — v1.1. Added Section 12 (Per-Project Launcher) documenting the multi-product credential design. Updated Section 6 with explicit default branch requirement. Updated Section 11 reference list with `routine.sh` and `routine-launcher-setup.md`. Motivated by a multi-hour cross-project routing incident that traced to shared global ROUTINE_API_* environment variables in the original single-product launcher.
 
 When updating this standard, increment the version, add an entry above with date and summary of changes.
