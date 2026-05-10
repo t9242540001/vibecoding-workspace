@@ -3,8 +3,8 @@
 <!--
   @file:        workspace-index.md
   @description: Root navigation file for the Vibe Coding workspace infrastructure
-  @updated:     2026-05-08
-  @version:     0.3
+  @updated:     2026-05-10
+  @version:     0.4
 -->
 
 ## Purpose
@@ -47,7 +47,7 @@ Planned contents:
 | `tools/` | External tools and MCP-related notes | Active: plugin registry present |
 | `configs/` | Shared machine-readable configuration for runners and model profiles | Active: model profiles present |
 | `prompts/` | Reusable prompt templates for workspace and product workflows | Active: project audit and knowledge repair prompts present |
-| `scripts/` | Utility scripts for workspace operations | Pending setup |
+| `scripts/` | Utility scripts for workspace operations | Active: batch-trigger primitive and per-project launcher present |
 | `docs/` | Supporting documentation | Active: repository and Codex workflow docs present |
 | `.codex/` | Codex-specific repository instructions | Active |
 | `AGENTS.md` | Root Code Agent instructions | Active |
@@ -98,6 +98,7 @@ Active tools, rules, and docs:
 - `docs/agent-runner-model-providers.md`
 - `docs/model-capability-matrix.md`
 - `docs/batch-execution-guide.md`
+- `docs/routine-launcher-setup.md`
 - `configs/model-profiles.json`
 - `configs/e2e-text-fixtures.json`
 - `docs/browser-e2e-text-fixtures.md`
@@ -134,6 +135,10 @@ Active batch execution infrastructure (Claude-owned):
 - `templates/batch-execution/routine-prompt.md`
 - `templates/batch-execution/manifest-template.json`
 - `templates/batch-execution/prompt-template.md`
+- `scripts/trigger-batch.sh` — low-level API primitive: POSTs to a Routine's fire endpoint
+- `scripts/routine.sh` — per-project launcher: loads per-project credentials and invokes `trigger-batch`
+- `docs/batch-execution-guide.md` — onboarding a new product to the batch execution system
+- `docs/routine-launcher-setup.md` — setting up the per-project launcher on a developer machine
 
 ### Product repositories
 
@@ -205,6 +210,7 @@ Current trigger map:
 | T3 task, strategic decision, high reversal cost, or external facts | `research-protocol` |
 | Creating or editing skills | `skill-writing-standard` |
 | Composing or running multi-prompt batches via Claude Code Routines | `standards/batch-execution-standard.md` + `docs/batch-execution-guide.md` |
+| First-time setup of the per-project batch launcher on a developer machine | `docs/routine-launcher-setup.md` |
 
 ## Non-Negotiable Rules
 
