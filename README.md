@@ -28,10 +28,12 @@ Core standards:
 
 - `standards/VIBECODER_STANDARDS.md`
 - `standards/VIBECODER_SYSTEM_INSTRUCTION.md`
+- `standards/batch-execution-standard.md`
 
 Templates:
 
 - `templates/product-repo/` — product repository template with Codex instructions and knowledge-structure-compliant starter files.
+- `templates/batch-execution/` — manifest, prompt, and routine-prompt templates for batch execution.
 
 Examples:
 
@@ -50,6 +52,13 @@ Tools, rules, and docs:
 - `docs/branch-protection-plan.md`
 - `docs/deploy-rollback-pattern.md`
 - `docs/next-steps.md`
+- `docs/batch-execution-guide.md` — onboarding a new product to the batch execution system
+- `docs/routine-launcher-setup.md` — setting up the per-project batch launcher on a developer machine
+
+Scripts:
+
+- `scripts/trigger-batch.sh` — low-level API primitive: POSTs to a Routine's fire endpoint
+- `scripts/routine.sh` — per-project launcher: `routine <project> <batch_id>` invokes `trigger-batch` with per-project credentials loaded from `~/.config/routines/<project>.env`
 
 Prompt templates:
 
