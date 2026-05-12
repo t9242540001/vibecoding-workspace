@@ -2,6 +2,8 @@
   "$schema": "https://json-schema.org/draft-07/schema#",
   "_comment_about_this_file": "This is a template for a batch manifest. Copy this file to prompts/queue/{batch_id}/manifest.json in a product repository and fill in the values. Remove the _comment_* fields when filling in.",
 
+  "_comment_schema_evolution": "Backward-compatibility rule for this schema. New fields added in future versions of this template MUST be optional and have a documented default value behavior in the routine prompt. Required-field additions are a breaking change: they invalidate every existing manifest in every product repository (e.g. the completed batch-2026-05-11-repo-foundation manifest in ai-knowledge-system). A breaking change requires (a) bumping the major version of this template, (b) a paired update of templates/batch-execution/routine-prompt.md to handle both schemas during the transition, (c) explicit Vasily approval, (d) a documented migration plan for existing manifests. In practice: prefer adding optional fields with sensible defaults. Older manifests omitting the field continue to work; newer manifests opt in by setting the field explicitly. This matches the best-practice schema evolution rule for JSON-shaped contracts consumed by multiple clients (the Routine and every planning chat that composes a manifest).",
+
   "batch_id": "batch-YYYY-MM-DD-short-description",
   "_comment_batch_id": "Unique identifier. Format: batch-DATE-purpose. Example: batch-2026-05-08-design-system-finish. Must match folder name under prompts/queue/.",
 

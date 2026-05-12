@@ -4,8 +4,8 @@
   @file:        docs/batch-execution-guide.md
   @description: Step-by-step guide for connecting a product repository to batch execution
   @owner:       Claude (Anthropic)
-  @updated:     2026-05-10
-  @version:     1.1.0
+  @updated:     2026-05-12
+  @version:     1.2.0
 -->
 
 This guide is for Vasily. It explains how to connect a product repository to the batch execution system so that prompt series can run automatically without manual intervention between prompts.
@@ -248,5 +248,6 @@ For launcher-specific troubleshooting, see `docs/routine-launcher-setup.md` → 
 - 2026-05-08 — v1.0 initial version. DS-серия pilot in jckauto.
 - 2026-05-08 — v1.0.1: Removed reference to legacy `app/` layout in Step 1. Clarified that `prompts/queue/` is always at git root regardless of code organization, with examples.
 - 2026-05-10 — v1.1.0: Per-project launcher integration. Step C now uses `routine <shortname> <batch_id>` instead of inline curl. Added Step 2 (verify default branch is `main`) and Step 5 (register project in launcher). Added pointer to `docs/routine-launcher-setup.md` for full launcher setup. Updated Troubleshooting with default-branch and wrong-token symptoms (motivated by a multi-hour cross-project routing incident).
+- 2026-05-12 — v1.2.0: Discipline reinforcement after Batch A (ai-knowledge-system, 2026-05-11) retrospective. No content changes in this guide; the corresponding rules live in `standards/batch-execution-standard.md` v1.3.1 — Section 14 (Pre-commit Verification), Section 15 (Foundation As Separate Bootstrap PR), Section 16 (Branch Discipline). Open the standard for the actionable details; this guide remains the onboarding entry point.
 
 When updating this guide, increment the version, add an entry above with date and summary of changes.
