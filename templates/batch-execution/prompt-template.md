@@ -4,8 +4,8 @@
   @file:        templates/batch-execution/prompt-template.md
   @description: Format reminder for individual prompts inside a batch queue
   @owner:       Claude (Anthropic)
-  @updated:     2026-05-08
-  @version:     1.0
+  @updated:     2026-05-12
+  @version:     1.2
 -->
 
 This file is a format reminder for prompts that go into a batch queue under `prompts/queue/{batch_id}/` in a product repository.
@@ -74,6 +74,17 @@ Project-wide execution discipline (from CLAUDE.md or equivalent main project con
 [ ] knowledge/*.md updated to reflect changes made in this prompt
 [ ] If architectural decision was made → entry added to knowledge/decisions.md
 [ ] INDEX.md updated (modification date of changed files)
+[ ] Local CI dry-run BEFORE committing (per `standards/batch-execution-standard.md` Section 14):
+    - `uv run ruff check .` exits 0
+    - `uv run ruff format --check .` exits 0
+    - `uv run mypy src/ --ignore-missing-imports` exits 0 (when src/ exists)
+    - `uv run pytest -q` exits 0 (when tests/ exists; mock LLM only)
+    If a check's toolchain is not yet available in this prompt's environment, skip
+    that specific check and record the reason in the commit message. See §14.3 for
+    rules on skipping; indefinite skipping is not allowed.
+[ ] If ANY check above fails, fix the cause within this prompt's declared scope
+    before committing. If the cause is outside scope (would violate REGRESSION
+    SHIELD), STOP and report to Vasily.
 [+ applicable infrastructure checks per the standard]
 
 Code Agent must report against each criterion after completion.
@@ -107,6 +118,8 @@ Before adding a prompt file to a batch queue, verify:
 - [ ] Single task, single file modification (or coupled file pair per the rule)
 - [ ] Regression shield explicitly lists what stays untouched
 - [ ] Acceptance criteria includes knowledge update check
+- [ ] Acceptance criteria includes Local CI dry-run block (per `standards/batch-execution-standard.md` Section 14)
 - [ ] No commit/branch instructions inside the prompt body
+- [ ] Prompt does NOT specify a target branch anywhere — the Code Agent picks its own branch under its safeguard, per `standards/batch-execution-standard.md` Section 16. Targeted edits to an existing feature branch go through GitHub MCP from the planning chat, not through a Code Agent prompt.
 - [ ] Step 9 review from `prompt-writing-standard-universal.md` completed
 - [ ] Step 10 review summary present in the planning chat (not in this file)

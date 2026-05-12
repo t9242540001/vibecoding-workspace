@@ -5,7 +5,7 @@
   @description: Standard for running prompt batches via Claude Code Routines
   @owner:       Claude (Anthropic)
   @updated:     2026-05-12
-  @version:     1.2.1
+  @version:     1.3.1
 -->
 
 This standard supplements `standards/VIBECODER_STANDARDS.md`. It defines rules for composing and running batches of prompts via Claude Code Routines.
@@ -442,11 +442,133 @@ After Recovery Mode finishes, verify both of these by reading the relevant files
 
 ---
 
+## 14. Pre-commit Verification
+
+Every prompt — whether inside a batch or standalone — instructs the Code Agent to run the project's automated quality checks **locally in its own environment, before `git commit`**. The instruction lives in the prompt's `## ACCEPTANCE CRITERIA` block (the exact wording is in `templates/batch-execution/prompt-template.md`).
+
+### 14.1 Why
+
+In Batch A (ai-knowledge-system, 2026-05-11), the Code Agent ran `pytest` locally, saw all tests green, and reported success. It did not run `ruff check`, `ruff format --check`, or `mypy`. Those checks were enforced by CI on the auto-merged branch — which discovered the violations only after the prompt was committed and the batch had moved on. Several commits accumulated failures before this surfaced.
+
+The lesson: **what CI catches after the fact, the Code Agent must catch before the commit.** A green CI is a poor first signal — it is the last signal, expensive to discover problems through. Catching failures in the Code Agent's own environment closes a multi-minute feedback loop into a sub-second one.
+
+This rule is the per-prompt counterpart to the baseline smoke test in §3.1: §3.1 ensures `main` starts in a green state; §14 ensures each prompt commits only when it leaves the local environment in a green state.
+
+### 14.2 Required checks
+
+The default set, applicable to any Python project using the standard `uv` toolchain:
+
+- `uv run ruff check .` — lint.
+- `uv run ruff format --check .` — format conformance (does not modify files).
+- `uv run mypy src/ --ignore-missing-imports` — type check, when `src/` exists.
+- `uv run pytest -q` — test suite, when `tests/` exists (mock LLM only; no real API calls).
+
+For non-Python projects, the equivalent checks are project-defined (e.g. `npm run lint`, `npm run typecheck`, `npm test` for Node/TS). The principle is the same: every check that CI runs, the Code Agent runs first.
+
+### 14.3 Toolchain availability caveat
+
+If a required check's toolchain is **not available** in the Code Agent's environment (e.g. `uv` not installed on first foundation prompt, `mypy` missing from `[tool.uv.dev-dependencies]` because the prompt that adds it has not yet run), the Code Agent **skips that specific check** and records the skip explicitly in the commit message:
+
+```
+[skipped: ruff check — uv not yet installed in this prompt's scope]
+```
+
+Skipping is not failure. The next prompt that introduces the missing toolchain restores the check. Skipping is also not bypass — the standard requires that the **next foundation prompt in sequence** install the missing toolchain so subsequent prompts can run the full set. Indefinite skipping accumulates blind spots.
+
+### 14.4 On failure
+
+If a check fails, the Code Agent fixes the cause **within the prompt's declared scope** before committing. If the cause is outside scope (would violate the `REGRESSION SHIELD` block) — **STOP and report to Vasily**, do not commit a known-failing state.
+
+This rule applies identically in Routine batch execution and in interactive single-prompt chats. In Recovery Mode (Section 13), the same local verification commands are run; the difference is that they run at the end of every prompt inside one session rather than across separate Routine iterations.
+
+---
+
+## 15. Foundation As Separate Bootstrap PR
+
+The project's **foundation** — the minimum machinery that lets any batch reach `main` safely — must be on `main` **before** the first content batch starts. Foundation changes do not travel inside a content batch; they go through a separate **bootstrap PR** with manual merge.
+
+### 15.1 Why
+
+In Batch A, the Promot 03 task was to upgrade `auto-merge.yml` from v1 (push-trigger, no CI gating) to v2 (workflow_run gating). The v2 file was committed to the batch's working branch, but v1 was still active on `main`. When v1 tried to auto-merge the branch carrying the v2 replacement, the change broke the workflow under its own feet — a classic bootstrap chicken-and-egg. The fix could not pass through the gate it was installing.
+
+The lesson: **foundation must be in place before any content batch runs.** A batch must never need to upgrade the rules it operates under, mid-flight. Foundation upgrades are pre-flight work, executed once, with human review, in a separate PR.
+
+This rule extends the baseline smoke test in §3.1: §3.1 verifies the foundation is *green* before the first feature batch; §15 specifies *how* the foundation gets there in the first place and how it gets upgraded over time.
+
+### 15.2 Foundation components
+
+A foundation comprises **four components**. Any project running batches must have all four on `main` before the first content batch:
+
+1. **Toolchain config.** `pyproject.toml` (or equivalent) with lint, format, and type-check tool configuration — including any `per-file-ignores`, line length, target version. Lockfile committed (`uv.lock` for Python projects, `package-lock.json` / `pnpm-lock.yaml` for Node).
+2. **CI workflow with required-check gating.** `.github/workflows/ci.yml` runs lint, format-check, type-check, and tests on every push and PR to `main`. Workflow's job name is referenced by required-status-checks in branch protection.
+3. **Auto-merge with `workflow_run` gating.** `.github/workflows/auto-merge.yml` triggered on `workflow_run` completion of the CI workflow, merges only when `conclusion == 'success'`. Does NOT trigger on raw `push` events.
+4. **`.env.example`.** Documents all required environment variables (names only — no values). Sets the contract that subsequent prompts can refer to.
+
+### 15.3 Procedure — greenfield bootstrap (new project)
+
+For a new project repository:
+
+1. **Single PR** — title `bootstrap: foundation (toolchain + CI + auto-merge + env)`. All four components are introduced in this one PR. Multiple commits within the PR are fine; the unit of merge is the PR itself.
+2. **Manual merge by Vasily.** Auto-merge is not yet on `main`, so it cannot self-merge this PR. Vasily reviews the PR (10–15 minutes), merges manually via GitHub UI, deletes the source branch.
+3. **Verify CI passes on `main`** after the merge. The first CI run on `main` from the freshly-merged foundation is the smoke test that the bootstrap landed correctly. This is also when the §3.1 baseline smoke test is first run.
+4. **Only after step 3 — open the first content batch.** Content batches assume foundation is stable. They are not the place to discover that the foundation is wrong.
+
+### 15.4 Procedure — foundation upgrade (existing project)
+
+For an existing project where foundation already exists but is incomplete or out of date (e.g. `ci.yml` exists but does not gate auto-merge; `pyproject.toml` exists but `ruff` config is missing `per-file-ignores`):
+
+1. **Audit foundation against §15.2** — which of the four components is present and current, which is missing or outdated.
+2. **Single PR** — title `foundation upgrade: {summary of what's changing}`. Scope is foundation only — no content changes ride along.
+3. **Manual merge by Vasily.** Even if auto-merge is configured, **bypass it for foundation upgrades** — the upgrade itself may temporarily destabilize the gate; manual merge avoids the chicken-and-egg.
+4. **Verify CI passes on `main`** after the merge.
+5. **Only after step 4 — schedule subsequent content batches.**
+
+### 15.5 What goes inside a content batch, what does not
+
+**Inside a batch (allowed):** content changes — features, fixes, refactors, knowledge updates, agent implementations, pipeline implementations. Anything that depends on the foundation being stable.
+
+**Outside a batch (foundation PR only):** changes to `pyproject.toml` tool configs, lockfile-only changes that change the toolchain, `.github/workflows/ci.yml` rules, `.github/workflows/auto-merge.yml`, the project's `.env.example` contract, branch protection rules.
+
+If a content batch needs a foundation change to succeed — that is the signal to stop, do the foundation upgrade as a separate PR, then resume the batch.
+
+---
+
+## 16. Branch Discipline
+
+Code Agent (Claude Code, Codex, others) operates under its own system instruction that fixes its working branch to `claude/<auto-slug>` (or equivalent provider-specific pattern). This is a **safeguard**, not a bug. The standard treats it as a fixed constraint, not something prompts try to override.
+
+### 16.1 Why
+
+In Batch A, after the bootstrap stall, a fix-prompt was written instructing the Code Agent to work on the existing batch branch `claude/batch-2026-05-11-repo-foundation`. The Code Agent ignored that instruction (per its system safeguard) and created an orphan branch `claude/fix-ruff-lint-tests-jObuK`. The fix landed there, divorced from the batch, and required manual reconciliation.
+
+The lesson: **prompts do not direct the Code Agent's branch. They never have. Pretending otherwise creates orphan branches and lost work.**
+
+The partial-branch handling in §6 ("Partial branches from prior runs") describes the operational consequence of this safeguard when a Routine is re-invoked. §16 describes the prompt-authoring consequence: don't try to fight the safeguard from the prompt side.
+
+### 16.2 Rule
+
+Prompts written for the Code Agent **must not** specify a target branch in their `## TASK`, `## CONTEXT`, or anywhere else in the prompt body. The Code Agent picks its own branch under its safeguard; the routine (for batches) or the auto-merge workflow (for single prompts) reconciles the result back to `main`.
+
+If a prompt template field looks like it asks for a branch — that field is misnamed or vestigial. Ignore it; the standard takes precedence.
+
+### 16.3 How to make targeted edits to an existing feature branch
+
+When a planning chat needs to make a small edit on top of an existing feature branch (e.g. correct a typo on `claude/batch-2026-05-11-repo-foundation` before it reaches main) — do it through **GitHub MCP from the planning chat**, not through a Code Agent prompt. The planning chat:
+
+1. Reads the file from the target branch via GitHub MCP (`get_file_contents` with `ref=refs/heads/<branch>`).
+2. Writes the corrected version via GitHub MCP (`create_or_update_file` with the same `branch`).
+
+This path is direct, single-commit, and respects that the feature branch is owned by whichever entity created it. The Code Agent is not invoked.
+
+---
+
 ## Changelog
 
 - 2026-05-08 — v1.0 initial version. Defines parade-of-prompts rule, gate evolution levels, failure recovery, branch naming.
 - 2026-05-10 — v1.1. Added Section 12 (Per-Project Launcher) documenting the multi-product credential design. Updated Section 6 with explicit default branch requirement. Updated Section 11 reference list with `routine.sh` and `routine-launcher-setup.md`. Motivated by a multi-hour cross-project routing incident that traced to shared global ROUTINE_API_* environment variables in the original single-product launcher.
 - 2026-05-12 — v1.2. Added Section 3.1 (Baseline Smoke Test) — required clean `build && lint && test` on main before first feature batch. Section 6 expanded to cover partial branches from prior runs (the `claude/{batch_id}-XXXX` suffix case). Section 8 split into 8.1 (Hangs Vs Failures) and 8.2 (Watchdog Recommendation) — hangs were not previously distinguished from failures, which left no documented path for "Routine stopped progressing without a verdict." New Section 13 (Recovery Mode) — manual single-session Code Agent completion as a sibling path to Routine execution, with a verbatim prompt template. Motivated by the magic-defender batch-2026-05-11 incident where Routine hung at prompt 06/15 and the remaining 9 prompts were completed in two Code Agent sessions instead.
 - 2026-05-12 — v1.2.1. Fix in §13.4 — cross-reference to "knowledge update outcomes" pointed to the wrong skill (knowledge-structure §8 covers WIP→Proposed→Accepted decision lifecycle, not the Outcome 1/2/3 framework). The correct reference is `prompt-writing-standard-universal.md` Section 4 ("Knowledge update rule — mandatory"). No other content changes.
+- 2026-05-12 — v1.3. Discipline reinforcement after Batch A (ai-knowledge-system, 2026-05-11) retrospective. Added Section 14 (Pre-commit Verification), Section 15 (Foundation As Separate Bootstrap PR), Section 16 (Branch Discipline). No changes to Sections 1–13. Cross-references added between §3.1 ↔ §14 (baseline smoke test ↔ per-prompt verification), §3.1 ↔ §15 (baseline green ↔ how foundation gets there), §6 ↔ §16 (partial-branch ops ↔ prompt-authoring rule). Motivated by three failure modes observed in Batch A: Code Agent reporting green pytest while ruff/mypy were failing (§14); v2 auto-merge upgrade stuck inside the batch it was meant to gate, classic bootstrap chicken-and-egg (§15); fix-prompt directing the Code Agent to a specific branch, creating an orphan branch (§16). Built on top of v1.2 (magic-defender retrospective).
+- 2026-05-12 — v1.3.1. Conflict resolution: merged v1.2.1 fix to §13.4 (knowledge update outcomes pointer to prompt-writing-standard-universal.md §4) into the v1.3 release. Both changes preserved verbatim. No new sections, no content rewrites.
 
 When updating this standard, increment the version, add an entry above with date and summary of changes.
