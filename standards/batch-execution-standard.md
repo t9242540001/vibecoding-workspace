@@ -4,8 +4,8 @@
   @file:        standards/batch-execution-standard.md
   @description: Standard for running prompt batches via Claude Code Routines
   @owner:       Claude (Anthropic)
-  @updated:     2026-05-10
-  @version:     1.1
+  @updated:     2026-05-12
+  @version:     1.2
 -->
 
 This standard supplements `standards/VIBECODER_STANDARDS.md`. It defines rules for composing and running batches of prompts via Claude Code Routines.
@@ -60,6 +60,28 @@ For batches that touch high-stakes zones (calculator logic, payment flows, lead 
 - The Stakeholder review explicitly considers the user-facing impact of regression.
 - The Domain expert review is performed by the most appropriate domain (financial analyst for calculator, lawyer for legal text, etc.).
 - The Technical review explicitly checks for bypass vectors of the regression shield.
+
+### 3.1 Baseline Smoke Test (Required For First Batch In A New Repo)
+
+Most ACCEPTANCE CRITERIA in `prompt-writing-standard-universal.md` end with verification commands (`npm run build`, `npm run lint`, `npm run test`, `tsc --noEmit`, equivalents for other stacks). The Routine runs these between prompts as part of health verification. If those commands are broken on the repo's baseline state — they will be broken between every prompt, and the prompts' acceptance criteria are formally unmet regardless of the actual code quality.
+
+Common baseline holes that surface only inside a batch:
+- `tsconfig.json` uses a deprecated option (`baseUrl` in TS 6+, `importsNotUsedAsValues` in TS 5+) — emits a warning that fails strict `tsc --noEmit`.
+- ESLint config is set up for vanilla JS but the project has TypeScript files — every `.ts` file errors on the parser.
+- A test command exists in `package.json` but Vitest/Jest config is missing — `npm test` exits non-zero immediately.
+- A `package-lock.json` is missing or out of sync — CI installs different versions than local.
+
+Before the first batch is fired against a new repo, a smoke-test batch must verify that on a clean checkout of `main`:
+
+```
+git clean -fdx && npm ci && npm run build && npm run lint && npm run test
+```
+
+(or the stack equivalent for non-Node projects)
+
+returns exit code 0. If any of those commands fails or warns, that failure is its own batch — fix the baseline before any feature batch is fired. The fix batch is typically 1-3 prompts (each one targeting a specific tool) and uses the same standard as any other batch.
+
+Skipping this step is the most common reason a feature batch reports "all prompts unverified" or "all prompts technically passed but build is broken" at completion.
 
 ---
 
@@ -120,6 +142,12 @@ Why two namespaces (`prep/` and `claude/`):
 - The batch execution branch (`claude/{batch_id}`) starts from main after `prep/{batch_id}` is merged. This way the routine works on a clean main with the batch already declared, not on a moving target.
 
 **Default branch requirement.** The product repository's default branch on GitHub **must** be `main` (or whatever branch the deploy pipeline targets). Routines and the GitHub API both default to reading from the repo's configured default branch when no explicit `ref` is given. If the default branch points elsewhere — for example a stale `claude/init-*` branch left over from initial scaffolding — the Routine reads a stale tree and reports recently-created batches as "manifest not found." Before onboarding a new product, verify on the GitHub repo settings page that the default branch is set to the working branch.
+
+**Partial branches from prior runs.** When a Routine fails or hangs partway through a batch and is re-invoked, Claude Code may create a new branch with a random suffix (e.g. `claude/{batch_id}-4YigR`) instead of resuming the existing `claude/{batch_id}` branch. The two branches then carry disjoint subsets of the batch's prompts, neither one alone being a complete batch. This is not a bug to fix in the Routine — it is a structural property of the Code Agent (it does not assume an existing branch is the right one to continue on). The mitigations are operational:
+
+1. Before triggering a re-run, rename the partial branch from the previous attempt out of the `claude/{batch_id}` slot — `git branch -m claude/{batch_id} claude/{batch_id}-partial-1` — so the Routine starts from main cleanly.
+2. If both partial branches already exist when the situation is discovered: prefer to merge each via its own PR (squash, in chronological order of work), then run a final small recovery batch to fill any gaps caused by file overlap (typically `package.json`, `knowledge/Index.md`, the manifest itself). See Section 13 for the recovery-mode prompt template.
+3. Never try to merge two partial `claude/{batch_id}-*` branches into each other before merging to main. Conflict resolution mid-flight in a branch the Routine assumes ownership of will confuse the next re-run.
 
 ---
 
@@ -190,6 +218,38 @@ Never:
 - Continue a failed batch by pretending the failure didn't happen.
 - Change `stop_on_failure` to `false` mid-batch to "skip past" a problem.
 - Modify the manifest's `prompts[i].status` to `done` when the prompt actually failed.
+
+### 8.1 Hangs Vs Failures
+
+A **failed** prompt is one where the Routine ran the work, ran the health check, and recorded a non-success verdict. A **hung** prompt is one where the Routine stopped progressing without recording any verdict at all — typically because the inter-prompt wait or the health check itself never returned.
+
+Symptoms of a hang:
+- Last commit on `claude/{batch_id}` is older than `inter_prompt_wait_minutes + health_check_timeout + ~5 minutes`.
+- The manifest's last-updated prompt status is `running`, not `done`/`unverified`/`failed`.
+- No Telegram message arrived after the expected delay.
+
+Common causes:
+- `inter_prompt_wait_minutes` implemented as a browser `setTimeout` in the Routine session, which the browser host suspends when the tab loses focus.
+- `curl` in the health check runs without `--max-time`, blocking on a DNS or TCP timeout that exceeds the Routine session's idle window.
+- Routine context window approaches saturation across long batches, and the session stops responding without raising an error.
+- A long-running tool call (web search, large file read) silently exceeds its limit.
+
+Distinguishing hangs from failures matters because the recovery path differs:
+- A failed prompt has a recorded failure reason — fix or revert, retrigger.
+- A hung prompt has no recorded state — re-running the Routine on the same batch_id may either resume cleanly (if Routine state was actually saved on disk) or duplicate-execute the in-flight prompt (if state lived only in session memory).
+
+When in doubt that a batch is hung, prefer **Recovery Mode** (Section 13) over re-running the Routine — Recovery Mode runs the remaining prompts in a single Code Agent session with no inter-prompt waits and no health checks, eliminating both hang causes at once. The Routine's automated path can be reattempted on the next batch once root cause is understood.
+
+### 8.2 Watchdog Recommendation
+
+This is a recommendation for future Routine implementations, not a current requirement:
+
+A heartbeat-based watchdog would catch hangs at the time they happen instead of when Vasily notices the silence:
+
+- If `prompts[i].status == "running"` and `manifest.last_updated > 30 minutes ago` — send a Telegram alert and revert the status to `pending`.
+- The watchdog runs on a separate schedule from the Routine itself (cron, scheduled GitHub Action, or external uptime monitor), so it survives the Routine session dying.
+
+Until a watchdog is implemented, hang detection is manual: if Vasily expected the batch to finish by time T and it hasn't, check the latest commit on `claude/{batch_id}` against current time. See Section 13 for what to do once a hang is identified.
 
 ---
 
@@ -298,9 +358,94 @@ Section 6 was updated in v1.1 to make the default branch requirement explicit. T
 
 ---
 
+## 13. Recovery Mode (Single-Session Code Agent Execution)
+
+Recovery Mode is the manual completion path for batches that the Routine cannot finish — typically because of a hang (Section 8.1), but also valid for batches that were prepared but where the Routine path is genuinely the wrong tool (see "When Recovery Mode is also appropriate up-front" below).
+
+In Recovery Mode, the remaining prompts are executed back-to-back in a single Code Agent session, without inter-prompt waits and without health checks between prompts. The Code Agent reads each prompt file from `prompts/queue/{batch_id}/{NN}-*.md` in order and applies them. Verification is consolidated: `tsc --noEmit && npm run lint && npm run test` (or stack equivalent) runs at the end of every prompt, and the session halts if any of them fails.
+
+### 13.1 When To Use Recovery Mode
+
+Use it when:
+- A batch has hung (Section 8.1) and re-running the Routine is too risky (state unclear, time pressure, etc.).
+- The remaining prompts are pure-additive content (data files, types, documentation) where between-prompt deploys verify nothing meaningful — health URL is a placeholder or every prompt touches non-deployed files.
+- All the remaining prompts are independent of any external service and can be verified locally.
+
+Do not use it for:
+- Batches that genuinely need a deploy between prompts (e.g. database migration → API endpoint → frontend call — each step must reach a real environment before the next one can be trusted).
+- Batches where Vasily wants to inspect each prompt's result before the next one starts — Recovery Mode runs them as a block.
+- Batches that exceed the Code Agent's effective context limit when packed end-to-end (rule of thumb: more than ~15 substantive prompts).
+
+### 13.2 When Recovery Mode Is Also Appropriate Up-Front
+
+Some batches should never have gone through the Routine in the first place. Pre-flight signs that Recovery Mode is the right tool from the start:
+
+- `health_url_override` is `.invalid` or any other placeholder — health checks will return `unverified` for every prompt, so `inter_prompt_wait_minutes` is pure dead time.
+- Every prompt in the batch is documentation, types, or additive data — there is no deploy to verify.
+- The batch is recovering from prior partial state and the surviving Routine state is itself a liability.
+
+In these cases, the parade-of-prompts review (Section 4) is still mandatory, but the execution mechanism is the Code Agent in one session, not the Routine.
+
+### 13.3 Recovery Prompt Template
+
+The prompt below is given to the Code Agent at the start of a recovery session. Fill in `{BATCH_ID}` and `{FROM}..{TO}` for the prompt range; leave the rest verbatim:
+
+```
+You are completing prompts {FROM} through {TO} of batch `{BATCH_ID}` in
+this Code Agent session. Earlier prompts in the batch (if any) are
+already in main — DO NOT redo them.
+
+For each prompt {FROM}..{TO} in numeric order:
+
+1. Read `prompts/queue/{BATCH_ID}/{NN}-*.md`.
+2. Execute the TASK exactly as written, honoring the REGRESSION SHIELD.
+3. Verify with the project's standard commands
+   (typically `tsc --noEmit && npm run lint && npm run test:run`). If
+   any fails, STOP and report which prompt + which command + the output.
+   Do NOT proceed to the next prompt.
+4. Commit with message `[batch:{BATCH_ID}] {prompt title from manifest}`
+   and push. Each prompt is a separate commit.
+
+Strict rules:
+- Execute prompts in numeric order, do not skip.
+- Do NOT modify `prompts/queue/**` — they are read-only spec.
+- Do NOT modify `manifest.json` status fields — Recovery Mode does not
+  use the Routine state machine.
+- Do NOT run deploy or health-check commands. Verification is local only.
+- Read every prompt's REGRESSION SHIELD before editing files. If a
+  prompt forbids touching a file, do not touch it even if it would
+  "improve" things.
+- If `node_modules/` is absent or a prior prompt added a dependency
+  that has not been installed, run `npm install` once at the start.
+- Use the project's existing commit author identity.
+
+At the end, report:
+- List of commits made, in order.
+- Files changed per prompt.
+- Verification command outputs from the last prompt.
+- Anything that surprised you or required deviation from the prompt
+  text (and how you handled it).
+
+Begin.
+```
+
+The template is intentionally pessimistic: it allows the agent to halt rather than improvise. If a prompt cannot be applied as written because the world has shifted since it was authored (a file no longer exists, a dependency has changed name), the agent should stop and surface the discrepancy. Hand-off to Vasily for a decision is cheaper than an agent's guess being merged silently.
+
+### 13.4 Post-Recovery Knowledge Sync
+
+After a Recovery-Mode run, the batch's normal close-out is not automatic. Specifically:
+
+- The manifest's `prompts[*].status` fields are stale (Recovery Mode does not write them). This is acceptable for completed batches — the manifest is a historical artifact, not a live state machine, after the batch is in main. But it should not be confused for an active state.
+- `knowledge/roadmap.md` updates that the batch's own final prompt was supposed to perform (move the batch from In Progress to Recent Activity, mark Open Tasks as done) may or may not have run — depends on whether the final prompt was inside the recovered range.
+
+After Recovery Mode finishes, verify both of these by reading the relevant files and either trusting the final prompt's output or applying a small follow-up patch. Section 8 of `knowledge-structure-universal.md` covers the knowledge update outcomes for these cases.
+
+---
+
 ## Changelog
 
 - 2026-05-08 — v1.0 initial version. Defines parade-of-prompts rule, gate evolution levels, failure recovery, branch naming.
 - 2026-05-10 — v1.1. Added Section 12 (Per-Project Launcher) documenting the multi-product credential design. Updated Section 6 with explicit default branch requirement. Updated Section 11 reference list with `routine.sh` and `routine-launcher-setup.md`. Motivated by a multi-hour cross-project routing incident that traced to shared global ROUTINE_API_* environment variables in the original single-product launcher.
+- 2026-05-12 — v1.2. Added Section 3.1 (Baseline Smoke Test) — required clean `build && lint && test` on main before first feature batch. Section 6 expanded to cover partial branches from prior runs (the `claude/{batch_id}-XXXX` suffix case). Section 8 split into 8.1 (Hangs Vs Failures) and 8.2 (Watchdog Recommendation) — hangs were not previously distinguished from failures, which left no documented path for "Routine stopped progressing without a verdict." New Section 13 (Recovery Mode) — manual single-session Code Agent completion as a sibling path to Routine execution, with a verbatim prompt template. Motivated by the magic-defender batch-2026-05-11 incident where Routine hung at prompt 06/15 and the remaining 9 prompts were completed in two Code Agent sessions instead.
 
 When updating this standard, increment the version, add an entry above with date and summary of changes.
