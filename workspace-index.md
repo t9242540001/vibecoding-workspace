@@ -3,8 +3,8 @@
 <!--
   @file:        workspace-index.md
   @description: Root navigation file for the Vibe Coding workspace infrastructure
-  @updated:     2026-05-10
-  @version:     0.4
+  @updated:     2026-05-12
+  @version:     0.5
 -->
 
 ## Purpose
@@ -87,6 +87,7 @@ Active tools, rules, and docs:
 - `docs/git-workflow.md`
 - `docs/branch-protection-plan.md`
 - `docs/deploy-rollback-pattern.md`
+- `docs/mcp-merge-conflict-pattern.md`
 - `docs/next-steps.md`
 - `docs/roadmap.md`
 - `docs/product-factory.md`
@@ -106,7 +107,7 @@ Active tools, rules, and docs:
 - `configs/e2e-staging-summary-contract.json`
 - `docs/e2e-staging-summary-contract.md`
 - `.github/workflows/e2e-staging-summary-validator.yml`
-- `docs/e2e-staging-summary-validator.md`
+- `docs/e2e-staging-summary-analysis.md`
 - `.github/workflows/e2e-staging-summary-analysis.yml`
 - `docs/e2e-staging-summary-analysis.md`
 - `configs/browser-automation-handoff-contract.json`
@@ -211,6 +212,7 @@ Current trigger map:
 | Creating or editing skills | `skill-writing-standard` |
 | Composing or running multi-prompt batches via Claude Code Routines | `standards/batch-execution-standard.md` + `docs/batch-execution-guide.md` |
 | First-time setup of the per-project batch launcher on a developer machine | `docs/routine-launcher-setup.md` |
+| GitHub MCP merge conflict on a `prep/*` branch that does not clear after file rewrite | `docs/mcp-merge-conflict-pattern.md` |
 
 ## Non-Negotiable Rules
 
