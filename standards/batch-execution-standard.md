@@ -5,7 +5,7 @@
   @description: Standard for running prompt batches via Claude Code Routines
   @owner:       Claude (Anthropic)
   @updated:     2026-05-12
-  @version:     1.3
+  @version:     1.3.1
 -->
 
 This standard supplements `standards/VIBECODER_STANDARDS.md`. It defines rules for composing and running batches of prompts via Claude Code Routines.
@@ -438,7 +438,7 @@ After a Recovery-Mode run, the batch's normal close-out is not automatic. Specif
 - The manifest's `prompts[*].status` fields are stale (Recovery Mode does not write them). This is acceptable for completed batches — the manifest is a historical artifact, not a live state machine, after the batch is in main. But it should not be confused for an active state.
 - `knowledge/roadmap.md` updates that the batch's own final prompt was supposed to perform (move the batch from In Progress to Recent Activity, mark Open Tasks as done) may or may not have run — depends on whether the final prompt was inside the recovered range.
 
-After Recovery Mode finishes, verify both of these by reading the relevant files and either trusting the final prompt's output or applying a small follow-up patch. Section 8 of `knowledge-structure-universal.md` covers the knowledge update outcomes for these cases.
+After Recovery Mode finishes, verify both of these by reading the relevant files and either trusting the final prompt's output or applying a small follow-up patch. The "knowledge update outcomes" framework that governs follow-up patches (Outcome 1 — Update now, Outcome 2 — Record as WIP, Outcome 3 — Truly not applicable) is defined in `prompt-writing-standard-universal.md`, Section 4, under "Knowledge update rule — mandatory." Recovery Mode close-out almost always falls under Outcome 1.
 
 ---
 
@@ -567,6 +567,8 @@ This path is direct, single-commit, and respects that the feature branch is owne
 - 2026-05-08 — v1.0 initial version. Defines parade-of-prompts rule, gate evolution levels, failure recovery, branch naming.
 - 2026-05-10 — v1.1. Added Section 12 (Per-Project Launcher) documenting the multi-product credential design. Updated Section 6 with explicit default branch requirement. Updated Section 11 reference list with `routine.sh` and `routine-launcher-setup.md`. Motivated by a multi-hour cross-project routing incident that traced to shared global ROUTINE_API_* environment variables in the original single-product launcher.
 - 2026-05-12 — v1.2. Added Section 3.1 (Baseline Smoke Test) — required clean `build && lint && test` on main before first feature batch. Section 6 expanded to cover partial branches from prior runs (the `claude/{batch_id}-XXXX` suffix case). Section 8 split into 8.1 (Hangs Vs Failures) and 8.2 (Watchdog Recommendation) — hangs were not previously distinguished from failures, which left no documented path for "Routine stopped progressing without a verdict." New Section 13 (Recovery Mode) — manual single-session Code Agent completion as a sibling path to Routine execution, with a verbatim prompt template. Motivated by the magic-defender batch-2026-05-11 incident where Routine hung at prompt 06/15 and the remaining 9 prompts were completed in two Code Agent sessions instead.
+- 2026-05-12 — v1.2.1. Fix in §13.4 — cross-reference to "knowledge update outcomes" pointed to the wrong skill (knowledge-structure §8 covers WIP→Proposed→Accepted decision lifecycle, not the Outcome 1/2/3 framework). The correct reference is `prompt-writing-standard-universal.md` Section 4 ("Knowledge update rule — mandatory"). No other content changes.
 - 2026-05-12 — v1.3. Discipline reinforcement after Batch A (ai-knowledge-system, 2026-05-11) retrospective. Added Section 14 (Pre-commit Verification), Section 15 (Foundation As Separate Bootstrap PR), Section 16 (Branch Discipline). No changes to Sections 1–13. Cross-references added between §3.1 ↔ §14 (baseline smoke test ↔ per-prompt verification), §3.1 ↔ §15 (baseline green ↔ how foundation gets there), §6 ↔ §16 (partial-branch ops ↔ prompt-authoring rule). Motivated by three failure modes observed in Batch A: Code Agent reporting green pytest while ruff/mypy were failing (§14); v2 auto-merge upgrade stuck inside the batch it was meant to gate, classic bootstrap chicken-and-egg (§15); fix-prompt directing the Code Agent to a specific branch, creating an orphan branch (§16). Built on top of v1.2 (magic-defender retrospective).
+- 2026-05-12 — v1.3.1. Conflict resolution: merged v1.2.1 fix to §13.4 (knowledge update outcomes pointer to prompt-writing-standard-universal.md §4) into the v1.3 release. Both changes preserved verbatim. No new sections, no content rewrites.
 
 When updating this standard, increment the version, add an entry above with date and summary of changes.
