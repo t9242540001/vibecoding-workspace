@@ -7,8 +7,8 @@ description: Complete workflow and template for writing Code Agent prompts. Use 
 <!--
   @file:        skills/prompt-writing-standard/SKILL.md
   @description: Complete workflow for writing Code Agent prompts
-  @version:     3.5
-  @updated:     2026-05-02
+  @version:     3.6
+  @updated:     2026-05-15
 -->
 
 ---
@@ -395,12 +395,18 @@ Exception: 2 files allowed only when both conditions are true:
 If a task touches more files → split into multiple prompts. Each prompt:
 1. Covers one file (or two if exception applies), plus any knowledge updates
 2. Ends with a commit
-3. Next prompt starts only after user confirms the previous result
+3. Creates an independently verifiable rollback point before the next prompt starts
 
 There are no other exceptions. A prompt that creates 8 code files is always wrong — split it into 8 prompts (each may include its own knowledge updates).
 
 ### Large tasks
-Assess scope → propose breakdown listing each prompt separately → user approves breakdown → execute one prompt at a time → mini-report after each → confirmation before next.
+Large tasks are split into small sequential prompts to preserve quality, verification, rollback points, and context stability.
+
+Assess scope → propose breakdown or batch plan listing each prompt separately → user approves the overall breakdown before execution starts → execute prompts in order → commit and verify each prompt independently.
+
+In Autonomous Batch Mode, no user confirmation is required between prompts after the batch plan is approved, provided the batch has an approved safe corridor, explicit stop conditions, verification gates, and per-prompt commits. The Code Agent continues through the sequence until all prompts complete or a critical stop condition is hit.
+
+If a critical stop condition is hit, the Code Agent stops immediately, records the reason, and reports instead of continuing to the next prompt.
 
 After each prompt — a committable state that can be verified independently.
 
