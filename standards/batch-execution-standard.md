@@ -4,8 +4,8 @@
   @file:        standards/batch-execution-standard.md
   @description: Standard for running prompt batches via Claude Code Routines
   @owner:       Claude (Anthropic)
-  @updated:     2026-05-12
-  @version:     1.3.1
+  @updated:     2026-05-15
+  @version:     1.4
 -->
 
 This standard supplements `standards/VIBECODER_STANDARDS.md`. It defines rules for composing and running batches of prompts via Claude Code Routines.
@@ -53,6 +53,9 @@ Time saved by automation must be reinvested in preparation:
 - Stronger Step 9 reviews from `prompt-writing-standard-universal.md`.
 - More explicit regression shields per prompt.
 - Wider scope mapping ("what else could break if this prompt does its work?").
+
+Autonomous Batch Mode removes manual waiting between prompts after the batch plan is approved; it does not remove quality gates. The safe corridor for a batch includes the approved parade, explicit stop conditions, per-prompt commits, local CI/build/test verification, auto-merge gates, deploy gates, and health/E2E checks appropriate to the project.
+
 
 For batches that touch high-stakes zones (calculator logic, payment flows, lead capture, legal text, tariff calculations), this preparation quality must be **explicitly verified** — not assumed:
 
@@ -109,6 +112,9 @@ Vasily reviews the parade in 2-5 minutes. He can:
 - Request rewrites ("07 needs to be split into two").
 
 The parade is not optional — it is the last point where a human looks at the entire shape of the batch before automation takes over. A batch without an approved parade does not get triggered.
+
+After the parade or batch plan is approved, the Routine or Recovery Mode session executes prompts in order without asking for user confirmation between prompts. It stops only on a critical stop condition, failed verification outside the current prompt's safe scope, or an operational failure that requires human action.
+
 
 ---
 
@@ -205,6 +211,8 @@ Upgrade to Level 3 when:
 
 ## 8. Failure Recovery
 
+Safe errors inside the current prompt's declared scope are fixed in the current step before commit. Critical errors, stop conditions, verification failures outside scope, secrets exposure risk, destructive actions, or CI/CD foundation problems stop the batch and produce a clear report instead of continuing.
+
 When a prompt fails health check:
 
 1. The routine sets `prompts[i].status = "failed"`, records `failure_reason`, commits manifest.
@@ -277,6 +285,7 @@ If hit (e.g. multiple parallel pilots in one day): use one-off scheduled runs (d
 
 - Single-prompt writing standard: `skills/prompt-writing-standard-universal.md`
 - Knowledge structure: `skills/knowledge-structure-universal.md`
+- Knowledge updates may use the flat `knowledge/*.md` structure for small projects or the folder/router/ADR structure described in `skills/knowledge-structure-universal.md` for larger projects.
 - Bug hunting (when batches fail repeatedly): `skills/bug-hunting-universal.md`
 - Onboarding guide: `docs/batch-execution-guide.md`
 - Per-project launcher setup: `docs/routine-launcher-setup.md`
@@ -570,5 +579,7 @@ This path is direct, single-commit, and respects that the feature branch is owne
 - 2026-05-12 — v1.2.1. Fix in §13.4 — cross-reference to "knowledge update outcomes" pointed to the wrong skill (knowledge-structure §8 covers WIP→Proposed→Accepted decision lifecycle, not the Outcome 1/2/3 framework). The correct reference is `prompt-writing-standard-universal.md` Section 4 ("Knowledge update rule — mandatory"). No other content changes.
 - 2026-05-12 — v1.3. Discipline reinforcement after Batch A (ai-knowledge-system, 2026-05-11) retrospective. Added Section 14 (Pre-commit Verification), Section 15 (Foundation As Separate Bootstrap PR), Section 16 (Branch Discipline). No changes to Sections 1–13. Cross-references added between §3.1 ↔ §14 (baseline smoke test ↔ per-prompt verification), §3.1 ↔ §15 (baseline green ↔ how foundation gets there), §6 ↔ §16 (partial-branch ops ↔ prompt-authoring rule). Motivated by three failure modes observed in Batch A: Code Agent reporting green pytest while ruff/mypy were failing (§14); v2 auto-merge upgrade stuck inside the batch it was meant to gate, classic bootstrap chicken-and-egg (§15); fix-prompt directing the Code Agent to a specific branch, creating an orphan branch (§16). Built on top of v1.2 (magic-defender retrospective).
 - 2026-05-12 — v1.3.1. Conflict resolution: merged v1.2.1 fix to §13.4 (knowledge update outcomes pointer to prompt-writing-standard-universal.md §4) into the v1.3 release. Both changes preserved verbatim. No new sections, no content rewrites.
+
+- 2026-05-15 — v1.4. Aligned batch wording with Autonomous Batch Mode: no confirmation between prompts after approved parade, safe corridor gates, safe-error vs critical-stop behavior, and flat/folder/ADR knowledge update references.
 
 When updating this standard, increment the version, add an entry above with date and summary of changes.

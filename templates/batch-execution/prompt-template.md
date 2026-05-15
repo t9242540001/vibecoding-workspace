@@ -4,8 +4,8 @@
   @file:        templates/batch-execution/prompt-template.md
   @description: Format reminder for individual prompts inside a batch queue
   @owner:       Claude (Anthropic)
-  @updated:     2026-05-12
-  @version:     1.2
+  @updated:     2026-05-15
+  @version:     1.3
 -->
 
 This file is a format reminder for prompts that go into a batch queue under `prompts/queue/{batch_id}/` in a product repository.
@@ -71,9 +71,9 @@ Project-wide execution discipline (from CLAUDE.md or equivalent main project con
 ```
 ## ACCEPTANCE CRITERIA
 [ ] [Task-specific check: specific action and expected result]
-[ ] knowledge/*.md updated to reflect changes made in this prompt
-[ ] If architectural decision was made → entry added to knowledge/decisions.md
-[ ] INDEX.md updated (modification date of changed files)
+[ ] Knowledge updated to reflect changes made in this prompt, using flat `knowledge/*.md` for small projects or folder/router/ADR structure for larger projects per `skills/knowledge-structure-universal.md`
+[ ] If architectural decision was made -> entry added to `knowledge/decisions.md` or a `knowledge/decisions/ADR-YYYY-MM-DD-short-title.md` file
+[ ] INDEX.md/router updated (modification date of changed files, folder README/sub-index links when applicable)
 [ ] Local CI dry-run BEFORE committing (per `standards/batch-execution-standard.md` Section 14):
     - `uv run ruff check .` exits 0
     - `uv run ruff format --check .` exits 0
@@ -85,6 +85,8 @@ Project-wide execution discipline (from CLAUDE.md or equivalent main project con
 [ ] If ANY check above fails, fix the cause within this prompt's declared scope
     before committing. If the cause is outside scope (would violate REGRESSION
     SHIELD), STOP and report to Vasily.
+[ ] Safe errors inside this prompt's declared scope are fixed before commit;
+    critical stop conditions stop execution and produce a clear report.
 [+ applicable infrastructure checks per the standard]
 
 Code Agent must report against each criterion after completion.
@@ -104,7 +106,9 @@ When a prompt runs inside a batch (not standalone):
 
 4. **One prompt = one file (with knowledge updates allowed).** Same rule as in `prompt-writing-standard-universal.md` Section 6. If the task touches more files, split into multiple prompts in the manifest.
 
-5. **No cross-prompt dependencies in instructions.** Each prompt must be self-contained. Do not write "as we did in the previous prompt" — the routine reads each prompt fresh.
+5. **No confirmation between approved batch prompts.** After the parade/batch plan is approved, Autonomous Batch Mode runs prompts in order without user confirmation between prompts. Quality gates, Regression Shield, Step 9 review, local CI/build/test gates, health/E2E checks, and stop conditions still apply.
+
+6. **No cross-prompt dependencies in instructions.** Each prompt must be self-contained. Do not write "as we did in the previous prompt" — the routine reads each prompt fresh.
 
 ---
 
