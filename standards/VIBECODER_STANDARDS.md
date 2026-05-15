@@ -1,5 +1,5 @@
 VIBECODER_STANDARDS.md — Стандарт разработки проекта Вайбкодер
-Версия 2.0 | Апрель 2026
+Version 2.1 | May 2026
 Применяется ко всем текущим и будущим проектам
 Обновлять при появлении новых устойчивых практик
 
@@ -93,7 +93,7 @@ Gate обязателен для:
 T1 может пропускать видимый gate, если не обнаружен риск регрессии, безопасности, product rules или knowledge drift.
 
 Ключевые правила (всегда в памяти):
-— Архитектура: Василий (задача) → AI-модель (стратегия + промпт) → Code Agent (реализация; например Claude Code) → Git (автомерж agent-веток, текущий пример claude/** → main) → Василий (деплой). Code Agent работает только с репозиторием. Доступа к серверу у него нет.
+- Architecture: Vasily (task) -> AI model / orchestrator (strategy + prompt) -> Code Agent (implementation) -> agent branch -> CI/build/test gates -> auto-merge -> main -> GitHub Actions deploy -> health/E2E checks -> report. Code Agent works only through the repository. It does not receive unrestricted SSH/root/server access; deploy happens only through pre-approved CI/CD workflows and repository or environment secrets.
 — Каждый промпт содержит 4 обязательных блока: Context, Task, Regression Shield, Acceptance Criteria. Неполный промпт не отправляется.
 — Один промпт = одна задача. Язык промптов: английский (контент на целевом языке — исключение). Общение с пользователем — на русском.
 — Проверка файлов перед промптом — блокирующее правило: полное содержимое затронутых файлов, без исключений.
@@ -102,6 +102,8 @@ T1 может пропускать видимый gate, если не обнар
 — Регрессионный щит: в каждом промпте на изменение существующего кода — явный список того, что не трогать.
 — Sustainable solutions: если есть быстрый фикс и долговечный — назвать оба, рекомендовать долговечный, оставить выбор Василию. Не маскировать симптом.
 — Формулировка от цели: TASK-блок промпта формулируется как цель + критерий верификации, не как пошаговая инструкция. «Добавь валидацию» → «Напиши тест на невалидный ввод и пройди его». «Почини баг» → «Напиши тест воспроизводящий баг и пройди его».
+- Large tasks are split into small sequential prompts to preserve quality, verification, rollback points, and context stability. In Autonomous Batch Mode, no confirmation is required between prompts after the approved batch plan starts; the Code Agent continues until success or a critical stop condition.
+- Safe error policy: safe error inside current scope -> fix within the current step before commit; critical error or stop condition -> stop, record the reason, and report for operational fix; all checks pass -> push the agent branch and let CI/CD continue.
 
 Правило сложных существующих механизмов:
 — Сложные существующие engine/pipeline не меняются от симптомов. Перед implementation prompt сначала применяется `docs/engine-change-workflow.md`: понять текущий механизм, найти уже существующие попытки решения, отделить prompt-level intention от code/data-level logic, определить реальный failure point и явно зафиксировать что нельзя менять.
@@ -229,7 +231,7 @@ from src.web.routes import router
 
 3.1 Git workflow
 
-Code Agent работает в выделенных agent-ветках; текущий пример — claude/**. CI/CD (в текущей конфигурации — GitHub Actions) автоматически мержит в main. Деплой на сервере — вручную.
+Code Agent works in dedicated agent branches; current example: claude/**. Universal flow: agent branch -> CI/build/test gates -> auto-merge -> main -> GitHub Actions deploy -> health/E2E checks -> report. Deploy is performed by pre-approved CI/CD workflows and secrets, not by unrestricted Code Agent access to the server.
 
 Никогда не чинить сломанный продакшн правками напрямую на сервере в обход git — такие правки теряются при следующем pull и создают конфликты. Исключение: правки конфигов (например nginx), которые не хранятся в репозитории — в этом случае изменение фиксировать в контекстном файле проекта.
 
@@ -505,17 +507,17 @@ MOEX API — RU акции, бесплатно, задержка 15 мин
 
 11. СТРУКТУРА ЗНАНИЙ ПРОЕКТА
 
-Каждый проект использует трёхуровневую систему документации: главный контекстный файл проекта (CLAUDE.md или аналог) как конституция проекта, knowledge/INDEX.md как реестр, knowledge/*.md как тематические файлы. Обновлять после каждого завершённого этапа, после изменения инфраструктуры, после принятия архитектурного решения. Устаревшая документация — риск не меньше чем сломанный код.
+Each project uses a progressive knowledge system. Small projects may keep the flat structure: main project context file (CLAUDE.md or equivalent) -> knowledge/INDEX.md -> knowledge/*.md. Larger projects may use knowledge/INDEX.md as a router to thematic folders, folder README files, runbooks, and decision ADR files. Update knowledge after each completed stage, infrastructure change, or architectural decision. Stale documentation is a risk no smaller than broken code.
 
 Краткое описание уровней:
 
 Главный контекстный файл проекта (CLAUDE.md или аналог, корень репозитория) — конституция проекта, ≤80 строк. Содержит: название и описание проекта, стек, 5 critical rules, блок Execution discipline (Карпати-правила), команды деплоя, ссылку на knowledge/INDEX.md. Никаких технических деталей, навигаторов по файлам, справочников.
 
-knowledge/INDEX.md — реестр всех файлов в формате таблицы: файл | перечень реальных заголовков разделов | дата обновления. Правило чтения для Code Agent: прочитать главный контекстный файл проекта (CLAUDE.md или аналог) → INDEX.md → только файлы релевантные текущей задаче.
+knowledge/INDEX.md is the top-level registry or router. For small projects it can list all knowledge files directly. For larger projects it points to sub-indexes or folder README files. Reading rule for Code Agent: main project context file (CLAUDE.md or equivalent) -> INDEX.md/router -> only files, folders, runbooks, or ADRs relevant to the current task.
 
-knowledge/*.md — тематические файлы, ≤200 строк каждый. Обязательные: infrastructure.md, architecture.md, rules.md, decisions.md (append-only), roadmap.md. Опциональные — по необходимости проекта.
+knowledge/*.md remains valid for small projects: thematic files, <=200 lines each. Required baseline: infrastructure.md, architecture.md, rules.md, decisions.md (append-only), roadmap.md. Larger projects may use thematic folders such as knowledge/rules/, knowledge/architecture/, knowledge/infrastructure/, knowledge/runbooks/, and knowledge/decisions/ with ADR-YYYY-MM-DD-short-title.md files.
 
-Полный стандарт (формат шапки knowledge-файла, протокол обновления, правило сохранения формулировок при переписывании, lifecycle decisions.md, протокол устаревших фактов, проверка целостности INDEX) — в skill «knowledge-structure».
+Full standard (knowledge file header, update protocol, content preservation, flat vs folder structure, decisions.md lifecycle, ADR format, stale fact protocol, INDEX/router integrity check) lives in skill "knowledge-structure".
 
 Skills для работы с документацией проекта:
 - «prompt-writing-standard» — перед написанием любого промпта для Code Agent
