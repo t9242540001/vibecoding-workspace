@@ -43,6 +43,12 @@ For batch execution, Codex:
 
 Codex batch execution is documented in `standards/codex-batch-execution-standard.md`.
 
+Example hardened WSL launcher command:
+
+```
+wsl bash -lc '\''~/codex-runners/run-vcw-codex-hardened.sh exec "Выполни Codex batch <batch_id> по standards/codex-batch-execution-standard.md. Не используй Claude Routines. Не запускай deploy/server/secrets actions без отдельного подтверждения."'\''
+```
+
 ## Safety And Autonomy
 
 On the main developer machine, Codex should keep interactive permission checks. The safe default is repo-local work with `workspace-write` style sandboxing and approval for actions that need broader access.

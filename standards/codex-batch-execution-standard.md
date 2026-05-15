@@ -76,6 +76,8 @@ Allowed mode inside that isolation boundary:
 codex --sandbox workspace-write --ask-for-approval never
 ```
 
+A hardened WSL process-local runner that hides host mounts such as `/mnt/c` and `/mnt/d` for the runner process is acceptable as a temporary isolated runner level for repo-local batch work.
+
 ---
 
 ## 5. Approval Policy
@@ -87,6 +89,8 @@ Do not use `danger-full-access` on the main Windows environment.
 Do not use `--dangerously-bypass-approvals-and-sandbox` on the main Windows environment.
 
 `--ask-for-approval never` is acceptable only inside an isolated repo-scoped runner/container/VM. It is not a substitute for isolation.
+
+Inside a hardened WSL process-local runner, `--ask-for-approval never` is allowed only for repo-local tasks without secrets, deploy actions, production access, auth, payments, PII, or other high-risk systems.
 
 Do not claim or assume that Codex has a repo-scoped allowlist unless the current Codex runtime explicitly provides one.
 

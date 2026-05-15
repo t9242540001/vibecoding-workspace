@@ -72,7 +72,19 @@ codex --sandbox workspace-write --ask-for-approval never
 
 ---
 
-## 5. What Not To Do
+## 5. Process-Local WSL Mount Namespace Hardening
+
+Process-local WSL mount namespace hardening is an intermediate option between ordinary WSL usage and a separate WSL distro, container, or VM.
+
+In this pattern, a hardened launcher starts the runner process in its own mount namespace and hides host mounts such as `/mnt/c` and `/mnt/d` only inside that runner process. Normal WSL usage outside the runner is not changed or broken.
+
+This option is suitable for repo-local Codex batches that do not need secrets, deploy access, production systems, or unrelated host files. It is not suitable for production, secrets, deploy, auth, payments, PII, or other high-risk batch work.
+
+For strict isolation, prefer a separate WSL distro, container, VM, or dedicated runner environment.
+
+---
+
+## 6. What Not To Do
 
 Do not:
 
@@ -86,7 +98,7 @@ Do not:
 
 ---
 
-## 6. Pre-Run Checklist
+## 7. Pre-Run Checklist
 
 Before starting a Codex batch:
 
@@ -102,7 +114,7 @@ Before starting a Codex batch:
 
 ---
 
-## 7. Rollback And Cleanup
+## 8. Rollback And Cleanup
 
 For normal repository rollback, use Git history:
 
