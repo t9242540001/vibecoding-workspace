@@ -1,0 +1,41 @@
+{
+  "batch_id": "batch-2026-05-15-autonomous-mode",
+  "title": "Autonomous batch mode standards update",
+  "created_by": "ChatGPT planning chat",
+  "created_at": "2026-05-15T13:30:00+02:00",
+  "completed_at": null,
+  "stop_on_failure": true,
+  "telegram_notify": true,
+  "inter_prompt_wait_minutes": 10,
+  "health_url_override": null,
+  "prompts": [
+    {
+      "id": "01",
+      "title": "Update prompt splitting",
+      "file": "01-update-prompt-splitting.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "02",
+      "title": "Update knowledge structure",
+      "file": "02-update-knowledge-structure.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "03",
+      "title": "Update universal standards",
+      "file": "03-update-universal-standards.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "04",
+      "title": "Update batch references",
+      "file": "04-update-batch-references.md",
+      "status": "pending",
+      "failure_reason": null
+    }
+  ]
+}
