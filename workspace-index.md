@@ -58,11 +58,12 @@ Active standards files:
 - `standards/VIBECODER_STANDARDS.md`
 - `standards/VIBECODER_SYSTEM_INSTRUCTION.md`
 - `standards/batch-execution-standard.md`
+- `standards/codex-batch-execution-standard.md`
 
 Active templates:
 
 - `templates/product-repo/` — includes Codex instructions and knowledge-structure-compliant starter files.
-- `templates/batch-execution/` — Claude-owned infrastructure for prompt batch execution via Routines (see folder's AGENTS.md).
+- `templates/batch-execution/` — Claude Routine-specific infrastructure for prompt batch execution via Routines unless explicitly generalized later (see folder's AGENTS.md).
 
 Active examples:
 
@@ -84,6 +85,7 @@ Active tools, rules, and docs:
 - `docs/new-project-onboarding.md`
 - `docs/repository-structure.md`
 - `docs/codex-workflow.md`
+- `docs/codex-isolated-runner-setup.md`
 - `docs/git-workflow.md`
 - `docs/branch-protection-plan.md`
 - `docs/deploy-rollback-pattern.md`
@@ -129,7 +131,7 @@ Active prompt templates:
 - `prompts/project-inventory-audit.md`
 - `prompts/knowledge-repair.md`
 
-Active batch execution infrastructure (Claude-owned):
+Active batch execution infrastructure (Claude Routine-specific unless explicitly generalized later):
 
 - `templates/batch-execution/AGENTS.md`
 - `templates/batch-execution/routine-prompt.md`
@@ -210,6 +212,7 @@ Current trigger map:
 | T3 task, strategic decision, high reversal cost, or external facts | `research-protocol` |
 | Creating or editing skills | `skill-writing-standard` |
 | Composing or running multi-prompt batches via Claude Code Routines | `standards/batch-execution-standard.md` + `docs/batch-execution-guide.md` |
+| Composing or running Codex prompt batches via Codex | `standards/codex-batch-execution-standard.md` + `docs/codex-isolated-runner-setup.md` |
 | First-time setup of the per-project batch launcher on a developer machine | `docs/routine-launcher-setup.md` |
 
 ## Non-Negotiable Rules
