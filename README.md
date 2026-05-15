@@ -29,11 +29,12 @@ Core standards:
 - `standards/VIBECODER_STANDARDS.md`
 - `standards/VIBECODER_SYSTEM_INSTRUCTION.md`
 - `standards/batch-execution-standard.md`
+- `standards/codex-batch-execution-standard.md`
 
 Templates:
 
 - `templates/product-repo/` — product repository template with Codex instructions and knowledge-structure-compliant starter files.
-- `templates/batch-execution/` — manifest, prompt, and routine-prompt templates for batch execution.
+- `templates/batch-execution/` — Claude Routine-specific manifest, prompt, and routine-prompt templates for batch execution unless explicitly generalized later.
 
 Examples:
 
@@ -48,6 +49,7 @@ Tools, rules, and docs:
 - `docs/new-project-onboarding.md`
 - `docs/repository-structure.md`
 - `docs/codex-workflow.md`
+- `docs/codex-isolated-runner-setup.md`
 - `docs/git-workflow.md`
 - `docs/branch-protection-plan.md`
 - `docs/deploy-rollback-pattern.md`
@@ -57,8 +59,8 @@ Tools, rules, and docs:
 
 Scripts:
 
-- `scripts/trigger-batch.sh` — low-level API primitive: POSTs to a Routine's fire endpoint
-- `scripts/routine.sh` — per-project launcher: `routine <project> <batch_id>` invokes `trigger-batch` with per-project credentials loaded from `~/.config/routines/<project>.env`
+- `scripts/trigger-batch.sh` — Claude Routine-specific low-level API primitive: POSTs to a Routine's fire endpoint unless explicitly generalized later.
+- `scripts/routine.sh` — Claude Routine-specific per-project launcher: `routine <project> <batch_id>` invokes `trigger-batch` with per-project credentials loaded from `~/.config/routines/<project>.env` unless explicitly generalized later.
 
 Prompt templates:
 
