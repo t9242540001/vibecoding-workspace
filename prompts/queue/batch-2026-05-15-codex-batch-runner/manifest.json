@@ -1,0 +1,18 @@
+{
+  "batch_id": "batch-2026-05-15-codex-batch-runner",
+  "title": "Codex batch execution and isolated runner setup",
+  "created_by": "ChatGPT planning chat",
+  "created_at": "2026-05-15T21:30:00+02:00",
+  "completed_at": null,
+  "stop_on_failure": true,
+  "telegram_notify": false,
+  "inter_prompt_wait_minutes": 0,
+  "health_url_override": null,
+  "prompts": [
+    {"id": "01", "title": "Create Codex batch standard", "file": "01-create-codex-batch-standard.md", "status": "pending", "failure_reason": null},
+    {"id": "02", "title": "Create Codex runner setup", "file": "02-create-codex-runner-setup.md", "status": "pending", "failure_reason": null},
+    {"id": "03", "title": "Update Codex workflow", "file": "03-update-codex-workflow.md", "status": "pending", "failure_reason": null},
+    {"id": "04", "title": "Update workspace navigation", "file": "04-update-workspace-navigation.md", "status": "pending", "failure_reason": null},
+    {"id": "05", "title": "Update root README", "file": "05-update-root-readme.md", "status": "pending", "failure_reason": null}
+  ]
+}
