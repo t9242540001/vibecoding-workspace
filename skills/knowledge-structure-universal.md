@@ -7,8 +7,8 @@ description: Create, maintain, and update the living knowledge base for any proj
 <!--
   @file:        skills/knowledge-structure/SKILL.md
   @description: Standard for creating and maintaining project living knowledge base
-  @version:     1.7
-  @updated:     2026-04-30
+  @version:     1.8
+  @updated:     2026-05-15
 -->
 
 ---
@@ -211,6 +211,19 @@ Create additional files whenever a domain becomes large enough to need its own f
 Name reflects content: `monetization.md`, `integrations.md`, `bot.md`,
 `calculator.md`, `design.md`, `prompts.md`, `content-rules.md`, etc.
 
+### Scalable folder structure
+
+The flat `knowledge/*.md` structure remains valid for small projects. Do not force a folder migration when five to ten thematic files are still readable through `knowledge/INDEX.md`.
+
+Larger projects may use thematic folders under `knowledge/` when the flat set stops being navigable. Common patterns:
+- `knowledge/rules/README.md`, `secrets.md`, `deploy.md`, `pii.md`, `prompts.md`
+- `knowledge/architecture/README.md`, `backend.md`, `frontend.md`, `prompt-pipeline.md`, `database.md`
+- `knowledge/infrastructure/README.md`, `deploy.md`, `rollback.md`, `github-actions.md`, `server-runtime.md`
+- `knowledge/decisions/README.md` plus `ADR-YYYY-MM-DD-short-title.md` files
+- `knowledge/runbooks/deploy.md`, `rollback.md`, `failed-automerge.md`, `failed-deploy.md`, `failed-health-check.md`
+
+Folder `README.md` files act as local indexes for that theme. `knowledge/INDEX.md` remains the top-level router and points to folder READMEs or sub-indexes.
+
 No fixed list — project complexity determines the set.
 
 ---
@@ -228,6 +241,8 @@ No fixed list — project complexity determines the set.
 archive older entries to `decisions-archive.md` and add a reference in decisions.md.
 
 **roadmap.md archival:** when roadmap.md approaches 200 lines, move oldest entries from `## Recent Activity` and `## Completed` together to `roadmap-archive-N.md` (`-1` first, then `-2`, etc.). Move whole entries, never half. Active roadmap.md retains only the recent window. The archive file gets a header note: "Archive — read only when investigating a specific historical question. Default reading does not include this file." Reference the archive from active roadmap.md: `Older entries → roadmap-archive-1.md`.
+
+**Folder file headers:** files inside thematic folders follow the same header, size, split, preservation, and INDEX update rules as flat `knowledge/*.md` files. The path in `@file` and in INDEX entries includes the folder path.
 
 **Recent Activity entry format** (per session, newest on top):
 
@@ -249,6 +264,8 @@ Keep entries compact. The point is fast re-entry into project state at the start
 ## 7. decisions.md Format
 
 The file has two sections: **Active iterations (WIP)** at the top for unstable records under active work, and the main append-only log below for stabilized records.
+
+For small projects, a single `knowledge/decisions.md` file remains valid. For larger projects, the preferred structure is `knowledge/decisions/` with `README.md` as the decision index and one ADR file per stable decision: `ADR-YYYY-MM-DD-short-title.md`.
 
 ### File structure
 
@@ -282,6 +299,25 @@ future readers will need to understand why it made sense at the time.
 
 ---
 ```
+
+### ADR file structure for larger projects
+
+Each stable ADR file in `knowledge/decisions/` uses this format:
+
+```markdown
+# ADR YYYY-MM-DD вЂ” Decision Title
+
+**Status:** Proposed | Accepted | Superseded by [ADR link]
+**Confidence:** high | medium | low
+**Scope:** [project area, subsystem, or rule this decision applies to]
+**Context:** [situation, problem, constraints]
+**Decision:** [what was decided]
+**Consequences:** [benefits, costs, tradeoffs, follow-up work]
+**Rollback / Revisit Trigger:** [what would invalidate or reopen this decision]
+**Links:** [markdown links to related files, commits, PRs, rules, runbooks]
+```
+
+`knowledge/decisions/README.md` lists ADR files newest first, with status and a one-line scope. WIP records may still live in a mutable "Active iterations" section in the README or in `decisions.md` until stabilized; stable decisions move into individual ADR files.
 
 ### Status field
 
@@ -442,6 +478,8 @@ All cross-links use markdown link syntax: `[visible text](target)`.
 
 This is human-readable, Code Agent-readable, and requires no toolchain. Wikilinks (`[[file]]`) are deliberately avoided — they're tied to Obsidian-specific tooling and we don't have a graph view to benefit from them.
 
+"Wiki-like" means a navigable folder structure, folder README/router pages, markdown links, and ADR files. It does not mean switching to Obsidian-only `[[wikilink]]` syntax.
+
 ### Six link types
 
 **1. Link to a knowledge file (most common).**
@@ -579,6 +617,8 @@ Knowledge files accumulate facts that can become incorrect over time. A fact tha
 
 **If INDEX is split (router + sub-indexes, see Section 4):** the integrity check covers the whole system — router + every sub-index. Every sub-index listed in the router exists; every `INDEX-*.md` in `knowledge/` is listed in the router; every file in `knowledge/` appears in exactly one sub-index (no orphans, no duplicates).
 
+**If knowledge uses thematic folders:** the integrity check covers the router, every folder README or sub-index, every ADR file, and every runbook. Anti-duplication applies across folders: a file must have one canonical home, with markdown cross-links from related folders instead of duplicated content.
+
 ---
 
 ## 14. How the Code Agent Reads knowledge/
@@ -589,6 +629,8 @@ Knowledge files accumulate facts that can become incorrect over time. A fact tha
 3. Read only the specific file(s) relevant to the current task
 
 **If INDEX is split (Section 4):** the sequence becomes main project context file (`CLAUDE.md` or equivalent) → INDEX.md (router) → the relevant `INDEX-*.md` sub-index → the specific file. If the task spans two themes, read both relevant sub-indexes — but not all of them by default.
+
+**If knowledge uses thematic folders:** the sequence becomes main project context file (`CLAUDE.md` or equivalent), then `knowledge/INDEX.md` router, then relevant folder `README.md` or sub-index, then the specific knowledge file, ADR, or runbook. Read only the folders relevant to the task.
 
 **Do not** read all knowledge files at session start.
 **Do not** skip INDEX.md and guess which files exist.
