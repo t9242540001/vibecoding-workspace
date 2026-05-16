@@ -70,6 +70,15 @@ codex --sandbox workspace-write --ask-for-approval never
 
 `--ask-for-approval never` is safe only when the external environment boundary is safe. It does not make the host safe by itself.
 
+The runner does not need to perform Git commits or pushes from inside the Codex sandbox. The working model is:
+
+1. Codex runs the prompt queue and changes only repo-local files inside the prompt scope.
+2. Codex runs verification and reports the changed files and final status.
+3. A trusted wrapper or human checks scope, secrets risk, and `git diff --check`.
+4. The trusted wrapper or human performs `git add`, `git commit`, and normal `git push`.
+
+This split is intentional. It keeps file-changing autonomy inside the hardened runner while leaving Git metadata and network push in a smaller trusted layer.
+
 ---
 
 ## 5. Process-Local WSL Mount Namespace Hardening
@@ -109,7 +118,7 @@ Before starting a Codex batch:
 - Confirm each prompt has affected files, regression shield, and acceptance criteria.
 - Confirm required local checks are available or document why they are skipped.
 - Confirm no secrets are present in the working tree.
-- Confirm push target and branch policy are understood.
+- Confirm the trusted wrapper or human commit/push step, push target, and branch policy are understood.
 - Confirm stop conditions from `standards/codex-batch-execution-standard.md`.
 
 ---

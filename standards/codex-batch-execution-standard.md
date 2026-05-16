@@ -8,7 +8,7 @@
   @version:     1.0
 -->
 
-This standard supplements `standards/VIBECODER_STANDARDS.md`. It defines the Codex-native batch execution model: a Codex session reads a manifest and ordered prompt queue, executes prompts sequentially, commits after each prompt, stops on critical failure, and reports the result.
+This standard supplements `standards/VIBECODER_STANDARDS.md`. It defines the Codex-native batch execution model: a Codex session reads a manifest and ordered prompt queue, executes prompts sequentially, makes repo-local file changes, stops on critical failure, and reports the result. Git add/commit/push may be performed by a trusted wrapper or human after verification.
 
 It does not replace or modify `standards/batch-execution-standard.md`, which remains the Claude Code Routine-specific batch standard.
 
@@ -18,7 +18,7 @@ It does not replace or modify `standards/batch-execution-standard.md`, which rem
 
 Codex batches are for multi-prompt work where the prompt sequence is already prepared and reviewed, but the execution happens through Codex instead of Claude Code Routines.
 
-The purpose is to remove manual waiting between prompts while preserving verification, regression shields, per-prompt commits, and stop conditions.
+The purpose is to remove manual waiting between prompts while preserving verification, regression shields, explicit git checkpoints, and stop conditions.
 
 ---
 
@@ -26,9 +26,9 @@ The purpose is to remove manual waiting between prompts while preserving verific
 
 Default flow:
 
-Vasily -> AI orchestrator -> Codex -> prompt queue -> per-prompt commit -> push -> GitHub verification/report.
+Vasily -> AI orchestrator -> Codex -> prompt queue -> verified file changes -> trusted wrapper or human git add/commit/push -> GitHub verification/report.
 
-Codex owns execution inside the current repository. GitHub remains the source of truth after commits are pushed.
+Codex owns scoped repo-local file execution inside the current repository. A trusted wrapper or human owns git metadata and push when the active Codex sandbox does not safely support commit/push. GitHub remains the source of truth after commits are pushed.
 
 ---
 
@@ -103,7 +103,7 @@ Allowed inside the declared prompt scope:
 - Repo-local file reads and edits.
 - Repo-local tests, build, lint, and validation commands.
 - `git status` and `git diff`.
-- `git add`, `git commit`, and normal `git push` to intended branches when requested by the prompt.
+- Handoff to a trusted wrapper or human for `git add`, `git commit`, and normal `git push` after scope and verification checks.
 - Documentation and knowledge updates explicitly listed by the prompt.
 
 Not allowed without explicit approval:
@@ -147,10 +147,12 @@ For each prompt in manifest order:
 5. Edit only the declared files and sections.
 6. Run relevant local verification.
 7. Review `git diff`.
-8. Commit with a batch-scoped message.
-9. Continue to the next prompt, or stop if a stop condition was hit.
+8. Report changed files, checks, and any stop conditions.
+9. Hand off git add/commit/push to a trusted wrapper or human, or continue to the next prompt when the wrapper controls the checkpoint.
 
 Do not update Routine state fields unless the prompt explicitly says to do so.
+
+Codex sandbox commit/push support is not required for a valid batch run. The normal architecture is that Codex produces verified repo-local changes and an external trusted layer records those changes in Git.
 
 ---
 
@@ -159,7 +161,7 @@ Do not update Routine state fields unless the prompt explicitly says to do so.
 Final reports must include:
 
 - Changed files.
-- Commits created, in order.
+- Commits created by the trusted wrapper or human, in order, when git checkpoints were completed.
 - Verification checks run.
 - Stop conditions encountered, or confirmation that none occurred.
 - Final `git status`.

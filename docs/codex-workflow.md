@@ -14,6 +14,8 @@ Vasily provides the task and reviews outcomes. ChatGPT orchestrates scope and pr
 
 Vasily should not manually edit repository files unless explicitly needed.
 
+Git add, commit, and push may be performed by a trusted wrapper or human after Codex reports a verified scoped diff. This is the normal Codex runner architecture when the Codex sandbox keeps Git metadata or network access outside the agent.
+
 ## Single-Prompt Workflow
 
 For normal work, Codex handles one task at a time:
@@ -22,7 +24,7 @@ For normal work, Codex handles one task at a time:
 2. Make the smallest correct scoped change.
 3. Run relevant local verification.
 4. Review the diff.
-5. Commit and push only when the prompt explicitly asks for it and the changed files match scope.
+5. Hand off git add, commit, and push to a trusted wrapper or human only when the prompt explicitly asks for it and the changed files match scope.
 6. Report changed files, checks, and final status.
 
 ## Codex Batch Execution
@@ -37,9 +39,9 @@ For batch execution, Codex:
 4. Applies each prompt's regression shield.
 5. Edits only the declared scope.
 6. Runs relevant verification.
-7. Creates a separate commit after each prompt.
+7. Reports the verified diff for a trusted wrapper or human to commit.
 8. Stops on critical conditions instead of guessing.
-9. Pushes and reports changed files, commits, checks, stop conditions, and final `git status`.
+9. Reports changed files, checks, stop conditions, and final `git status`; the trusted wrapper or human records and pushes git checkpoints.
 
 Codex batch execution is documented in `standards/codex-batch-execution-standard.md`.
 
