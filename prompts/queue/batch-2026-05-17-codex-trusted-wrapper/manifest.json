@@ -1,0 +1,33 @@
+{
+  "batch_id": "batch-2026-05-17-codex-trusted-wrapper",
+  "title": "Codex trusted wrapper for automatic git checkpoint",
+  "created_by": "ChatGPT planning chat",
+  "created_at": "2026-05-17T00:00:00+00:00",
+  "completed_at": null,
+  "stop_on_failure": true,
+  "telegram_notify": false,
+  "inter_prompt_wait_minutes": 0,
+  "prompts": [
+    {
+      "id": "01",
+      "title": "Create trusted wrapper",
+      "file": "01-create-trusted-wrapper.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "02",
+      "title": "Document wrapper workflow",
+      "file": "02-document-wrapper-workflow.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "03",
+      "title": "Smoke test wrapper",
+      "file": "03-smoke-test-wrapper.md",
+      "status": "pending",
+      "failure_reason": null
+    }
+  ]
+}
