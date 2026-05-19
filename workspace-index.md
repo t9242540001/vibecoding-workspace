@@ -4,7 +4,7 @@
   @file:        workspace-index.md
   @description: Root navigation file for the Vibe Coding workspace infrastructure
   @updated:     2026-05-19
-  @version:     0.4.1
+  @version:     0.4.2
 -->
 
 ## Purpose
@@ -41,6 +41,7 @@ Planned contents:
 |---|---|---|
 | `standards/` | Shared development standards | Active: core standards present |
 | `skills/` | Reusable working procedures | Active: six universal skills migrated |
+| `skills/external/` | Third-party skills surveyed/adopted from the ecosystem | Active: REGISTRY.md catalogs surveyed skills |
 | `templates/` | Starter templates for product repositories | Active: strengthened product repository template present |
 | `examples/` | Sample artifacts for validating workspace templates | Active: sample product repository template test present |
 | `rules/` | Shared rules that are not product-specific | Active: root rules note present |
@@ -125,6 +126,7 @@ Active tools, rules, and docs:
 Active operational backlog:
 
 - `skills/BACKLOG.md`
+- `skills/external/REGISTRY.md` — survey + decision log for third-party skills considered for adoption
 
 Active prompt templates:
 
