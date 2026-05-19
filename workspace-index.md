@@ -3,8 +3,8 @@
 <!--
   @file:        workspace-index.md
   @description: Root navigation file for the Vibe Coding workspace infrastructure
-  @updated:     2026-05-10
-  @version:     0.4
+  @updated:     2026-05-19
+  @version:     0.4.1
 -->
 
 ## Purpose
@@ -142,6 +142,11 @@ Active batch execution infrastructure (Claude Routine-specific unless explicitly
 - `docs/batch-execution-guide.md` — onboarding a new product to the batch execution system
 - `docs/routine-launcher-setup.md` — setting up the per-project launcher on a developer machine
 
+Active skill sync infrastructure (used by all product repositories via SessionStart hook):
+
+- `scripts/sync-skills.sh` — canonical SessionStart hook script that pulls `skills/` into a product repo's `.claude/skills/` on every session start
+- `docs/new-project-onboarding.md` § 6.5 — Skill Sync Setup procedure for new product repositories
+
 ### Product repositories
 
 Role: concrete applications, bots, websites, services, and other build targets.
@@ -190,12 +195,12 @@ Skills migration immediate next steps:
 
 | Skill | Priority | Status | Repository file |
 |---|---:|---|---|
-| `prompt-writing-standard` | 1 | Migrated to universal Code Agent wording | `skills/prompt-writing-standard-universal.md` |
-| `knowledge-structure` | 2 | Migrated to universal Code Agent wording | `skills/knowledge-structure-universal.md` |
-| `code-markup-standard` | 3 | Migrated to universal Code Agent wording | `skills/code-markup-standard-universal.md` |
-| `bug-hunting` | 4 | Migrated to universal Code Agent wording | `skills/bug-hunting-universal.md` |
-| `research-protocol` | 5 | Migrated to universal Code Agent wording | `skills/research-protocol-universal.md` |
-| `skill-writing-standard` | 6 | Migrated to universal Code Agent wording | `skills/skill-writing-standard-universal.md` |
+| `prompt-writing-standard` | 1 | Migrated to universal Code Agent wording | `skills/prompt-writing-standard/SKILL.md` |
+| `knowledge-structure` | 2 | Migrated to universal Code Agent wording | `skills/knowledge-structure/SKILL.md` |
+| `code-markup-standard` | 3 | Migrated to universal Code Agent wording | `skills/code-markup-standard/SKILL.md` |
+| `bug-hunting` | 4 | Migrated to universal Code Agent wording | `skills/bug-hunting/SKILL.md` |
+| `research-protocol` | 5 | Migrated to universal Code Agent wording | `skills/research-protocol/SKILL.md` |
+| `skill-writing-standard` | 6 | Migrated to universal Code Agent wording | `skills/skill-writing-standard/SKILL.md` |
 
 ## Skill Triggering Logic
 
@@ -228,6 +233,5 @@ Current trigger map:
 
 - Final folder structure of this workspace repository.
 - Exact universal wording for AI model / Code Agent roles inside remaining skills.
-- Whether skill files are stored as flat markdown files or as `skills/<skill-name>/SKILL.md` folders.
 - Template structure for new product repositories.
 - Branch protection and PR workflow for this workspace repository.
