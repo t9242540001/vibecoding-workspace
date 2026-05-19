@@ -147,6 +147,107 @@ Mark unverified facts as `needs verification`.
 
 Do not commit secrets, tokens, real passwords, private keys, `.env` files, credentials, or raw source notes.
 
+## 6.5. Skill Sync Setup
+
+Connect the new project to the shared skill library in this workspace. Without this step Claude Code in the new project will not see the custom skills (`prompt-writing-standard`, `bug-hunting`, `code-markup-standard`, `knowledge-structure`, `research-protocol`, `skill-writing-standard`) and will work without the standards they enforce.
+
+### Why this step exists
+
+Claude Code on the web does not register skills from disk as slash-commands (Anthropic issues #47929, #50669, #48696). The workaround: a SessionStart hook copies the skills repo into the project's `.claude/skills/` folder on every session start, and `CLAUDE.md` instructs Claude Code to read the relevant `SKILL.md` by path when a task matches a skill's trigger.
+
+The canonical sync script lives in this workspace at `scripts/sync-skills.sh`. New projects copy it verbatim into their own `.claude/hooks/`. When the canonical version changes, projects pick up the update on the next routine sync — no per-project script edits.
+
+### Files added to the product repository
+
+Three files plus two `.gitignore` rules. Adapt only paths and project-specific text in `CLAUDE.md`; the script and the settings hook are copied as-is.
+
+1. `.claude/hooks/sync-skills.sh` — copy of `scripts/sync-skills.sh` from this workspace. Make it executable (`chmod +x`).
+
+2. `.claude/settings.json` — SessionStart hook wiring. If the file already exists with other settings, merge rather than overwrite:
+
+   ```json
+   {
+     "hooks": {
+       "SessionStart": [
+         {
+           "matcher": "startup|resume",
+           "hooks": [
+             {
+               "type": "command",
+               "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/sync-skills.sh"
+             }
+           ]
+         }
+       ]
+     }
+   }
+   ```
+
+3. A `## Custom Skills` block appended to `CLAUDE.md`. This block tells Claude Code which skills exist and when to read each one. The trigger phrasing must match the `description` field of each skill in `skills/<name>/SKILL.md` — keep the wording aligned when skills evolve.
+
+   ```markdown
+   ## Custom Skills
+
+   Custom skills are synced to $CLAUDE_PROJECT_DIR/.claude/skills/ at session start
+   via SessionStart hook (source: vibecoding-workspace/skills/).
+
+   Available skills and their triggers:
+
+   - prompt-writing-standard — MANDATORY before writing any Claude Code prompt.
+     Read: .claude/skills/prompt-writing-standard/SKILL.md
+
+   - bug-hunting — when a bug fix has failed twice with the same approach, or
+     when the same bug keeps coming back.
+     Read: .claude/skills/bug-hunting/SKILL.md
+
+   - code-markup-standard — MANDATORY when creating or modifying any code file
+     or knowledge file (file headers, RULE comments, region tags).
+     Read: .claude/skills/code-markup-standard/SKILL.md
+
+   - knowledge-structure — MANDATORY when creating, restructuring, or
+     non-trivially editing any knowledge/*.md file.
+     Read: .claude/skills/knowledge-structure/SKILL.md
+
+   - research-protocol — for T3 strategic decisions (architecture, stack choice,
+     long-term consequences).
+     Read: .claude/skills/research-protocol/SKILL.md
+
+   - skill-writing-standard — when creating or modifying any skill in
+     vibecoding-workspace/skills/.
+     Read: .claude/skills/skill-writing-standard/SKILL.md
+
+   When a task matches a skill's trigger, Read the relevant SKILL.md FIRST and
+   follow the protocol described inside. These are not optional guidelines —
+   they are mandatory protocols for their declared triggers.
+   ```
+
+### `.gitignore` rules
+
+Add to the product repository's `.gitignore`:
+
+```text
+.claude/skills/
+.claude/settings.local.json
+```
+
+`hooks/` and `settings.json` ARE committed (they define how the project syncs skills — part of the project's contract). `skills/` is NOT committed (it is rebuilt on every session from the canonical source). `settings.local.json` is per-developer state and must never be committed.
+
+If `.gitignore` already blocks `.claude/` wholesale, rewrite the rule to whitelist `hooks/` and `settings.json` while keeping `skills/` and `settings.local.json` blocked. The JCK-AUTO repository is the reference for this pattern.
+
+### Verification
+
+After committing the three files and the `.gitignore` change:
+
+1. Open a fresh Claude Code session in the new project.
+2. The session start banner should include a line from the hook: `sync-skills: N skill(s) synced to ...`.
+3. Ask Claude Code: "Read CLAUDE.md and confirm you see the Custom Skills section. Then read `.claude/skills/prompt-writing-standard/SKILL.md` and summarize section 2 in one paragraph."
+
+If both succeed, the sync is working. If the hook does not fire, check `.claude/settings.json` syntax and that `sync-skills.sh` has execute permissions.
+
+### When skills evolve in the workspace
+
+No per-project action needed. The next time any session starts in the project, the hook pulls the latest `vibecoding-workspace/skills/` and rebuilds `.claude/skills/`. The `CLAUDE.md` block only needs updating if a skill is added, removed, or its description changes substantially.
+
 ## 7. First Task Cycle
 
 Run one small safe task after the repository is connected and knowledge files are initialized.
