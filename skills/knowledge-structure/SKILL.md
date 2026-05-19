@@ -7,8 +7,8 @@ description: Create, maintain, and update the living knowledge base for any proj
 <!--
   @file:        skills/knowledge-structure/SKILL.md
   @description: Standard for creating and maintaining project living knowledge base
-  @version:     2.0
-  @updated:     2026-05-17
+  @version:     2.1
+  @updated:     2026-05-19
 -->
 
 ---
@@ -114,6 +114,7 @@ A reader (human or Claude session) sees the root INDEX first, picks the right fo
 | [infrastructure.md](infrastructure.md) | Server, PM2, deploy, nginx, … | 2026-05-17 |
 | [decisions/](decisions/) | **Folder** — Architectural Decision Records. Local INDEX: `decisions/INDEX.md` | 2026-05-17 |
 | [roadmap/](roadmap/) | **Folder** — open tasks, in-progress, recent activity. Local INDEX: `roadmap/INDEX.md` | 2026-05-17 |
+| [universals/](universals/) | **Folder** — registry of reusable technical and design units. Local INDEX: `universals/INDEX.md` | 2026-05-19 |
 ```
 
 **Local INDEX** — table of records inside the folder. Format depends on the folder's natural unit; see Section 5 for per-folder layouts.
@@ -229,6 +230,46 @@ bugs/
     └── (resolved or won't-fix bugs older than ~90 days)
 ```
 File naming: `B-YYYY-MM-DD-kebab-slug.md` (or project-specific bug ID prefix). Status, severity, and resolution live inside the file.
+
+**universals/** *(folder)*
+Registry of reusable technical and design units. Drives the `universality-discipline` skill — the default flips from "create new" to "reuse existing" for every component, engine, tool, design token, text pattern, or identity element in the project. One **thematic file** per category of unit; one **row** per unit inside each file.
+
+Folder structure:
+```
+universals/
+├── INDEX.md              — registry of thematic files in this folder
+├── components.md         — UI components: buttons, forms, modals, navigation, layouts
+├── design-tokens.md      — colors, spacing, typography, icons, animations, themes
+├── text-patterns.md      — headings, toasts, errors, placeholders, empty states
+├── identity.md           — contacts, addresses, legal text, brand copy
+├── tools.md              — calculators, validators, formatters, parsers, handlers
+├── engines.md            — large modules: AI agents, search, OCR, auth, payments
+└── forms-and-leads.md    — data collection, contact blocks, lead capture
+```
+
+Additional thematic files are added on demand when a project develops a category that does not fit (e.g. `email-templates.md`, `notifications.md`). The folder's `INDEX.md` is updated whenever a thematic file is added.
+
+File format per thematic file:
+```markdown
+# Universals — Components — <Project Name>
+
+<!--
+  @file:        knowledge/universals/components.md
+  @project:     <Project Name>
+  @description: Reusable UI components
+  @updated:     YYYY-MM-DD
+  @version:     1.0
+-->
+
+| Unit | Lives at | Accepts (adaptation params) | When to use | When to deviate |
+|---|---|---|---|---|
+| PrimaryButton | src/components/ui/Button.tsx | label, onClick, variant ('default' / 'large'), disabled, loading | Any primary action | If destructive — use DestructiveButton |
+| FormField | src/components/ui/FormField.tsx | label, name, type, placeholder, error, required | All form inputs | — |
+```
+
+**The `Accepts` column is mandatory** — it lists the adaptation parameters of the universal (props, config keys, slots). An empty `Accepts` column is a red flag: the unit is rigid, not a real universal. Either parametrize it or remove it from the registry. See `universality-discipline` Section 6 for the adaptability requirement.
+
+**Bootstrap for existing projects:** when this skill is first applied to a project that already has code but no `knowledge/universals/` folder yet, run the Bootstrap procedure from `universality-discipline` Section 5: scan `src/components/`, `src/lib/`, design configuration, and build the initial registry by entering every technical or design unit found. Vasily reviews the result and **removes** entries that should not be universals — universal-by-default means removal is the only exit, not the entry.
 
 ### Optional — add when needed
 
@@ -452,6 +493,7 @@ This rule is absolute. "The meaning is preserved" is not a valid justification: 
 As part of Acceptance Criteria (already in prompt template):
 - Update knowledge files that reflect changes made in the prompt
 - Add a new ADR file to `decisions/` if an architectural decision was made
+- Add a new entry to `universals/<file>.md` if a new universal was created
 - Update `@updated` date and `@lines` count in every modified file's header
 - Update the relevant **local** INDEX for any folder whose contents changed
 - Touch the **root** INDEX only if a top-level file or folder was added, renamed, or removed (per Section 3)
@@ -467,6 +509,7 @@ Before closing the chat — review what was done in the session and update:
 | Architectural decision made | new file in `decisions/` |
 | Task completed or added | task file in `roadmap/tasks/`, status flipped |
 | Bug found / resolved | new or updated file in `bugs/` |
+| New reusable unit created or registered | corresponding file in `universals/` |
 | **Always** — session happened | new entry on top of `roadmap/recent-activity.md` (format per Section 6) |
 | Local content changed in a folder | that folder's local INDEX |
 | Top-level structure changed | root INDEX |
@@ -626,6 +669,8 @@ These four files are the minimum context for a useful start. They tell you: what
 
 **Do not read archive files at session start** (`*-archive-pre-migration-*.md`, `archive/` subfolders). They are read only when investigating a specific historical question.
 
+**Do not read `knowledge/universals/*.md` files at session start.** The registry is large by design — reading all of it every session would flood the working set. Universals are read **per task** during Step 6a of `prompt-writing-standard`, when the relevant thematic file is selected by task scope. The exception is a one-time check on first work with a project: if `knowledge/universals/` does not exist yet, run the Bootstrap procedure from `universality-discipline` Section 5 before proceeding to actual work.
+
 This ritual exists because the previous default — reading everything, or guessing context from past chats — was either wasteful or unreliable. A handful of compact files, read every session, give predictable context entry without flooding the working set.
 
 If `roadmap/recent-activity.md` does not yet exist for this project (or is empty) — note this and ask Vasily where work stopped. Do not fabricate context.
@@ -680,6 +725,12 @@ For each folder whose contents changed in this session:
 3. Verify status fields, dates, and any other tracked metadata in the local INDEX match the records' actual front matter.
 4. Verify the local INDEX's own `@updated` date is today.
 
+### Universals-specific integrity check
+
+The `universals/` folder undergoes the standard Local INDEX check above, plus one additional check unique to its format:
+
+5. For every row in every `universals/*.md` thematic file, verify the `Accepts` column is non-empty. An empty `Accepts` column is a red flag per `universality-discipline` Section 6 — either the unit must be parametrized (and the column filled), or the entry must be removed by Vasily's explicit command. Flag any empty `Accepts` rows in the integrity report so they can be resolved.
+
 ### Cross-link integrity (across both levels)
 
 For every file modified in this session, scan its outgoing markdown links. Verify each link target still exists — file path resolves, anchor `#section-id` matches an actual H2 header in the target. If a link is stale because the target was renamed in the same session — fix the link. If the target itself was deleted — replace the link with plain text or remove it, do not leave a broken link silently.
@@ -732,13 +783,25 @@ Maximum 1 file or folder per Claude Code prompt. Maximum 2 if both are small and
 tightly coupled. Never batch all knowledge creation into one prompt.
 
 Order: CLAUDE.md first → root INDEX.md second → top-level files and folders one by one
-(each folder created with its local INDEX in the same prompt).
+(each folder created with its local INDEX in the same prompt). The `universals/` folder
+is created as part of this sequence — its `INDEX.md` and the seven standard thematic
+files (components, design-tokens, text-patterns, identity, tools, engines,
+forms-and-leads) are scaffolded in one or two prompts (empty tables with the standard
+file format header).
 
 **Step 4 — Migrate legacy documentation**
 After all new artefacts are created, deal with legacy:
 - Old single-file `decisions.md` / `roadmap.md` / `bugs.md` / `rules.md` → archive-and-seed pattern (Section 5).
 - Old `docs/` or README content → moved into relevant new files where it fits.
 - Verify nothing was lost before deleting old sources.
+
+**Bootstrap universals/ for existing projects.** When the project already has code
+but no `knowledge/universals/` folder yet, run the Bootstrap procedure from
+`universality-discipline` Section 5 right after Step 3: scan `src/components/`,
+`src/lib/`, design configs, build the initial registry by entering every technical
+or design unit found, fill the `Accepts` column for each row from the actual code,
+and present the result to Vasily. His task is to **remove** entries that should not
+be universals — universal-by-default means removal is the only exit, not entry.
 
 **Step 5 — Verify both INDEX levels**
 Run the Section 13 integrity check on the root INDEX and every folder's local INDEX.
@@ -833,6 +896,7 @@ This section is itself a knowledge artefact and is updated when our position on 
 |---|---|
 | Should this new thing be a file or a folder? | § 4 — Natural Unit |
 | What's mandatory in every project's knowledge/? | § 5 — Standard File Set |
+| Where do reusable units (components, engines, design tokens, text patterns) get registered? | § 5 — Standard File Set, `universals/` subsection; full discipline in skill `universality-discipline` |
 | How do I migrate a legacy monolithic file? | § 5 — Archive-and-seed pattern |
 | What goes in a new ADR's file? | § 7 — decisions/ Format |
 | What states can an ADR be in? | § 8 — Decision Lifecycle |
@@ -844,7 +908,7 @@ This section is itself a knowledge artefact and is updated when our position on 
 | Starting a new session — what do I read first? | § 11.6 — Session Start Ritual |
 | Found a fact that's wrong now — what do I do? | § 12 — Stale Information |
 | End of session, am I sure INDEX is consistent? | § 13 — INDEX Integrity Check |
+| Project has no `knowledge/universals/` yet — what now? | § 15 — Bootstrap step; full procedure in skill `universality-discipline` § 5 |
 | Starting fresh on a project — how do I bootstrap? | § 15 — Creating knowledge/ |
 | Vasily said "сделай wiki-lint" — what now? | § 16 — Wiki Lint Pass |
 | Why don't we use [[wikilinks]]? | § 17 — Inheritance from Karpathy |
-
