@@ -7,8 +7,8 @@ description: Complete workflow and template for writing Claude Code prompts. Use
 <!--
   @file:        skills/prompt-writing-standard/SKILL.md
   @description: Complete workflow for writing Claude Code prompts
-  @version:     3.4
-  @updated:     2026-04-25
+  @version:     3.5
+  @updated:     2026-05-19
 -->
 
 ---
@@ -73,20 +73,26 @@ Before reading code files and before writing the prompt, the model MUST read the
 
 4. **`knowledge/decisions.md`** (if it exists in the project) — architectural decisions log. Goal: do not propose a prompt that contradicts a previously fixed decision.
 
+5. **`knowledge/universals/*.md`** — universals registry. Read the thematic files relevant to the task scope (e.g. `components.md` for UI work, `engines.md` for backend modules, `text-patterns.md` for any user-facing copy). This is the data source for Checkpoint 1 in Step 7 — without it, the plan cannot state reuse decisions. If the project has no `knowledge/universals/` folder yet, the skill `universality-discipline` Bootstrap procedure (Section 5) runs as part of the current work.
+
 **Why this matters:**
 - The REGRESSION SHIELD block in the prompt template requires "critical rules for this project" — these come from CLAUDE.md and knowledge, otherwise the block is empty or fabricated.
 - The domain expert in Step 9 cannot fully review the prompt without knowing project decision history.
 - Without knowledge, the model works "from scratch" every session, discarding accumulated project context — defeating the purpose of the knowledge system.
 - Conflicts with already-made decisions are caught BEFORE writing the prompt, not after execution.
+- Without `universals/*.md`, every new feature defaults to building from scratch instead of reusing — the failure mode this whole skill set exists to prevent.
 
 **Not accepted:**
 - Knowledge file summaries from Vasily — only full reads via file MCP or AI Knowledge Base MCP.
 - "I remember this project from a past session" — context does not persist across sessions, knowledge must be re-read.
 - Skipping decisions.md because "the task is small" — even simple prompts can contradict architectural decisions.
+- Skipping `universals/*.md` because "this is just a small component" — small components are exactly what the registry exists to consolidate.
 
 **Exception:** For `Documentation-only` task type updating a single knowledge file — reading only that file plus `INDEX.md` is sufficient.
 
-**Related skill:** When creating or updating knowledge files in this prompt, apply the rules from skill `knowledge-structure` — in particular Section 9 (Content Preservation) and the rules for anti-duplication, stale information, and INDEX integrity. Read `knowledge-structure` SKILL.md before writing any prompt that touches knowledge files.
+**Related skills:**
+- When creating or updating knowledge files in this prompt, apply the rules from skill `knowledge-structure` — in particular Section 9 (Content Preservation) and the rules for anti-duplication, stale information, and INDEX integrity. Read `knowledge-structure` SKILL.md before writing any prompt that touches knowledge files.
+- When the task creates or affects any technical or design unit (components, engines, tools, design tokens, text patterns, forms), apply the rules from skill `universality-discipline`. Read its SKILL.md before formulating the plan in Step 7 — the plan must state explicit reuse decisions for each candidate unit.
 
 **Step 6b — Read code file contents. BLOCKING RULE.**
 Request and read FULL actual content of every affected file identified in Step 5. Summaries like "this file contains..." are not accepted. No prompt without verified file contents. No exceptions.
@@ -99,6 +105,15 @@ Four elements in plain language:
 - Why: one sentence
 - How: numbered steps, one sentence each
 - What we're NOT touching: list
+
+**Universality Checkpoint 1 — mandatory within the plan.**
+For every technical or design unit the task creates or affects (as classified by `universality-discipline` Section 2 scope), the plan must state an explicit reuse decision in one of three forms:
+
+- *"Use existing X from `universals/<file>.md`. Adaptation via parameters: [list]."* — an analog is registered, the prompt will reuse it.
+- *"No analog in registry. Creating new universal. Will add entry to `universals/<file>.md` with adaptation parameters: [list]."* — nothing fits, a new universal is being created and will be registered immediately.
+- *"Existing X almost fits but [reason]. Need Vasily's decision: extend via parameters, or create parallel universal?"* — STOP within the plan, do not resolve silently. Wait for Vasily.
+
+The plan is rejected if it creates or affects a universal-scope unit without stating one of these three forms. Silent invention is forbidden.
 
 User approves or corrects. Prompt is written only after approval.
 
@@ -122,7 +137,15 @@ Before writing the prompt, produce a numbered brief in Russian for Vasily's revi
 Vasily approves or corrects the brief. Prompt is written only after brief approval.
 
 **Step 8b — Write the prompt** using the template below.
-Verify: all 4 blocks present, English language, single task. The prompt must match the approved brief from Step 8a.
+
+**Universality Checkpoint 2 — mandatory right before writing.**
+Just before writing the prompt body:
+
+1. Re-read the relevant `knowledge/universals/*.md` files. The registry may have been updated between plan approval and now.
+2. If a new analog appeared since Step 7, adjust the prompt to use it. If the adjustment changes scope beyond the approved plan, escalate to Vasily.
+3. Inject reuse references into the prompt's CONTEXT, REGRESSION SHIELD, and ACCEPTANCE CRITERIA blocks as specified in Section 3.
+
+Verify: all 4 blocks present, English language, single task. The prompt must match the approved brief from Step 8a and include the Universality Checkpoint 2 references in the three blocks named above.
 
 **Step 9 — Multi-perspective review. MANDATORY — NO EXCEPTIONS.**
 This step is a blocking gate. A prompt CANNOT be presented to Vasily without completing all three reviews below. Skipping this step — even partially — is equivalent to delivering an unfinished prompt. If you wrote the prompt in Step 8b, you MUST immediately proceed to this review before any output to the user. Each perspective produces 1–3 findings (or "no issues").
@@ -166,6 +189,10 @@ This question is not optional and not replaceable by the checklist above — it 
 > *"Are you sure the prompt does not let Claude Code change anything outside the explicitly declared scope? Walk through the prompt and verify: does the REGRESSION SHIELD block specify exactly what stays untouched within the modified files? Are all the places Claude Code might be tempted to 'improve' — adjacent sections, nearby comments, related functions, neighboring rules — explicitly named as out of scope? If the prompt permits silent edits to adjacent wording, terminology, rule severity, or examples — that is an error ❌, not a warning ⚠️. 'Claude Code will probably not touch it' is not sufficient; the prompt must make it impossible."*
 
 This check is the primary defense against the broken-telephone drift described in `knowledge-structure` Section 9. A prompt that passes all other checks but leaves scope ambiguous still fails Step 9.
+
+**Mandatory universality check** (answered by the Technical reviewer, explicitly, in addition to the questions above):
+
+> *"Does the prompt create or affect any technical or design unit without an explicit reuse decision? Walk through CONTEXT, TASK, REGRESSION SHIELD, ACCEPTANCE CRITERIA — are all candidate units accounted for via 'Reuses: X from universals/<file>.md' (existing) or 'New universal added to universals/<file>.md' (new) or an explicit Vasily-approved deviation? Silent creation of a parallel variant that bypasses the registry is an error ❌, not a warning ⚠️."*
 
 Format each review as:
 ```
@@ -213,6 +240,7 @@ Four mandatory blocks plus a title header. A prompt missing any element is incom
 Project: [name]
 Repository: [URL]
 Affected files: [exact paths relative to repo root]
+Reuses: [list of universals used in this prompt, with their location in the registry and the adaptation parameters being passed. Example: "PrimaryButton from universals/components.md — props: label='Сохранить', variant='default'; API error wrapper from universals/tools.md — no params". If the prompt creates a new universal, state: "Creates new universal: <name> → universals/<file>.md, Accepts: [params]". If the task touches no universal-scope units, state: "No universals affected."]
 Current state: [what works, what's broken — based on collected data]
 
 ## TASK
@@ -228,6 +256,8 @@ Within the modified file(s): only the change zone described in TASK is edited. A
 
 Rationale: unagreed edits to adjacent wording accumulate across iterations and silently change the meaning of the codebase and knowledge base over time. See `knowledge-structure` Section 9 (Content Preservation).
 
+Universality shield: do not create parallel variants of universals already registered in `knowledge/universals/*.md`. Extensions of an existing universal are done via its declared adaptation parameters — never by forking a new variant for cosmetic differences. If a new case truly cannot fit via parameters (per `universality-discipline` Section 8 boundary cases), STOP and require a separate prompt with an explicit registry update. Forking silently is forbidden.
+
 Critical rules for this project:
 - [project-specific rule + consequence of violation]
 
@@ -238,6 +268,7 @@ Project-wide execution discipline (from `CLAUDE.md` Execution Discipline block �
 [ ] knowledge/*.md updated to reflect changes made in this prompt
 [ ] If architectural decision was made → entry added to knowledge/decisions.md
 [ ] INDEX.md updated (modification date of changed files)
+[ ] If a new universal was created → entry added to `knowledge/universals/<file>.md` with file path, "Accepts" column populated with adaptation parameters, and `@universal` tag added to the source file's header
 [+ applicable infrastructure checks — see Section 4]
 
 Claude Code must report against each criterion after completion.
@@ -295,6 +326,16 @@ Key points enforced by `code-markup-standard`:
 
 Every prompt that touches files must explicitly apply `code-markup-standard`.
 
+### Universality discipline — mandatory
+When a prompt creates or affects any technical or design unit (components, engines, tools, design tokens, text patterns, forms, identity — full scope in `universality-discipline` Section 2), the `universality-discipline` skill is mandatory. Two checkpoints are enforced within this prompt-writing workflow:
+
+- **Checkpoint 1** runs inside Step 7 (plan formulation): every candidate unit gets an explicit reuse decision in the plan.
+- **Checkpoint 2** runs inside Step 8b (just before writing the prompt): registry is re-read, reuse references are injected into CONTEXT / REGRESSION SHIELD / ACCEPTANCE CRITERIA.
+
+The Technical reviewer in Step 9 verifies that no candidate unit slipped through without a registry decision (universality check). A prompt that creates a parallel variant of a registered universal without a stated §8 boundary reason fails Step 9 as ❌, not ⚠️.
+
+Read `universality-discipline` SKILL.md before writing any prompt in scope.
+
 ### Knowledge update rule — mandatory
 Every prompt must explicitly assess: does this work produce new facts, rules, decisions, or structural changes that belong in knowledge? The assessment must result in one of three outcomes — not a vague "not applicable":
 
@@ -318,6 +359,7 @@ Required AC checkboxes (included in template when knowledge updates apply):
 [ ] knowledge/*.md updated to reflect changes made in this prompt
 [ ] If architectural decision was made → entry added to knowledge/decisions.md (with Status and Confidence per knowledge-structure Section 7)
 [ ] INDEX.md updated (modification date of changed files)
+[ ] If a new universal was created → entry added to knowledge/universals/<file>.md with adaptation parameters
 ```
 
 ### Flexible Acceptance Criteria minimums
@@ -349,7 +391,7 @@ Exception: 2 files allowed only when both conditions are true:
 - Both files are small (well under 200 lines each)
 - Both files are tightly coupled by logic (e.g. a component and its types file)
 
-**Knowledge files exception:** updating `knowledge/*.md` (including `decisions.md` and `INDEX.md`) alongside the primary code file is always allowed within a single prompt. Knowledge updates are metadata about the change, not a separate functional unit. See Section 4 (Knowledge update rule) for details.
+**Knowledge files exception:** updating `knowledge/*.md` (including `decisions.md`, `INDEX.md`, and `universals/*.md`) alongside the primary code file is always allowed within a single prompt. Knowledge updates are metadata about the change, not a separate functional unit. See Section 4 (Knowledge update rule) for details.
 
 If a task touches more files → split into multiple prompts. Each prompt:
 1. Covers one file (or two if exception applies), plus any knowledge updates
