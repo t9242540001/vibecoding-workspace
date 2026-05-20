@@ -7,7 +7,7 @@ description: Complete workflow and template for writing Claude Code prompts. Use
 <!--
   @file:        skills/prompt-writing-standard/SKILL.md
   @description: Complete workflow for writing Claude Code prompts
-  @version:     3.6
+  @version:     3.7
   @updated:     2026-05-19
 -->
 
@@ -94,6 +94,7 @@ Before reading code files and before writing the prompt, the model MUST read the
 - When creating or updating knowledge files in this prompt, apply the rules from skill `knowledge-structure` — in particular Section 9 (Content Preservation) and the rules for anti-duplication, stale information, and INDEX integrity. Read `knowledge-structure` SKILL.md before writing any prompt that touches knowledge files.
 - When the task creates or affects any technical or design unit (components, engines, tools, design tokens, text patterns, forms), apply the rules from skill `universality-discipline`. Read its SKILL.md before formulating the plan in Step 7 — the plan must state explicit reuse decisions for each candidate unit.
 - When the task produces any plan, brief, prompt, ADR, knowledge entry, or review summary, apply the rules from skill `anti-hedging-language` — every hedging phrase ("possibly", "later", "should work", "not critical", "не должно", "возможно") becomes a self-directing question about knowing, searching, or deferring. Read its SKILL.md before writing the plan in Step 7.
+- When the task creates or modifies runtime behavior (feature, fix, refactor with logical change, schema migration, API contract change, integration, calculation, validation, parsing), apply the rules from skill `real-path-verification` — mental simulation before delivery, forward thinking on 1-2 step harmful consequences with industry best-practice redesign, real-path verification inside the prompt where access allows, and explicit verification handoff to Vasily for prod-side checks. Read its SKILL.md before formulating the plan in Step 7.
 
 **Step 6b — Read code file contents. BLOCKING RULE.**
 Request and read FULL actual content of every affected file identified in Step 5. Summaries like "this file contains..." are not accepted. No prompt without verified file contents. No exceptions.
@@ -106,6 +107,11 @@ Four elements in plain language:
 - Why: one sentence
 - How: numbered steps, one sentence each
 - What we're NOT touching: list
+
+**Forward-thinking Checkpoint — mandatory within the plan.**
+Every decision in the "How" list above must carry a one-line *1-2 step consequences* note. The note states what was actively searched for as harmful downstream effects (per `real-path-verification` Section 5 — system layer, neighbour-system layer, user layer) and what was found. If harm was found, the note also states which industry best-practice was used to redesign the decision so the harm is gone (feature flag, graceful degradation, backward-compatible change, adapter pattern, deprecation path, and similar — see `real-path-verification` Section 5 "Searching for the best practice").
+
+The plan is rejected if a decision lacks a consequences note. "No consequences found" is not legitimate — it means the looking was not done, not that consequences do not exist. See `real-path-verification` Section 5.
 
 **Universality Checkpoint 1 — mandatory within the plan.**
 For every technical or design unit the task creates or affects (as classified by `universality-discipline` Section 2 scope), the plan must state an explicit reuse decision in one of three forms:
@@ -201,6 +207,18 @@ This check is the primary defense against the broken-telephone drift described i
 
 This check is the primary defense against the silent-deferral failure mode described in `anti-hedging-language`. A prompt that passes all other checks but contains hidden deferrals still fails Step 9.
 
+**Mandatory real-path scenario check** (answered by the Stakeholder reviewer, explicitly, in addition to the question above):
+
+> *"Walk through the prompt and identify the real-path scenario it must support — not the happy-path mock, not the unit-test fixture, but the actual workflow a real user or real system will hit on production. Is that scenario covered by the prompt's TASK and ACCEPTANCE CRITERIA? Is it covered by the REAL-PATH VERIFICATION block (Section 3 template)? If only the happy-path mock is covered while the real-path scenario is missing or hand-waved — that is an error ❌, not a warning ⚠️. The prompt must either cover the real path or explicitly state which real path is deferred to a future prompt with a tracked artefact."*
+
+This check is the primary defense against shipping features that pass tests but fail on production data, the failure mode `real-path-verification` is built to prevent.
+
+**Mandatory mental-simulation check** (answered by the Technical reviewer, explicitly, in addition to the questions above):
+
+> *"Did mental simulation run on the relevant calculations, control flow branches, and obvious edge cases of the code being written by this prompt (per `real-path-verification` Section 4)? Is the Mental Simulation note present in the prompt's ACCEPTANCE CRITERIA (or planned as a commit-message line by Claude Code)? If the prompt's task includes any calculation, parsing, control flow with multiple branches, or state machine — and there is no Mental Simulation note required by the prompt — that is an error ❌, not a warning ⚠️. Mental simulation that says 'ran in my head, looks fine' without naming what was traced is not the note (per `real-path-verification` Section 11 pattern 6) — it must state the inputs and the result."*
+
+This check is the primary defense against the "green tests, shipping" pattern that `real-path-verification` Section 11 names as recurring wrong shape.
+
 Format each review as:
 ```
 #### Проверка: [Role Name]
@@ -220,6 +238,7 @@ After all three perspectives are checked:
 - **Что найдено:** [своими словами, что именно ревьюеры обнаружили — без технических терминов]
 - **Принятые решения:** [список — что исправлено и почему]
 - **Осознанно оставлено:** [список — что замечено, но не исправляется, с обоснованием]
+- **Verification status:** `coded` / `pending-verification` / `verified` — [one-line reason]
 ```
 
 Every item in **«Осознанно оставлено»** must satisfy one of two conditions:
@@ -228,6 +247,8 @@ Every item in **«Осознанно оставлено»** must satisfy one of 
 - **(b)** Explicit phrase **«Vasily explicitly chose to defer — see chat context»** with one sentence stating why deferral was chosen.
 
 Items lacking both (a) and (b) are not legitimate deferrals — they are silent deferrals (the failure mode `anti-hedging-language` is built to prevent). Such items must be either resolved within this prompt or escalated to Vasily for an explicit decision before the prompt is finalized.
+
+The **Verification status** line is mandatory for prompts in scope of `real-path-verification` (Section 2). It states the closure criterion honestly — `coded` if code is written but real-path not yet verified, `pending-verification` if scenarios are handed off to Vasily but not yet confirmed, `verified` if real-path is closed. Out-of-scope prompts (pure documentation, mechanical fixes, infrastructure) state `completed — out of scope for real-path-verification` instead. Silent omission of this line is incomplete summary. See `real-path-verification` Section 7 for the three states.
 
 The summary is mandatory. **Without this summary, Step 9 is considered incomplete** — the prompt is not ready to present to Vasily. Full review texts (the three perspectives in detail) are not output to chat by default — Vasily can request them explicitly if he wants to see the full reasoning.
 
@@ -277,6 +298,29 @@ Critical rules for this project:
 
 Project-wide execution discipline (from `CLAUDE.md` Execution Discipline block — Karpathy-style behavioral rules): the standard 4–5 rules in `CLAUDE.md` (don't guess, simplicity test, surgical changes, goal-driven execution, sustainable solutions) apply to this prompt by default. They are not duplicated inline here — Claude Code reads them from the project's `CLAUDE.md` at session start. If any of those rules is especially load-bearing for this prompt — restate the relevant one explicitly here.
 
+## REAL-PATH VERIFICATION
+
+### What Claude Code verifies in this prompt:
+- [specific action 1]: run with input X, expect output Y
+- [specific action 2]: ...
+- [If nothing — state "No tier-1 verification applicable, all verification is mental simulation + handoff."]
+
+### What Claude Code verifies via mental simulation (no run):
+- [calculation/logic 1]: trace through values A, B, C — each should yield ...
+- [edge case 1]: empty payload → expected behaviour ...
+- [If covered by Section 4 mental simulation already — state "see commit message mental-simulation note."]
+
+### What is handed off to Vasily for prod-side verification:
+- Scenario 1:
+  - Trigger: [how to invoke]
+  - Input: [specific data]
+  - Expected: [what should happen]
+  - Verify at: [where to look for the result]
+- Scenario 2: ...
+
+### What is queued for the future AI test agent:
+- (Currently duplicates the Vasily-handoff section above — this is intentional. When the AI test agent comes online, it reads this subsection and runs the scenarios automatically. Until then, Vasily executes; agent is in standby.)
+
 ## ACCEPTANCE CRITERIA
 [ ] [Task-specific check: specific action and expected result]
 [ ] knowledge/*.md updated to reflect changes made in this prompt
@@ -287,6 +331,8 @@ Project-wide execution discipline (from `CLAUDE.md` Execution Discipline block �
 
 Claude Code must report against each criterion after completion.
 ```
+
+**REAL-PATH VERIFICATION block** — mandatory for in-scope prompts per `real-path-verification` Section 2. Out-of-scope tasks (pure documentation, mechanical fixes, infrastructure operations) may omit this block, stating the out-of-scope reason in the prompt's TASK block.
 
 **Title header rules:**
 - Format: `# Prompt NN — [short title]`
@@ -362,6 +408,20 @@ Three enforcement points within this prompt-writing workflow:
 A `low-confidence` ADR created as part of the prompt must include a "Next step to raise confidence" paragraph (per `anti-hedging-language` Section 7 and `knowledge-structure` integration), naming the concrete action that would move it to `medium` or `high`.
 
 Read `anti-hedging-language` SKILL.md before writing any plan, brief, prompt, or review summary.
+
+### Real-path verification — mandatory
+When a prompt creates or modifies runtime behavior (feature, fix, refactor with logical change, schema migration, API contract change, integration, calculation, validation, parsing — full in-scope list in `real-path-verification` Section 2), the `real-path-verification` skill is mandatory. Four enforcement points within this prompt-writing workflow:
+
+- **During Step 7 (plan)** — every decision carries a *1-2 step consequences* note that actively searched for harmful downstream effects. If harm was found, the redesign using an industry best practice is built into the current plan, not deferred (per `real-path-verification` Section 5).
+- **During Step 8b (prompt body)** — the REAL-PATH VERIFICATION block (Section 3 template) is filled with concrete content across four subsections: what Claude Code verifies in the prompt, what mental simulation covers, what is handed off to Vasily, what is queued for the future AI test agent.
+- **During Step 9** — Stakeholder reviewer verifies the real-path scenario is covered (not happy-path mock); Technical reviewer verifies the Mental Simulation note is present where required.
+- **During Step 10** — review summary includes a mandatory line "**Verification status:** `coded` / `pending-verification` / `verified`" with one-line reason (per `real-path-verification` Section 7).
+
+A prompt that creates or modifies runtime behavior without a filled REAL-PATH VERIFICATION block, or without a *1-2 step consequences* note for each decision, fails Step 9 as ❌.
+
+Out-of-scope prompts (pure documentation, mechanical fixes with no behavior change, infrastructure operations) explicitly state the out-of-scope reason in their TASK block and omit the REAL-PATH VERIFICATION block accordingly.
+
+Read `real-path-verification` SKILL.md before writing any plan, prompt, or review summary that involves runtime-behavior changes.
 
 ### Knowledge update rule — mandatory
 Every prompt must explicitly assess: does this work produce new facts, rules, decisions, or structural changes that belong in knowledge? The assessment must result in one of three outcomes — not a vague "not applicable":
