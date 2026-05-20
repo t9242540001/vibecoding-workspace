@@ -4,7 +4,7 @@
   @file:        workspace-index.md
   @description: Root navigation file for the Vibe Coding workspace infrastructure
   @updated:     2026-05-19
-  @version:     0.4.4
+  @version:     0.4.5
 -->
 
 ## Purpose
@@ -40,7 +40,7 @@ Planned contents:
 | Path | Role | Status |
 |---|---|---|
 | `standards/` | Shared development standards | Active: core standards present |
-| `skills/` | Reusable working procedures | Active: eight universal skills migrated |
+| `skills/` | Reusable working procedures | Active: nine universal skills migrated |
 | `skills/external/` | Third-party skills surveyed/adopted from the ecosystem | Active: REGISTRY.md catalogs surveyed skills |
 | `templates/` | Starter templates for product repositories | Active: strengthened product repository template present |
 | `examples/` | Sample artifacts for validating workspace templates | Active: sample product repository template test present |
@@ -205,6 +205,7 @@ Skills migration immediate next steps:
 | `skill-writing-standard` | 6 | Migrated to universal Code Agent wording | `skills/skill-writing-standard/SKILL.md` |
 | `universality-discipline` | 7 | New skill, born universal (closes pain map G; partially A, B, E) | `skills/universality-discipline/SKILL.md` |
 | `anti-hedging-language` | 8 | New skill, born universal (closes pain map F; partially A, C, D) | `skills/anti-hedging-language/SKILL.md` |
+| `real-path-verification` | 9 | New skill, born universal (closes pain map D; partially A, B, C) | `skills/real-path-verification/SKILL.md` |
 
 ## Skill Triggering Logic
 
@@ -222,6 +223,7 @@ Current trigger map:
 | Creating or editing skills | `skill-writing-standard` |
 | Planning or prompting any technical or design unit (components, modules, engines, tokens, forms) | `universality-discipline` |
 | Writing any plan, brief, prompt, ADR, knowledge entry, or review summary containing hedging language ("possibly", "later", "should work", "not critical") | `anti-hedging-language` |
+| Writing or reviewing any prompt that creates or modifies runtime behavior (feature, fix, refactor, schema migration, API change, integration, calculation, validation, parsing) | `real-path-verification` |
 | Composing or running multi-prompt batches via Claude Code Routines | `standards/batch-execution-standard.md` + `docs/batch-execution-guide.md` |
 | Composing or running Codex prompt batches via Codex | `standards/codex-batch-execution-standard.md` + `docs/codex-isolated-runner-setup.md` |
 | First-time setup of the per-project batch launcher on a developer machine | `docs/routine-launcher-setup.md` |
