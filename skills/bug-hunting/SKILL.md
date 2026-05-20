@@ -7,8 +7,8 @@ description: Systematic protocol for finding and fixing bugs through hypothesis-
 <!--
   @file:        skills/bug-hunting/SKILL.md
   @description: Systematic protocol for finding and fixing bugs
-  @version:     2.0.1
-  @updated:     2026-04-17
+  @version:     2.1
+  @updated:     2026-05-20
 -->
 
 ---
@@ -90,6 +90,12 @@ A live incident in production — even on the first attempt. High stakes warrant
 
 A bug that was previously closed has returned. This means the previous fix addressed a symptom, not the cause. Full bug hunt is mandatory — no quick attempts.
 
+### Trigger 6 — Real-path verification failed
+
+A task was prepared with real-path verification scenarios per skill `real-path-verification` Section 6, sent to Vasily for verification, and at least one scenario failed — the actual behavior in production did not match the expected behavior from the scenario. This is a confirmed gap between intent and reality, which is exactly the precondition for a bug hunt.
+
+Do NOT send another attempt "fixing the scenario" without entering this protocol. The failed verification IS the reproduction (Phase 2) — leverage it directly. The expected vs actual comparison from the scenario goes into Phase 1 framing.
+
 ---
 
 ## 2.5. Severity Triage — First Step After Activation
@@ -154,6 +160,7 @@ Answer all of these explicitly before moving on. If any answer is "I don't know"
   - **Claude proactively runs `conversation_search`** with keywords from the symptom (error message fragment, file name, symptom description) before asking Vasily. Past investigations of similar bugs are highly relevant — they may contain the answer or rule out hypotheses cheaply.
   - **Claude reads `knowledge/decisions.md`** via file MCP to check for previous occurrences of this symptom or related ones.
 - Does this match any pattern in `knowledge/rules.md` or any `RULE:` comment in the affected files? Claude reads via MCP.
+- If activation was via Trigger 6 (failed real-path verification) — what was the exact scenario that failed? The scenario itself (per `real-path-verification` Section 6) provides Symptom (Expected vs Actual), reproduction steps (Trigger and Input), and the observation point (Verify at). Reuse these directly instead of re-deriving them.
 
 ### Virtual team — pull in the right specialists
 
