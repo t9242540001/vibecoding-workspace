@@ -7,7 +7,7 @@ description: Create, maintain, and update the living knowledge base for any proj
 <!--
   @file:        skills/knowledge-structure/SKILL.md
   @description: Standard for creating and maintaining project living knowledge base
-  @version:     2.2
+  @version:     2.3
   @updated:     2026-05-19
 -->
 
@@ -216,7 +216,18 @@ roadmap/
     ├── completed-2026-Q2.md
     └── recent-activity-2026-04.md
 ```
-Each task file holds: status (open / in-progress / completed / blocked), priority, owner, brief context, acceptance criteria, links to related ADRs or commits. Status changes happen inside the file — the file does not get renamed.
+Each task file holds: status, priority, owner, brief context, acceptance criteria, links to related ADRs or commits. Status changes happen inside the file — the file does not get renamed.
+
+**Valid status values:**
+- `open` — not yet started
+- `in-progress` — currently being worked on
+- `coded` — code is written but real-path not yet verified (per skill `real-path-verification` Section 7)
+- `pending-verification` — verification scenarios handed off to Vasily but not yet confirmed
+- `verified` — real-path verification closed; task complete for in-scope work (per `real-path-verification` Section 2)
+- `completed` — task closed; used for out-of-scope tasks (pure documentation, mechanical fixes, infrastructure operations) where `real-path-verification` does not apply
+- `blocked` — cannot proceed; blocker named in the task body
+
+In-scope tasks (runtime behavior changes) close at `verified`, not `completed`. Out-of-scope tasks close at `completed`. The `coded` / `pending-verification` / `verified` trio mirrors the three-state lifecycle defined in `real-path-verification` Section 7.
 
 **bugs/** *(folder)*
 Open / verify-status / won't-fix bugs tracker. One file per bug.
@@ -362,6 +373,17 @@ will need to understand why it made sense at the time.
 
 ## Consequences
 What changes. What new constraints exist now. What risks remain.
+
+## Forward-thinking impact
+**Mandatory for every ADR.** Per skill `real-path-verification` Section 5, every decision must be examined for 1-2 step downstream consequences before it is recorded as accepted. State here:
+
+- **System layer** — what this decision changes inside the system itself (data, code, schemas).
+- **Neighbour-system layer** — what this affects in adjacent systems (other services, processes, integrations, monitoring).
+- **User layer** — what this changes for end users, operators, or downstream consumers (UX, response time, error messages, expectations).
+
+If harm was found on any layer, state which industry best-practice was used to redesign the decision so the harm is gone (feature flag, graceful degradation, backward-compatible change, adapter pattern, deprecation path, and similar — see `real-path-verification` Section 5 «Searching for the best practice»). If no harm was found after active searching, state "No harmful downstream consequences identified after explicit search."
+
+"No consequences found" without active search is not legitimate — it means the looking was not done, not that consequences do not exist.
 
 ## Alternatives considered
 What else was on the table and why it was not picked.
