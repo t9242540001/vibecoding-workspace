@@ -7,8 +7,8 @@ description: Deep investigation protocol using the virtual team roster, with a d
 <!--
   @file:        skills/research-protocol/SKILL.md
   @description: Deep investigation by the virtual team for decisions with long-term consequences
-  @version:     1.0
-  @updated:     2026-04-21
+  @version:     1.1
+  @updated:     2026-05-20
 -->
 
 ---
@@ -121,6 +121,7 @@ This phase exists because phases 1 and 2 tend to produce a converging consensus.
 - Did I gather evidence that supports the recommendation, or also evidence that could contradict it? If only the former — I've been confirming, not investigating.
 - What do I not know that I should know to be confident in this?
 - How do comparable products solve this — Russian and global? If our answer differs from what most of them do, what is our specific reason?
+- Which part of this recommendation can only be verified by running it against the real path, not by analysis? Per skill `real-path-verification` Section 5, every recommendation has consequences on the System, Neighbour-system, and User layers — some of these only surface when the code actually runs in production. State what real-path verification would test that this research cannot. If the answer is "nothing — pure analysis is sufficient", say so explicitly; if there is a layer that research cannot reach, that gap goes into the report as "what to verify before/after implementation".
 
 **Hard procedure — premortem.** After the questions above, run an explicit premortem. Not a soft "think about risks" — the formal version, because it works specifically as a formal step. The grammatical shift from "what could go wrong" (speculative, low engagement) to "why did this go wrong" (observed, explanatory) activates a different kind of reasoning — that is the whole technique and what gives it its disproportionate value.
 
