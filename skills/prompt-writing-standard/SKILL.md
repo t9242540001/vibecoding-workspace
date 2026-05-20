@@ -7,8 +7,8 @@ description: Complete workflow and template for writing Claude Code prompts. Use
 <!--
   @file:        skills/prompt-writing-standard/SKILL.md
   @description: Complete workflow for writing Claude Code prompts
-  @version:     3.7
-  @updated:     2026-05-19
+  @version:     3.8
+  @updated:     2026-05-20
 -->
 
 ---
@@ -95,6 +95,7 @@ Before reading code files and before writing the prompt, the model MUST read the
 - When the task creates or affects any technical or design unit (components, engines, tools, design tokens, text patterns, forms), apply the rules from skill `universality-discipline`. Read its SKILL.md before formulating the plan in Step 7 — the plan must state explicit reuse decisions for each candidate unit.
 - When the task produces any plan, brief, prompt, ADR, knowledge entry, or review summary, apply the rules from skill `anti-hedging-language` — every hedging phrase ("possibly", "later", "should work", "not critical", "не должно", "возможно") becomes a self-directing question about knowing, searching, or deferring. Read its SKILL.md before writing the plan in Step 7.
 - When the task creates or modifies runtime behavior (feature, fix, refactor with logical change, schema migration, API contract change, integration, calculation, validation, parsing), apply the rules from skill `real-path-verification` — mental simulation before delivery, forward thinking on 1-2 step harmful consequences with industry best-practice redesign, real-path verification inside the prompt where access allows, and explicit verification handoff to Vasily for prod-side checks. Read its SKILL.md before formulating the plan in Step 7.
+- When the task is T2 (or a micro-decision inside a research-protocol T3 session), apply the rules from skill `forward-thinking-discipline` — three mental moves at design-time before the TASK block is formed: Default inversion (treat happy path as exception), What-it-touches (1-2 steps downstream across System / Neighbour-system / User layers in predictive mode), User-lens (concrete persona + concrete observation). Output lands in the REGRESSION SHIELD block. This is the design-time counterpart of `real-path-verification` (which operates at verification-time, after code is written). Read its SKILL.md before formulating the plan in Step 7. Hard exclusions: T1 tasks, pure text content, pure documentation, mechanical fixes.
 
 **Step 6b — Read code file contents. BLOCKING RULE.**
 Request and read FULL actual content of every affected file identified in Step 5. Summaries like "this file contains..." are not accepted. No prompt without verified file contents. No exceptions.
@@ -112,6 +113,17 @@ Four elements in plain language:
 Every decision in the "How" list above must carry a one-line *1-2 step consequences* note. The note states what was actively searched for as harmful downstream effects (per `real-path-verification` Section 5 — system layer, neighbour-system layer, user layer) and what was found. If harm was found, the note also states which industry best-practice was used to redesign the decision so the harm is gone (feature flag, graceful degradation, backward-compatible change, adapter pattern, deprecation path, and similar — see `real-path-verification` Section 5 "Searching for the best practice").
 
 The plan is rejected if a decision lacks a consequences note. "No consequences found" is not legitimate — it means the looking was not done, not that consequences do not exist. See `real-path-verification` Section 5.
+
+**Mental Moves Checkpoint — mandatory within the plan for T2 tasks (and for micro-decisions inside T3).**
+Before the "How" list is finalized, the three mental moves from `forward-thinking-discipline` Section 3 run at design-time — at the level of the whole task, not per decision:
+
+- *Move 1 (Default inversion):* one concrete sentence stating which unhappy case is the actual norm and why.
+- *Move 2 (What-it-touches):* 1-3 bullets per layer (System / Neighbour-system / User) in predictive mode — same three-layer model as `real-path-verification` Section 5, applied before code is written rather than after.
+- *Move 3 (User-lens):* one specific persona (named by a distinguishing condition) and one specific observation they would make when it goes wrong.
+
+The output of the three moves lands in the REGRESSION SHIELD block of the prompt (per `forward-thinking-discipline` Section 4) as 2-3 condensed lines in the form *"Forward-thinking: <Move 1>. Most-touched: <Move 2>. User-first-hit: <Move 3>."* If Move 1/2/3 surfaces a scenario not covered by happy-path verification, that scenario is added to the REAL-PATH VERIFICATION block of the prompt as a new handoff item.
+
+The plan is rejected if a T2 task lacks a Mental Moves note in the plan. "Nothing harmful found" is not legitimate output — see `forward-thinking-discipline` Section 5 anti-pattern 2 (no harmful consequences without active search). Hard exclusions per `forward-thinking-discipline` Section 2 — if the task is T1, pure text content, pure documentation, mechanical fix, or verification-time work — the checkpoint is skipped and the exclusion reason stated explicitly in the plan.
 
 **Universality Checkpoint 1 — mandatory within the plan.**
 For every technical or design unit the task creates or affects (as classified by `universality-discipline` Section 2 scope), the plan must state an explicit reuse decision in one of three forms:
@@ -422,6 +434,21 @@ A prompt that creates or modifies runtime behavior without a filled REAL-PATH VE
 Out-of-scope prompts (pure documentation, mechanical fixes with no behavior change, infrastructure operations) explicitly state the out-of-scope reason in their TASK block and omit the REAL-PATH VERIFICATION block accordingly.
 
 Read `real-path-verification` SKILL.md before writing any plan, prompt, or review summary that involves runtime-behavior changes.
+
+### Forward-thinking discipline — mandatory
+When a prompt is being prepared for a T2 task (or for a micro-decision inside a research-protocol T3 session), the `forward-thinking-discipline` skill is mandatory. It is the design-time counterpart of `real-path-verification` — the two skills operate at different points in the workflow: this one **before** the code is written (at the moment the plan and prompt brief are being formed), `real-path-verification` **after** the code is written (at the moment the verification scenarios are being executed). They are not interchangeable.
+
+Three enforcement points within this prompt-writing workflow:
+
+- **During Step 6a** — `forward-thinking-discipline` SKILL.md is read alongside `real-path-verification` SKILL.md when the task is in scope. The skill's three mental moves (Default inversion, What-it-touches, User-lens — see Section 3 of that skill) become the design-time pass before the plan's "How" list is finalized.
+- **During Step 7 (plan)** — the Mental Moves Checkpoint runs (described above in Step 7), producing the three-move output that lands in the REGRESSION SHIELD block of the prompt as 2-3 condensed lines.
+- **During Step 9** — the Stakeholder reviewer (or Technical reviewer when no specific stakeholder applies) verifies the three mental moves outputs are present in REGRESSION SHIELD and non-ritual. Generic edge case lists (empty/null/large/negative), abstract user references ("the user"), and ritual phrases ("errors may occur") fail Step 9 as ❌ — per `forward-thinking-discipline` Section 5 anti-patterns.
+
+Hard exclusions per `forward-thinking-discipline` Section 2 — the skill does not activate for T1 tasks, pure text content edits, pure documentation edits, mechanical fixes, or verification-time work after code is written. If an exclusion applies, the plan states which one and proceeds without the checkpoint.
+
+The discipline against ritualization: forward thinking that lists generic edge cases (empty/null/large) is a junior-level output that the skill explicitly forbids — see `forward-thinking-discipline` Section 5 anti-pattern 1. The output must name a concrete unhappy case, a concrete consequence path, and a concrete user — anything generic means the moves were performed as ritual, not as thinking.
+
+Read `forward-thinking-discipline` SKILL.md before writing any plan, brief, or prompt for a T2-tier task.
 
 ### Knowledge update rule — mandatory
 Every prompt must explicitly assess: does this work produce new facts, rules, decisions, or structural changes that belong in knowledge? The assessment must result in one of three outcomes — not a vague "not applicable":
