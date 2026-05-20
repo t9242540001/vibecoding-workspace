@@ -7,7 +7,7 @@ description: Create, maintain, and update the living knowledge base for any proj
 <!--
   @file:        skills/knowledge-structure/SKILL.md
   @description: Standard for creating and maintaining project living knowledge base
-  @version:     2.1
+  @version:     2.2
   @updated:     2026-05-19
 -->
 
@@ -366,6 +366,13 @@ What changes. What new constraints exist now. What risks remain.
 ## Alternatives considered
 What else was on the table and why it was not picked.
 
+## Next step to raise confidence
+**Mandatory when `Confidence: low`.** Concrete action that would move this ADR
+from low to medium or high confidence (e.g. "run experiment X for two weeks",
+"observe production behavior under load N", "consult specialist Y on tradeoff Z").
+Without this section, a low-confidence ADR is hedging in disguise.
+See skill `anti-hedging-language` Section 7.
+
 ## Source
 Where the data behind this decision came from (research session date, diagnostic logs,
 commit SHAs, external documentation).
@@ -381,6 +388,10 @@ Allowed values:
 - **Superseded by [filename of replacing ADR]** — a later decision replaced this one. Format: `Superseded by 2026-06-12-1-oauth-revised.md`. Never edit the superseded record's body; the new record is a separate file that names this one in its own Context section.
 
 The Confidence field (`low / medium / high`) coexists with Status and reflects how much trust the team currently puts in the decision. A Proposed-low ADR is honest; pretending it is Accepted-high is not.
+
+### Low-confidence ADRs require a next step
+
+When an ADR has `Confidence: low`, it must include a "Next step to raise confidence" section in the body, stating what concrete action would move it to medium or high. A low-confidence ADR without this section is hedging in disguise — claiming to record a decision while leaving the decision-quality unstated. See skill `anti-hedging-language` Section 7.
 
 ### Local INDEX of decisions/
 
@@ -696,6 +707,8 @@ Knowledge files accumulate facts that can become incorrect over time. A fact tha
 - Leave known-wrong information in knowledge "because removing it feels destructive"
 - Add contradictory facts without resolving the contradiction
 - Use vague hedges ("may be", "possibly") to avoid committing — either the fact is true or it isn't; if unknown, mark it `@todo: verify`
+
+**Hedging language as a drift signal.** When reviewing an existing knowledge file and noticing hedging phrases that did not used to be there (or that were added by a recent edit) — that is a signal that a fact has drifted into uncertainty without being formally re-examined. Treat hedging in a knowledge file as if it were a `@todo: verify` flag: stop, re-verify the fact, either confirm it as fact (remove the hedge with evidence) or escalate to ADR if the situation has actually changed. See skill `anti-hedging-language` Section 7 for the discipline applied to writing.
 
 **Periodic review:** At the end of a work session, if any fact was touched tangentially and its currentness is in doubt — flag it with an `@todo: verify` inline comment. Do not rewrite on suspicion alone. The periodic Wiki Lint pass (Section 16) picks these flags up and resolves them.
 
