@@ -7,7 +7,7 @@ description: Standard for marking up code files and knowledge files — file hea
 <!--
   @file:        skills/code-markup-standard/SKILL.md
   @description: Standard for code and knowledge file markup
-  @version:     1.2
+  @version:     1.3
   @updated:     2026-05-19
 -->
 
@@ -222,7 +222,7 @@ Tags are single-line markers placed inline where they apply. They are not prose 
 - `@important: description` — critical behavioral detail, not a prohibition.
 
 **Task tracking tags:**
-- `@todo: description (→ knowledge/roadmap/tasks/YYYY-MM-DD-slug.md)` — task to implement later. **Mandatory link to a roadmap task file.** A bare `@todo:` without a roadmap link is the code-level form of silent deferral (per skill `anti-hedging-language` Section 5 Step 4): the comment will be forgotten and the work lost. If the task is too small to deserve a roadmap entry — resolve it in the current prompt, do not write `@todo:`. See skill `anti-hedging-language` Section 7.
+- `@todo: description (→ knowledge/roadmap/tasks/2026-05-20-refactor-auth.md)` — task to implement later. **Mandatory link to a roadmap task file.** A bare `@todo:` without a roadmap link is the code-level form of silent deferral (per skill `anti-hedging-language` Section 5 Step 4): the comment will be forgotten and the work lost. If the task is too small to deserve a roadmap entry — resolve it in the current prompt, do not write `@todo:`. See skill `anti-hedging-language` Section 7. The path shown is an example, not a literal — substitute the actual roadmap task filename in the format `YYYY-MM-DD-slug.md`.
 - `@bug: description` — known problem, not yet fixed
 
 **Operational awareness tags:**
@@ -238,6 +238,14 @@ Tags are single-line markers placed inline where they apply. They are not prose 
   - **Inline above a block or function** — when the universal is a specific function, class, or block inside a larger non-universal file. Example: `@universal: knowledge/universals/tools.md#APIErrorWrapper` placed above the exported function that implements that universal.
 
 The tag is required for every code unit that corresponds to a registry entry. Missing the tag makes the universal invisible from the code side; future sessions won't know the file participates in the universals discipline.
+
+**Verification-status tags:**
+- `@verified-by: <scenario-or-link>` — marks code that has passed real-path verification (per skill `real-path-verification` Section 7). The link points to the scenario name in the REAL-PATH VERIFICATION block of the prompt that introduced the code, or to a `knowledge/roadmap/tasks/<task>.md#verification-log` entry where the verification was recorded. Two placement modes:
+  - Inline above the function or block that was verified
+  - In the file header when the entire file's logic was end-to-end verified
+- `@pending-verification` — marks code that is `coded` but not yet `verified` (per skill `real-path-verification` Section 7 — the three states `coded` / `pending-verification` / `verified`). Lifespan: until verification closes or the task is closed by other means. Lingering `@pending-verification` tags in code older than ~30 days are an integrity-check signal (per `knowledge-structure` Section 13) — the verification handoff is stale and should be revisited.
+
+Both tags are added by Claude Code when the prompt creates or modifies runtime behavior in scope of `real-path-verification`. They are not retroactive — old code does not get marked unless it's being touched anyway.
 
 **Tags are opt-in by relevance, not mandatory** — *except* `@rule`, `@universal`, `RULE:` anchors, and `@todo:` tags, which are mandatory in the following sense: `@rule` / `@universal` / `RULE:` are mandatory **when the conditions apply** (rule exists, universal is registered, recurrence-prone bug was fixed); `@todo:` is mandatory **in its link form** — wherever `@todo:` appears, the roadmap link is required, not the tag itself. Use the other tags where they help future sessions — don't fill files with ceremonial tags.
 
@@ -345,5 +353,6 @@ When touching an old file that uses a previous version of this standard:
 - **`knowledge-structure`** — Section 6 (File Format Standard) references Section 11 of this skill for the knowledge header format.
 - **`universality-discipline`** — Section 9 (Connections to Other Skills) references this skill for the `@universal` tag, both as a file-header field (Section 4) and as an inline operational tag (Section 7), plus the bilateral integrity rule in Section 9 (Rules and Universals Hierarchy).
 - **`anti-hedging-language`** — Section 7 references Section 7 of this skill for the `@todo:` tag rule. A bare `@todo:` without a roadmap link is the code-level shape of the silent deferral that `anti-hedging-language` addresses.
+- **`real-path-verification`** — Section 10 "Application in Existing Processes" references Section 7 of this skill for the two new inline tags `@verified-by` and `@pending-verification`. Both tags mirror the three states of verification lifecycle (`coded` / `pending-verification` / `verified`) defined in `real-path-verification` Section 7.
 
 When a prompt creates or modifies files — this skill must be read alongside `prompt-writing-standard`.
