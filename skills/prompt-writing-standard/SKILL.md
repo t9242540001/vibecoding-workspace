@@ -7,7 +7,7 @@ description: Complete workflow and template for writing Claude Code prompts. Use
 <!--
   @file:        skills/prompt-writing-standard/SKILL.md
   @description: Complete workflow for writing Claude Code prompts
-  @version:     3.5
+  @version:     3.6
   @updated:     2026-05-19
 -->
 
@@ -93,6 +93,7 @@ Before reading code files and before writing the prompt, the model MUST read the
 **Related skills:**
 - When creating or updating knowledge files in this prompt, apply the rules from skill `knowledge-structure` — in particular Section 9 (Content Preservation) and the rules for anti-duplication, stale information, and INDEX integrity. Read `knowledge-structure` SKILL.md before writing any prompt that touches knowledge files.
 - When the task creates or affects any technical or design unit (components, engines, tools, design tokens, text patterns, forms), apply the rules from skill `universality-discipline`. Read its SKILL.md before formulating the plan in Step 7 — the plan must state explicit reuse decisions for each candidate unit.
+- When the task produces any plan, brief, prompt, ADR, knowledge entry, or review summary, apply the rules from skill `anti-hedging-language` — every hedging phrase ("possibly", "later", "should work", "not critical", "не должно", "возможно") becomes a self-directing question about knowing, searching, or deferring. Read its SKILL.md before writing the plan in Step 7.
 
 **Step 6b — Read code file contents. BLOCKING RULE.**
 Request and read FULL actual content of every affected file identified in Step 5. Summaries like "this file contains..." are not accepted. No prompt without verified file contents. No exceptions.
@@ -194,6 +195,12 @@ This check is the primary defense against the broken-telephone drift described i
 
 > *"Does the prompt create or affect any technical or design unit without an explicit reuse decision? Walk through CONTEXT, TASK, REGRESSION SHIELD, ACCEPTANCE CRITERIA — are all candidate units accounted for via 'Reuses: X from universals/<file>.md' (existing) or 'New universal added to universals/<file>.md' (new) or an explicit Vasily-approved deviation? Silent creation of a parallel variant that bypasses the registry is an error ❌, not a warning ⚠️."*
 
+**Mandatory hedging check** (answered by the Technical reviewer, explicitly, in addition to the questions above):
+
+> *"Read through CONTEXT, TASK, REGRESSION SHIELD, ACCEPTANCE CRITERIA, and the review summary. Find every hedging phrase — 'possibly', 'probably', 'likely', 'later', 'minimum for now', 'should work', 'should not break', 'if anything', 'in most cases', 'не должно', 'возможно', 'для начала', or equivalents. For each one, ask: is this knowledge with evidence, honest unknown with a concrete next step, or hidden deferral? Hidden deferral — softening that releases the author from action without an artefact to track it — is an error ❌, not a warning ⚠️. Tonal hedging that does not change next actions is OK. Honest unknown without a concrete next step (the 'I do not know AND must learn through X' formula from `anti-hedging-language` Section 4) is ⚠️."*
+
+This check is the primary defense against the silent-deferral failure mode described in `anti-hedging-language`. A prompt that passes all other checks but contains hidden deferrals still fails Step 9.
+
 Format each review as:
 ```
 #### Проверка: [Role Name]
@@ -214,6 +221,13 @@ After all three perspectives are checked:
 - **Принятые решения:** [список — что исправлено и почему]
 - **Осознанно оставлено:** [список — что замечено, но не исправляется, с обоснованием]
 ```
+
+Every item in **«Осознанно оставлено»** must satisfy one of two conditions:
+
+- **(a)** Link to a concrete artefact where the deferred work is tracked — a task file under `knowledge/roadmap/tasks/`, a WIP ADR under `knowledge/decisions/`, or a discovery entry under `knowledge/discovery/`. The link makes the deferral real and recoverable.
+- **(b)** Explicit phrase **«Vasily explicitly chose to defer — see chat context»** with one sentence stating why deferral was chosen.
+
+Items lacking both (a) and (b) are not legitimate deferrals — they are silent deferrals (the failure mode `anti-hedging-language` is built to prevent). Such items must be either resolved within this prompt or escalated to Vasily for an explicit decision before the prompt is finalized.
 
 The summary is mandatory. **Without this summary, Step 9 is considered incomplete** — the prompt is not ready to present to Vasily. Full review texts (the three perspectives in detail) are not output to chat by default — Vasily can request them explicitly if he wants to see the full reasoning.
 
@@ -335,6 +349,19 @@ When a prompt creates or affects any technical or design unit (components, engin
 The Technical reviewer in Step 9 verifies that no candidate unit slipped through without a registry decision (universality check). A prompt that creates a parallel variant of a registered universal without a stated §8 boundary reason fails Step 9 as ❌, not ⚠️.
 
 Read `universality-discipline` SKILL.md before writing any prompt in scope.
+
+### Anti-hedging discipline — mandatory
+Every text produced during prompt writing — plan, brief, prompt itself, review summary, ADRs, knowledge entries — is subject to skill `anti-hedging-language`. Hedging language ("possibly", "probably", "later", "should work", "not critical", "minimum for now", "не должно", "возможно", "для начала") is a trigger for a self-directing question, not a stylistic choice to soften: does this hedge protect knowledge with evidence, an honest unknown with a concrete next step, or quiet deferral?
+
+Three enforcement points within this prompt-writing workflow:
+
+- **During Step 7 / Step 8a / Step 8b** — every hedge in the plan, brief, or prompt body is resolved into evidence, an explicit next step, or — only on Vasily's explicit defer — a tracked artefact in `knowledge/roadmap/tasks/` or `knowledge/decisions/`.
+- **During Step 9 hedging check** — the Technical reviewer scans the prompt and review summary for residual hedging. Hidden deferral = ❌. Honest unknown without next step = ⚠️.
+- **During Step 10 «Осознанно оставлено»** — every deferred item links to an artefact (a) or cites explicit Vasily defer (b). Silent deferral is not allowed in the summary.
+
+A `low-confidence` ADR created as part of the prompt must include a "Next step to raise confidence" paragraph (per `anti-hedging-language` Section 7 and `knowledge-structure` integration), naming the concrete action that would move it to `medium` or `high`.
+
+Read `anti-hedging-language` SKILL.md before writing any plan, brief, prompt, or review summary.
 
 ### Knowledge update rule — mandatory
 Every prompt must explicitly assess: does this work produce new facts, rules, decisions, or structural changes that belong in knowledge? The assessment must result in one of three outcomes — not a vague "not applicable":
