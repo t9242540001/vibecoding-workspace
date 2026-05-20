@@ -1,14 +1,14 @@
 ---
 name: code-markup-standard
-description: Standard for marking up code files and knowledge files — file headers, function documentation, region comments, inline operational tags, and RULE comments. Use this skill whenever writing or modifying a prompt that creates or edits code files, and whenever creating or updating knowledge/*.md files. Referenced by prompt-writing-standard and knowledge-structure skills.
+description: Standard for marking up code files and knowledge files — file headers, function documentation, region comments, inline operational tags, and RULE comments. Use this skill whenever writing or modifying a prompt that creates or edits code files, and whenever creating or updating knowledge/*.md files. Referenced by prompt-writing-standard, knowledge-structure, and universality-discipline skills.
 ---
 
 # Code Markup Standard
 <!--
   @file:        skills/code-markup-standard/SKILL.md
   @description: Standard for code and knowledge file markup
-  @version:     1.0.1
-  @updated:     2026-04-15
+  @version:     1.1
+  @updated:     2026-05-19
 -->
 
 ---
@@ -18,7 +18,7 @@ description: Standard for marking up code files and knowledge files — file hea
 Markup serves three purposes, in this order of priority:
 
 1. **Regression protection** — `RULE:` comments next to vulnerable code make Claude Code see the rule on every future edit, preventing the same mistake twice.
-2. **Grep-friendly navigation** — operational tags (`@rule`, `@bug`, `@todo`, `@cost`…) allow a single `grep -r` to map critical spots across the project.
+2. **Grep-friendly navigation** — operational tags (`@rule`, `@bug`, `@todo`, `@cost`, `@universal`…) allow a single `grep -r` to map critical spots across the project.
 3. **Structural clarity** — file headers, function docs, region comments make files readable in one pass.
 
 Markup is not about bureaucracy — it's about giving future sessions (of Claude Code, or yourself) the context they need without re-reading everything.
@@ -162,15 +162,18 @@ pub fn my_function(arg: &str) -> bool {}
 
 ## 4. File Header — Minimal Set
 
-Every code file gets a header **at the top of the file** with at most three fields:
+Every code file gets a header **at the top of the file** with at most four fields:
 
 - `@file` — path relative to repo root
 - `@description` — one line, what this file does
 - `@rule` — CRITICAL rule at file level that must not be violated (optional — include only if such a rule exists)
+- `@universal` — pointer to the registry entry if this file implements a registered universal (optional — include only if this file's primary purpose is to implement a unit listed in `knowledge/universals/*.md`)
 
 That's it. No `@lastModified`, no `@dependencies`, no `@author`. Git tracks these better.
 
 **`@rule` in the file header is about the file as a whole** — violation breaks the entire file's contract. For rules about specific lines or blocks, use inline `RULE:` comments (Section 8).
+
+**`@universal` in the file header is about the file as a whole** — the file's primary purpose is to implement a registered universal. Example: `src/components/ui/Button.tsx` carries `@universal: knowledge/universals/components.md#PrimaryButton`. This makes the universal-to-code link visible from the code side (the registry already knows where the code lives via its `Lives at` column). For universals that are blocks or functions inside a larger non-universal file, use the inline `@universal` tag (Section 7) instead of the file-level header field.
 
 ---
 
@@ -229,7 +232,14 @@ Tags are single-line markers placed inline where they apply. They are not prose 
 - `@rate-limit: description` — rate-limited operation (e.g. `@rate-limit: 60 req/min per user`)
 - `@pii: description` — handles personal or sensitive data (requires extra care for logging, storage, transmission)
 
-**Tags are opt-in by relevance, not mandatory.** Use them where they help future sessions — don't fill files with ceremonial tags.
+**Universal-traceability tag:**
+- `@universal: <link>` — marks code that implements (or is part of) a registered universal. The link points to the entry in `knowledge/universals/<file>.md`. Two placement modes:
+  - **In the file header** (Section 4) — when the entire file's primary purpose is to implement a registered universal. Example: `@universal: knowledge/universals/components.md#PrimaryButton` in `src/components/ui/Button.tsx`.
+  - **Inline above a block or function** — when the universal is a specific function, class, or block inside a larger non-universal file. Example: `@universal: knowledge/universals/tools.md#APIErrorWrapper` placed above the exported function that implements that universal.
+
+The tag is required for every code unit that corresponds to a registry entry. Missing the tag makes the universal invisible from the code side; future sessions won't know the file participates in the universals discipline.
+
+**Tags are opt-in by relevance, not mandatory** — *except* `@rule`, `@universal`, and `RULE:` anchors, which are mandatory when the conditions they describe apply (rule exists, universal is registered, recurrence-prone bug was fixed). Use the other tags where they help future sessions — don't fill files with ceremonial tags.
 
 ---
 
@@ -256,19 +266,36 @@ No conflict between the three — they have different scopes. All three can coex
 
 ---
 
-## 9. Rules Hierarchy — Three Places, One Source of Truth
+## 9. Rules and Universals Hierarchy — Three Places, One Source of Truth
+
+Both project rules and project universals follow the same architectural pattern: a single source of truth in knowledge, mirrored by operational markers in code.
+
+### Rules hierarchy
 
 Project rules can appear in three places:
 
 | Place | Role | Relationship |
 |---|---|---|
-| `CLAUDE.md` — Critical rules list | High-level pointers, max 5, most severe only | Points to `knowledge/rules.md` for full list |
-| `knowledge/rules.md` | **Source of truth** — complete registry of all project rules | Authoritative. All rules live here. |
-| `@rule` in code | Operational marker next to code | Mirror of an entry from `rules.md` |
+| `CLAUDE.md` — Critical rules list | High-level pointers, max 5, most severe only | Points to `knowledge/rules/` for full list |
+| `knowledge/rules/` | **Source of truth** — complete registry of all project rules | Authoritative. All rules live here. |
+| `@rule` in code | Operational marker next to code | Mirror of an entry from `rules/` |
 
-**Iron rule:** a rule cannot exist only in code. Every `@rule` in code must correspond to an entry in `knowledge/rules.md`. When you add a new `@rule` to code — add the same rule to `rules.md` in the same prompt. When you remove a rule from `rules.md` — clean up corresponding `@rule` markers in code.
+**Iron rule:** a rule cannot exist only in code. Every `@rule` in code must correspond to an entry in `knowledge/rules/`. When you add a new `@rule` to code — add the same rule to `rules/` in the same prompt. When you remove a rule from `rules/` — clean up corresponding `@rule` markers in code.
 
 This prevents the drift where code comments say one thing and documentation says another.
+
+### Universals hierarchy
+
+The same architectural pattern applies to universals:
+
+| Place | Role | Relationship |
+|---|---|---|
+| `knowledge/universals/*.md` | **Source of truth** — complete registry of reusable units | Authoritative. All universals live here. |
+| `@universal` tag in code (header or inline) | Operational marker next to the code that implements the universal | Mirror of an entry from `universals/*.md` |
+
+**Iron rule:** a universal cannot exist only in code. Every `@universal` tag in code must correspond to an entry in `knowledge/universals/<file>.md`. When you add a new universal — add the entry to `universals/` and the `@universal` tag to the file in the same prompt. When you remove an entry from `universals/` (by Vasily's explicit command, per `universality-discipline` Section 5) — clean up corresponding `@universal` tags in code.
+
+The reverse drift is also forbidden: an entry in `universals/<file>.md` whose `Lives at` column points at a file that lacks an `@universal` tag is broken. The integrity check in `knowledge-structure` Section 13 surfaces this mismatch.
 
 ---
 
@@ -308,11 +335,14 @@ When touching an old file that uses a previous version of this standard:
 - If the file is not being touched — leave it. Do not create prompts whose sole purpose is re-marking old files, unless the markup gap is actively causing problems.
 - The current standard version is tracked in this skill's header (`@version`). Files don't need to declare which version of the standard they follow — the repo uses whatever this skill's current version says.
 
+**Special case for `@universal`:** during the Bootstrap procedure for an existing project's universals registry (per `universality-discipline` Section 5 and `knowledge-structure` Section 15), every file that ends up registered in `knowledge/universals/*.md` gets its `@universal` tag added in the same Bootstrap operation. This avoids a state where the registry knows the file but the file does not know it's a universal.
+
 ---
 
 ## 13. How Other Skills Reference This
 
 - **`prompt-writing-standard`** — Step 6b (Read code files) and Section 3 (Prompt Template) reference this skill for markup rules of any file being created or modified.
 - **`knowledge-structure`** — Section 6 (File Format Standard) references Section 11 of this skill for the knowledge header format.
+- **`universality-discipline`** — Section 9 (Connections to Other Skills) references this skill for the `@universal` tag, both as a file-header field (Section 4) and as an inline operational tag (Section 7), plus the bilateral integrity rule in Section 9 (Rules and Universals Hierarchy).
 
 When a prompt creates or modifies files — this skill must be read alongside `prompt-writing-standard`.
