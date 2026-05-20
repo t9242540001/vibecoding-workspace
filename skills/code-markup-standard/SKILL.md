@@ -7,7 +7,7 @@ description: Standard for marking up code files and knowledge files — file hea
 <!--
   @file:        skills/code-markup-standard/SKILL.md
   @description: Standard for code and knowledge file markup
-  @version:     1.1
+  @version:     1.2
   @updated:     2026-05-19
 -->
 
@@ -222,7 +222,7 @@ Tags are single-line markers placed inline where they apply. They are not prose 
 - `@important: description` — critical behavioral detail, not a prohibition.
 
 **Task tracking tags:**
-- `@todo: description` — task to implement later
+- `@todo: description (→ knowledge/roadmap/tasks/YYYY-MM-DD-slug.md)` — task to implement later. **Mandatory link to a roadmap task file.** A bare `@todo:` without a roadmap link is the code-level form of silent deferral (per skill `anti-hedging-language` Section 5 Step 4): the comment will be forgotten and the work lost. If the task is too small to deserve a roadmap entry — resolve it in the current prompt, do not write `@todo:`. See skill `anti-hedging-language` Section 7.
 - `@bug: description` — known problem, not yet fixed
 
 **Operational awareness tags:**
@@ -239,7 +239,7 @@ Tags are single-line markers placed inline where they apply. They are not prose 
 
 The tag is required for every code unit that corresponds to a registry entry. Missing the tag makes the universal invisible from the code side; future sessions won't know the file participates in the universals discipline.
 
-**Tags are opt-in by relevance, not mandatory** — *except* `@rule`, `@universal`, and `RULE:` anchors, which are mandatory when the conditions they describe apply (rule exists, universal is registered, recurrence-prone bug was fixed). Use the other tags where they help future sessions — don't fill files with ceremonial tags.
+**Tags are opt-in by relevance, not mandatory** — *except* `@rule`, `@universal`, `RULE:` anchors, and `@todo:` tags, which are mandatory in the following sense: `@rule` / `@universal` / `RULE:` are mandatory **when the conditions apply** (rule exists, universal is registered, recurrence-prone bug was fixed); `@todo:` is mandatory **in its link form** — wherever `@todo:` appears, the roadmap link is required, not the tag itself. Use the other tags where they help future sessions — don't fill files with ceremonial tags.
 
 ---
 
@@ -344,5 +344,6 @@ When touching an old file that uses a previous version of this standard:
 - **`prompt-writing-standard`** — Step 6b (Read code files) and Section 3 (Prompt Template) reference this skill for markup rules of any file being created or modified.
 - **`knowledge-structure`** — Section 6 (File Format Standard) references Section 11 of this skill for the knowledge header format.
 - **`universality-discipline`** — Section 9 (Connections to Other Skills) references this skill for the `@universal` tag, both as a file-header field (Section 4) and as an inline operational tag (Section 7), plus the bilateral integrity rule in Section 9 (Rules and Universals Hierarchy).
+- **`anti-hedging-language`** — Section 7 references Section 7 of this skill for the `@todo:` tag rule. A bare `@todo:` without a roadmap link is the code-level shape of the silent deferral that `anti-hedging-language` addresses.
 
 When a prompt creates or modifies files — this skill must be read alongside `prompt-writing-standard`.
