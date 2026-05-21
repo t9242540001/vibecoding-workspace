@@ -484,7 +484,6 @@ Select applicable checks based on task type:
 | Deploy / infrastructure | pm2 status → all processes online; health endpoint → 200 OK |
 | Frontend / build | npm run build exits 0; target page loads without errors |
 | Backend / API | endpoint responds with expected status and payload |
-
 | Documentation only | all modified files have updated @updated date; INDEX.md updated |
 | Any task with code change | no TypeScript/lint errors; regression shield respected |
 
