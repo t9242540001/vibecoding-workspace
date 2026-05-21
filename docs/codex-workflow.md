@@ -39,9 +39,9 @@ For batch execution, Codex:
 4. Applies each prompt's regression shield.
 5. Edits only the declared scope.
 6. Runs relevant verification.
-7. Reports the verified diff for a trusted wrapper or human to commit.
+7. Reports the verified diff for `scripts/codex-trusted-checkpoint.sh` or a human to commit.
 8. Stops on critical conditions instead of guessing.
-9. Reports changed files, checks, stop conditions, and final `git status`; the trusted wrapper or human records and pushes git checkpoints.
+9. Reports changed files, checks, stop conditions, and final `git status`; the trusted wrapper validates the diff, creates the git checkpoint, and pushes the current branch for low-risk batches.
 
 Codex batch execution is documented in `standards/codex-batch-execution-standard.md`.
 

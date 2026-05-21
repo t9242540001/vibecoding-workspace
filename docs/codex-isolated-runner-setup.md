@@ -79,6 +79,12 @@ The runner does not need to perform Git commits or pushes from inside the Codex 
 
 This split is intentional. It keeps file-changing autonomy inside the hardened runner while leaving Git metadata and network push in a smaller trusted layer.
 
+Low-risk checkpoint wrapper example after Codex completes a prompt or batch:
+
+```
+scripts/codex-trusted-checkpoint.sh <batch_id> "<commit message>"
+```
+
 ---
 
 ## 5. Process-Local WSL Mount Namespace Hardening

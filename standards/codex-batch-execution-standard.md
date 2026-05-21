@@ -30,6 +30,8 @@ Vasily -> AI orchestrator -> Codex -> prompt queue -> verified file changes -> t
 
 Codex owns scoped repo-local file execution inside the current repository. A trusted wrapper or human owns git metadata and push when the active Codex sandbox does not safely support commit/push. GitHub remains the source of truth after commits are pushed.
 
+For low-risk repo-local batches, the default trusted checkpoint wrapper is `scripts/codex-trusted-checkpoint.sh`. It validates the diff, blocks high-risk paths and deletes by default, commits with `[batch:<batch_id>]`, and pushes the current branch. Human review remains the fallback and is required for high-risk tasks.
+
 ---
 
 ## 3. What A Codex Batch Is
