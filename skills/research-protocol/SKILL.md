@@ -7,8 +7,8 @@ description: Deep investigation protocol using the virtual team roster, with a d
 <!--
   @file:        skills/research-protocol/SKILL.md
   @description: Deep investigation by the virtual team for decisions with long-term consequences
-  @version:     1.2
-  @updated:     2026-05-20
+  @version:     1.3
+  @updated:     2026-05-21
 -->
 
 ---
@@ -150,6 +150,7 @@ Fixed skeleton (so Vasily can scan predictably), with some blocks conditional on
 - **Alternatives considered and rejected** — only when alternatives were actually examined in phase 2 or 3. Don't invent rejected alternatives to fill the section.
 - **What to re-verify before implementation** — only when the recommendation rests on data that can age (affiliate rates, API tariffs, service terms). For purely architectural decisions about internal code, skip this block.
 - **Team disagreements** — only when phase 2 produced real disagreements. Don't stage disagreements for the format's sake.
+- **Series Charter handoff** — only when the recommendation translates to an implementation of 3+ sequential Claude Code prompts forming one project increment (per skill `series-design-discipline` Section 2 triggers). In that case, the final report's handoff to implementation does NOT go directly to `prompt-writing-standard` for the first prompt — it goes to `series-design-discipline` first, which composes the Series Charter (Product frame / Invariants / Dependency map / Per-step plan / Definition of Done) from this research's findings; only then each individual prompt is written per `prompt-writing-standard`. Single-prompt implementations skip this block — the handoff goes straight to `prompt-writing-standard` as before. The Charter is written before the first prompt of the series (forward mode) per `series-design-discipline` §2 Trigger 1; if for some reason the series-shape was not visible at research time and only emerges after prompt 01 or 02, the Charter is drafted retroactively (discovery mode, §2 Trigger 2) — but for a research-driven decision the forward mode is the default.
 
 The principle: a shorter report with only the applicable blocks is better than a longer report with ritual-filled sections.
 
@@ -228,6 +229,7 @@ These are the specific failure modes this skill exists to prevent. If Claude cat
 - **`prompt-writing-standard`** — research often produces, as its result, a Claude Code prompt based on the approved decision. That prompt still follows `prompt-writing-standard` Section 2 (Context / Task / Regression Shield / Acceptance Criteria). This skill stops at the research report; prompt-writing takes over from there.
 - **`bug-hunting`** — different domain. `bug-hunting` handles "something is broken, find the cause"; this skill handles "before we decide, investigate". A bug that requires a decision about whether to fix, refactor, or rewrite may hand off from `bug-hunting` to this skill.
 - **`forward-thinking-discipline`** — counterpart in scale. This skill (research-protocol) handles T3 strategic decisions where formal premortem covers the whole recommendation; `forward-thinking-discipline` handles T2 micro-decisions and tactical choices inside Phase 3 where premortem would be overkill but design-time forward thinking is still mandatory. They are complementary — both run on a T3 task with tactical sub-decisions, neither replaces the other. See §4 Phase 3 critical questions for the activation rule.
+- **`series-design-discipline`** — handoff target when the research-driven recommendation translates to an implementation of 3+ sequential Claude Code prompts forming one project increment (per `series-design-discipline` Section 2 triggers). The Series Charter (Product frame / Invariants / Dependency map / Per-step plan / Definition of Done — Section 3 of that skill) consumes this research's findings: the recommendation becomes the Charter's Product frame; the premortem result feeds the Charter's Invariants; tactical micro-decisions surfaced during Phase 3 land in the Charter's Dependency map. Composing the Charter is a separate step between this skill and `prompt-writing-standard` — research-protocol stops at the report, `series-design-discipline` composes the Charter, then `prompt-writing-standard` writes each individual prompt with the Charter cited in its CONTEXT block. Single-prompt implementations bypass `series-design-discipline` and go directly from this skill to `prompt-writing-standard` as before. See §4 Phase 4 "Series Charter handoff" conditional block for the activation rule.
 
 ---
 
