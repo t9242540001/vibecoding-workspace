@@ -7,8 +7,8 @@ description: Complete workflow and template for writing Claude Code prompts. Use
 <!--
   @file:        skills/prompt-writing-standard/SKILL.md
   @description: Complete workflow for writing Claude Code prompts
-  @version:     3.9
-  @updated:     2026-05-21
+  @version:     3.8
+  @updated:     2026-05-20
 -->
 
 ---
@@ -75,15 +75,12 @@ Before reading code files and before writing the prompt, the model MUST read the
 
 5. **`knowledge/universals/*.md`** — universals registry. Read the thematic files relevant to the task scope (e.g. `components.md` for UI work, `engines.md` for backend modules, `text-patterns.md` for any user-facing copy). This is the data source for Checkpoint 1 in Step 7 — without it, the plan cannot state reuse decisions. If the project has no `knowledge/universals/` folder yet, the skill `universality-discipline` Bootstrap procedure (Section 5) runs as part of the current work.
 
-6. **Series Charter** (if the prompt is part of a series of 3+ prompts) — read the Charter at `knowledge/series-charters/<series-name>.md` if one exists for the current series, per skill `series-design-discipline`. The Charter contains the Product frame, Invariants, Dependency map, Per-step plan, and Definition of Done that govern every prompt in the series. If the prompt is part of a series and no Charter exists yet, the skill `series-design-discipline` Creation procedure (forward or discovery mode) runs **before** writing this prompt.
-
 **Why this matters:**
 - The REGRESSION SHIELD block in the prompt template requires "critical rules for this project" — these come from CLAUDE.md and knowledge, otherwise the block is empty or fabricated.
 - The domain expert in Step 9 cannot fully review the prompt without knowing project decision history.
 - Without knowledge, the model works "from scratch" every session, discarding accumulated project context — defeating the purpose of the knowledge system.
 - Conflicts with already-made decisions are caught BEFORE writing the prompt, not after execution.
 - Without `universals/*.md`, every new feature defaults to building from scratch instead of reusing — the failure mode this whole skill set exists to prevent.
-- Without the Series Charter, prompts of one series drift from a shared design into a chain of disconnected work items — the failure mode `series-design-discipline` exists to prevent.
 
 **Not accepted:**
 - Knowledge file summaries from Vasily — only full reads via file MCP or AI Knowledge Base MCP.
@@ -99,7 +96,6 @@ Before reading code files and before writing the prompt, the model MUST read the
 - When the task produces any plan, brief, prompt, ADR, knowledge entry, or review summary, apply the rules from skill `anti-hedging-language` — every hedging phrase ("possibly", "later", "should work", "not critical", "не должно", "возможно") becomes a self-directing question about knowing, searching, or deferring. Read its SKILL.md before writing the plan in Step 7.
 - When the task creates or modifies runtime behavior (feature, fix, refactor with logical change, schema migration, API contract change, integration, calculation, validation, parsing), apply the rules from skill `real-path-verification` — mental simulation before delivery, forward thinking on 1-2 step harmful consequences with industry best-practice redesign, real-path verification inside the prompt where access allows, and explicit verification handoff to Vasily for prod-side checks. Read its SKILL.md before formulating the plan in Step 7.
 - When the task is T2 (or a micro-decision inside a research-protocol T3 session), apply the rules from skill `forward-thinking-discipline` — three mental moves at design-time before the TASK block is formed: Default inversion (treat happy path as exception), What-it-touches (1-2 steps downstream across System / Neighbour-system / User layers in predictive mode), User-lens (concrete persona + concrete observation). Output lands in the REGRESSION SHIELD block. This is the design-time counterpart of `real-path-verification` (which operates at verification-time, after code is written). Read its SKILL.md before formulating the plan in Step 7. Hard exclusions: T1 tasks, pure text content, pure documentation, mechanical fixes.
-- When the prompt is part of a series of 3+ prompts forming one project increment (a new ЭТАП in a project ТЗ, a feature implementation across multiple files, a research-protocol recommendation that translates into multiple prompts), apply the rules from skill `series-design-discipline`. A Series Charter at `knowledge/series-charters/<series-name>.md` defines the shared Product frame, Invariants, Dependency map, Per-step plan, and Definition of Done for the whole series. The current prompt's CONTEXT block cites the Charter and lists the invariants that apply to this specific prompt. After the current prompt completes, the Charter is updated in the same commit. Read its SKILL.md before formulating the plan in Step 7. Hard exclusions: genuinely single-prompt tasks, pure mechanical batches with no logical state between prompts, pure documentation series.
 
 **Step 6b — Read code file contents. BLOCKING RULE.**
 Request and read FULL actual content of every affected file identified in Step 5. Summaries like "this file contains..." are not accepted. No prompt without verified file contents. No exceptions.
@@ -137,17 +133,6 @@ For every technical or design unit the task creates or affects (as classified by
 - *"Existing X almost fits but [reason]. Need Vasily's decision: extend via parameters, or create parallel universal?"* — STOP within the plan, do not resolve silently. Wait for Vasily.
 
 The plan is rejected if it creates or affects a universal-scope unit without stating one of these three forms. Silent invention is forbidden.
-
-**Series Charter Checkpoint — mandatory within the plan when the prompt is part of a series.**
-If the current prompt is part of a series of 3+ prompts (per skill `series-design-discipline`), the plan must state:
-
-- **Which series this prompt belongs to** — name and link to the Charter file at `knowledge/series-charters/<series-name>.md`.
-- **Which Charter invariants apply to this prompt** — list the specific invariants from Charter Section 2 that constrain the work in this prompt.
-- **Which Charter dependencies this prompt produces or consumes** — what state, schema, file, or contract this prompt produces for later prompts in the series; what it consumes from earlier prompts (per Charter Section 3 Dependency map).
-- **Which Charter step number this prompt is** — corresponds to a numbered step in Charter Section 4 Per-step plan.
-- **Charter update planned for this prompt's commit** — what status changes and what new dependencies/invariants will be added to the Charter when this prompt completes (per `series-design-discipline` Section 4 Update after each prompt).
-
-The plan is rejected if the prompt is part of a series and these five points are absent. If no Charter exists yet for the series, the plan stops here and the `series-design-discipline` Creation procedure runs first (forward or discovery mode per that skill Section 4). Hard exclusions per `series-design-discipline` Section 2 — if the task is genuinely single-prompt, a pure mechanical batch, or a pure documentation series — the checkpoint is skipped and the exclusion reason stated explicitly in the plan.
 
 User approves or corrects. Prompt is written only after approval.
 
@@ -246,12 +231,6 @@ This check is the primary defense against shipping features that pass tests but 
 
 This check is the primary defense against the "green tests, shipping" pattern that `real-path-verification` Section 11 names as recurring wrong shape.
 
-**Mandatory Series Charter check** (answered by the Technical reviewer, explicitly, in addition to the questions above — only when the prompt is part of a series):
-
-> *"If this prompt is part of a series of 3+ prompts (per skill `series-design-discipline`), does the CONTEXT block cite the Series Charter at `knowledge/series-charters/<series-name>.md` and list the specific invariants from Charter Section 2 that apply to this prompt? Does the prompt's plan match the Charter's Section 4 Per-step plan entry for this step? Does the ACCEPTANCE CRITERIA include the Charter update for this prompt's commit per Charter Section 4 lifecycle? If the prompt is part of a series and the Charter is not cited, or the invariants are not listed, or the Charter update is missing from AC — that is an error ❌, not a warning ⚠️. If no Charter exists yet but the prompt is clearly part of a series, the prompt fails Step 9 and the `series-design-discipline` Creation procedure runs first."*
-
-This check is the primary defense against series drift — the failure mode `series-design-discipline` exists to prevent.
-
 Format each review as:
 ```
 #### Проверка: [Role Name]
@@ -309,7 +288,6 @@ Project: [name]
 Repository: [URL]
 Affected files: [exact paths relative to repo root]
 Reuses: [list of universals used in this prompt, with their location in the registry and the adaptation parameters being passed. Example: "PrimaryButton from universals/components.md — props: label='Сохранить', variant='default'; API error wrapper from universals/tools.md — no params". If the prompt creates a new universal, state: "Creates new universal: <name> → universals/<file>.md, Accepts: [params]". If the task touches no universal-scope units, state: "No universals affected."]
-Series: [link to Series Charter at knowledge/series-charters/<series-name>.md, OR "Not part of a series — single-prompt task" if the prompt is standalone. When part of a series, also list the Charter invariants from Section 2 that apply to this specific prompt, the Charter step number from Section 4 Per-step plan, and what this prompt produces/consumes per Section 3 Dependency map. See skill `series-design-discipline` for the Charter format and lifecycle.]
 Current state: [what works, what's broken — based on collected data]
 
 ## TASK
@@ -361,7 +339,6 @@ Project-wide execution discipline (from `CLAUDE.md` Execution Discipline block �
 [ ] If architectural decision was made → entry added to knowledge/decisions.md
 [ ] INDEX.md updated (modification date of changed files)
 [ ] If a new universal was created → entry added to `knowledge/universals/<file>.md` with file path, "Accepts" column populated with adaptation parameters, and `@universal` tag added to the source file's header
-[ ] If part of a series → Series Charter updated in the same commit (step status moves to ✅ done with date; new dependencies or invariants discovered during this prompt added per `series-design-discipline` Section 4)
 [+ applicable infrastructure checks — see Section 4]
 
 Claude Code must report against each criterion after completion.
@@ -473,21 +450,6 @@ The discipline against ritualization: forward thinking that lists generic edge c
 
 Read `forward-thinking-discipline` SKILL.md before writing any plan, brief, or prompt for a T2-tier task.
 
-### Series design discipline — mandatory
-When the prompt is part of a series of 3+ prompts forming one project increment, the `series-design-discipline` skill is mandatory. The skill operates at the design layer **above** individual prompts — between `research-protocol` (which produces strategic recommendations) and this skill (which writes each individual prompt). A series has a single namespace of goals, invariants, and dependency rules expressed in a Series Charter document at `knowledge/series-charters/<series-name>.md`; every prompt in the series obeys that namespace.
-
-Three enforcement points within this prompt-writing workflow:
-
-- **During Step 6a** — `series-design-discipline` SKILL.md is read alongside the other related skills when the prompt is part of a series. The Series Charter is read in full as part of mandatory knowledge context (see Step 6a mandatory read #6).
-- **During Step 7 (plan)** — the Series Charter Checkpoint runs (described above in Step 7), producing five points: series name and Charter link, applicable invariants for this prompt, dependencies produced or consumed, Charter step number, and the Charter update planned for this prompt's commit.
-- **During Step 9** — the Technical reviewer verifies the CONTEXT block cites the Charter and lists applicable invariants, the plan matches the Charter's Per-step plan entry, and the ACCEPTANCE CRITERIA includes the Charter update. Missing Charter citation, missing invariants list, or missing Charter update in AC fails Step 9 as ❌ — per `series-design-discipline` Section 6 anti-patterns 1, 4, and 8.
-
-Hard exclusions per `series-design-discipline` Section 2 — the skill does not activate for genuinely single-prompt tasks, pure mechanical batches with no logical state between prompts (formatting passes, batch renames), or pure documentation series where each prompt is an isolated knowledge edit with no shared state. If an exclusion applies, the plan states which one and proceeds without the checkpoint.
-
-The two-mode activation: **forward mode** (Charter written before the first prompt of a distinct series) and **discovery mode** (Charter written retroactively after a T2 task expanded into a series). Both modes apply the same five-point Series Charter Checkpoint in Step 7 of every prompt in the series.
-
-Read `series-design-discipline` SKILL.md before writing any plan, brief, or prompt that is part of a series.
-
 ### Knowledge update rule — mandatory
 Every prompt must explicitly assess: does this work produce new facts, rules, decisions, or structural changes that belong in knowledge? The assessment must result in one of three outcomes — not a vague "not applicable":
 
@@ -522,6 +484,7 @@ Select applicable checks based on task type:
 | Deploy / infrastructure | pm2 status → all processes online; health endpoint → 200 OK |
 | Frontend / build | npm run build exits 0; target page loads without errors |
 | Backend / API | endpoint responds with expected status and payload |
+
 | Documentation only | all modified files have updated @updated date; INDEX.md updated |
 | Any task with code change | no TypeScript/lint errors; regression shield respected |
 
