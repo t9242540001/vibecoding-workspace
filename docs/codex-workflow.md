@@ -62,6 +62,7 @@ Do not use full host access or approval bypass on the host OS.
 Isolated runner setup is documented in `docs/codex-isolated-runner-setup.md`.
 
 - 2026-05-15: hardened WSL runner smoke test completed for a documentation-only Codex batch.
+- 2026-05-21: external auto-checkpoint runner smoke test completed for a documentation-only Codex batch.
 
 ## Relationship To Claude Routine Infrastructure
 
