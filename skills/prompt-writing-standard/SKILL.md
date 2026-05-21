@@ -470,8 +470,6 @@ Hard exclusions per `forward-thinking-discipline` Section 2 — the skill does n
 
 The discipline against ritualization: forward thinking that lists generic edge cases (empty/null/large) is a junior-level output that the skill explicitly forbids — see `forward-thinking-discipline` Section 5 anti-pattern 1. The output must name a concrete unhappy case, a concrete consequence path, and a concrete user — anything generic means the moves were performed as ritual, not as thinking.
 
-The output must name a concrete unhappy case, a concrete consequence path, and a concrete user — anything generic means the moves were performed as ritual, not as thinking.
-
 Read `forward-thinking-discipline` SKILL.md before writing any plan, brief, or prompt for a T2-tier task.
 
 ### Series design discipline — mandatory
