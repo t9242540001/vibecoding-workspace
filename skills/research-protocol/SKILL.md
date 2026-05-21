@@ -7,7 +7,7 @@ description: Deep investigation protocol using the virtual team roster, with a d
 <!--
   @file:        skills/research-protocol/SKILL.md
   @description: Deep investigation by the virtual team for decisions with long-term consequences
-  @version:     1.1
+  @version:     1.2
   @updated:     2026-05-20
 -->
 
@@ -122,6 +122,7 @@ This phase exists because phases 1 and 2 tend to produce a converging consensus.
 - What do I not know that I should know to be confident in this?
 - How do comparable products solve this — Russian and global? If our answer differs from what most of them do, what is our specific reason?
 - Which part of this recommendation can only be verified by running it against the real path, not by analysis? Per skill `real-path-verification` Section 5, every recommendation has consequences on the System, Neighbour-system, and User layers — some of these only surface when the code actually runs in production. State what real-path verification would test that this research cannot. If the answer is "nothing — pure analysis is sufficient", say so explicitly; if there is a layer that research cannot reach, that gap goes into the report as "what to verify before/after implementation".
+- Does this research contain any micro-decisions (tactical choices inside the strategic recommendation — specific adapter, specific library version, specific copy variant) that would benefit from forward thinking at the design-time level, before the formal premortem runs on the strategic decision as a whole? If yes, per skill `forward-thinking-discipline` Section 2, that skill is mandatory for each micro-decision: three mental moves (Default inversion / What-it-touches / User-lens) before the micro-decision is fixed. Formal premortem covers the strategic level; forward-thinking covers the tactical level. Both run — they are not interchangeable.
 
 **Hard procedure — premortem.** After the questions above, run an explicit premortem. Not a soft "think about risks" — the formal version, because it works specifically as a formal step. The grammatical shift from "what could go wrong" (speculative, low engagement) to "why did this go wrong" (observed, explanatory) activates a different kind of reasoning — that is the whole technique and what gives it its disproportionate value.
 
@@ -198,6 +199,8 @@ Not every triggered research needs the full treatment. The protocol scales down 
 
 **On specialist count:** the principle from Section 4 Phase 2 holds across all passes — specialists are chosen by relevance, not by filling a quota. Lightweight pass tends to need fewer because the question is narrow; deep pass tends to need more because the question is cross-cutting. The pass sets the expected range; relevance sets the actual selection.
 
+**Lightweight predecessor at micro-level:** for tactical micro-decisions inside any pass (specific adapter, specific library version, specific copy variant), skill `forward-thinking-discipline` runs at design-time per micro-decision. This is in addition to premortem (which covers the strategic level), not a replacement.
+
 ---
 
 ## 7. Anti-patterns — Explicitly Forbidden
@@ -224,6 +227,7 @@ These are the specific failure modes this skill exists to prevent. If Claude cat
 - **`knowledge-structure`** — phase 4's `decisions.md` block follows the append-only log convention from that skill. When in doubt about format, match the existing entries in the target project's `decisions.md`.
 - **`prompt-writing-standard`** — research often produces, as its result, a Claude Code prompt based on the approved decision. That prompt still follows `prompt-writing-standard` Section 2 (Context / Task / Regression Shield / Acceptance Criteria). This skill stops at the research report; prompt-writing takes over from there.
 - **`bug-hunting`** — different domain. `bug-hunting` handles "something is broken, find the cause"; this skill handles "before we decide, investigate". A bug that requires a decision about whether to fix, refactor, or rewrite may hand off from `bug-hunting` to this skill.
+- **`forward-thinking-discipline`** — counterpart in scale. This skill (research-protocol) handles T3 strategic decisions where formal premortem covers the whole recommendation; `forward-thinking-discipline` handles T2 micro-decisions and tactical choices inside Phase 3 where premortem would be overkill but design-time forward thinking is still mandatory. They are complementary — both run on a T3 task with tactical sub-decisions, neither replaces the other. See §4 Phase 3 critical questions for the activation rule.
 
 ---
 
