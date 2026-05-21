@@ -10,6 +10,9 @@
   "title": "Human-readable batch title",
   "_comment_title": "Short description shown in Telegram start message and logs.",
 
+  "executor": "claude-code",
+  "_comment_executor": "Optional. Routes the batch to the correct executor. Allowed values: 'claude-code' (default when omitted; batch is picked up by the Claude Code Routine launcher per standards/batch-execution-standard.md) or 'codex' (batch is picked up by Codex per standards/codex-batch-execution-standard.md). A batch is single-executor by design — cross-executor batches are not supported in this schema version. Manifests omitting this field remain valid and default to claude-code behavior, preserving backward compatibility.",
+
   "created_by": "Claude.ai (planning chat)",
   "_comment_created_by": "Who composed the batch. Usually Claude.ai (planning chat) or Vasily.",
 
