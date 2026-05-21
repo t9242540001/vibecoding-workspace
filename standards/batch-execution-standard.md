@@ -4,8 +4,8 @@
   @file:        standards/batch-execution-standard.md
   @description: Standard for running prompt batches via Claude Code Routines
   @owner:       Claude (Anthropic)
-  @updated:     2026-05-15
-  @version:     1.4
+  @updated:     2026-05-21
+  @version:     1.5
 -->
 
 This standard supplements `standards/VIBECODER_STANDARDS.md`. It defines rules for composing and running batches of prompts via Claude Code Routines.
@@ -112,6 +112,8 @@ Vasily reviews the parade in 2-5 minutes. He can:
 - Request rewrites ("07 needs to be split into two").
 
 The parade is not optional — it is the last point where a human looks at the entire shape of the batch before automation takes over. A batch without an approved parade does not get triggered.
+
+When the series has a Series Charter (per skill `series-design-discipline`), the parade is a forward tabular projection of the Charter's §4 Per-step plan, not a separately-authored summary. The Charter's Per-step plan is composed before the first prompt of the series (forward mode) or retroactively at the discovery point (discovery mode) and is the single source of truth for the series' composition; the parade exists to render that composition for Vasily's pre-flight review, not to re-derive it. Discrepancies between the Charter §4 entries and the parade rows surface a Charter-update need, not a parade-edit need — fix the Charter first, then re-render the parade from it.
 
 After the parade or batch plan is approved, the Routine or Recovery Mode session executes prompts in order without asking for user confirmation between prompts. It stops only on a critical stop condition, failed verification outside the current prompt's safe scope, or an operational failure that requires human action.
 
@@ -287,6 +289,7 @@ If hit (e.g. multiple parallel pilots in one day): use one-off scheduled runs (d
 - Knowledge structure: `skills/knowledge-structure-universal.md`
 - Knowledge updates may use the flat `knowledge/*.md` structure for small projects or the folder/router/ADR structure described in `skills/knowledge-structure-universal.md` for larger projects.
 - Bug hunting (when batches fail repeatedly): `skills/bug-hunting-universal.md`
+- Series design discipline (multi-prompt series forming one project increment, Series Charter as cross-prompt namespace): `skills/series-design-discipline/SKILL.md`
 - Onboarding guide: `docs/batch-execution-guide.md`
 - Per-project launcher setup: `docs/routine-launcher-setup.md`
 - Routine prompt template: `templates/batch-execution/routine-prompt.md`
@@ -581,5 +584,7 @@ This path is direct, single-commit, and respects that the feature branch is owne
 - 2026-05-12 — v1.3.1. Conflict resolution: merged v1.2.1 fix to §13.4 (knowledge update outcomes pointer to prompt-writing-standard-universal.md §4) into the v1.3 release. Both changes preserved verbatim. No new sections, no content rewrites.
 
 - 2026-05-15 — v1.4. Aligned batch wording with Autonomous Batch Mode: no confirmation between prompts after approved parade, safe corridor gates, safe-error vs critical-stop behavior, and flat/folder/ADR knowledge update references.
+
+- 2026-05-21 — v1.5. Integrated skill `series-design-discipline` into the parade flow. Added paragraph in §4 stating that when the series has a Series Charter, the parade is a forward tabular projection of the Charter's §4 Per-step plan, not a separately-authored summary — Charter is the single source of truth, parade renders it for Vasily's pre-flight review. Added §11 reference entry pointing to `skills/series-design-discipline/SKILL.md`. No content rewrites in Sections 1–3, 5–10, 12–16. Motivated by the wiring of skill E (series-design-discipline) into the system: prompt-writing-standard v3.9 already cites Charter from the design layer; this v1.5 wires Charter into the operational batch layer so parade and Charter cannot drift.
 
 When updating this standard, increment the version, add an entry above with date and summary of changes.
