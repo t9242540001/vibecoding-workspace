@@ -4,8 +4,8 @@
   @file:        standards/codex-batch-execution-standard.md
   @description: Standard for running prompt batches manually through Codex or inside an isolated Codex runner
   @owner:       Vibe Coding
-  @updated:     2026-05-15
-  @version:     1.0
+  @updated:     2026-05-21
+  @version:     1.1
 -->
 
 This standard supplements `standards/VIBECODER_STANDARDS.md`. It defines the Codex-native batch execution model: a Codex session reads a manifest and ordered prompt queue, executes prompts sequentially, makes repo-local file changes, stops on critical failure, and reports the result. Git add/commit/push may be performed by a trusted wrapper or human after verification.
@@ -185,6 +185,127 @@ Codex batch execution may reference them for historical context, but it must not
 
 ---
 
+## 11. Manifest Executor Field
+
+Codex batches use the same `prompts/queue/{batch_id}/` structure as Claude Code Routine batches per `standards/batch-execution-standard.md`. The manifest schema is shared. To disambiguate which executor a batch is intended for, the manifest declares an optional `executor` field:
+
+```json
+{
+  "batch_id": "batch-2026-05-21-stub-enemy-extraction",
+  "executor": "codex",
+  "title": "Extract stubEnemy into src/data/enemies.ts"
+}
+```
+
+Allowed values:
+
+- `"claude-code"` — default when omitted, batch runs via Claude Code Routine per `standards/batch-execution-standard.md`.
+- `"codex"` — batch runs via Codex per this standard.
+
+When `executor: "codex"` is set, the routine launcher does not pick up the batch; only Codex reads it. When `executor: "claude-code"` (or omitted) is set, Codex does not pick it up; only the routine launcher reads it.
+
+A batch is single-executor by design. Cross-executor batches are not supported in this version of the schema.
+
+The `executor` field is an optional addition to the manifest schema. Manifests omitting it remain valid and default to `claude-code` behavior, preserving backward compatibility with existing batches across all product repositories.
+
+---
+
+## 12. Per-Prompt File Naming Within A Codex Batch
+
+For most Codex batches one prompt file is sufficient — Codex-friendly tasks are usually single-PR by nature (per its self-stated comfort zone: 1–4 files, ≤300 lines diff, one concern per PR).
+
+Default single-prompt naming:
+
+```
+prompts/queue/{batch_id}/codex-prompt.md
+```
+
+For multi-step Codex batches (rare — usually means the batch should be split), use sequential numbering inside a `codex/` subfolder:
+
+```
+prompts/queue/{batch_id}/codex/01-{kebab-title}.md
+prompts/queue/{batch_id}/codex/02-{kebab-title}.md
+prompts/queue/{batch_id}/codex/response.md
+```
+
+The manifest lists prompts in execution order. The `executor` field in the manifest disambiguates Codex batches from Claude Code Routine batches; folder layout above is descriptive, not mandatory.
+
+---
+
+## 13. Codex Response Files
+
+When Codex completes a batch successfully, the PR description is the single artefact. PR template lives at `.github/PULL_REQUEST_TEMPLATE/codex.md` in the product repository.
+
+When Codex cannot complete a batch (blocked, partial, or requires human decision), Codex writes a response file `prompts/queue/{batch_id}/codex-response.md` (or `prompts/queue/{batch_id}/codex/response.md` for multi-step batches) with the following structure:
+
+```markdown
+# Codex Response: {batch_id}
+
+## Status
+blocked | partial | needs-decision
+
+## Where I stopped
+[Exact prompt section / file / line where execution halted]
+
+## Reason
+[One paragraph explaining why I stopped]
+
+## Evidence
+[Command outputs, file diffs, missing context, conflicting state — concrete data, not interpretation]
+
+## Question For Claude
+[If applicable — what Claude must decide before resuming]
+
+## Question For Vasily
+[If applicable — what Vasily must approve or provide]
+
+## What Would Unblock Me
+[Specific actionable thing — file content, decision, command output, asset]
+```
+
+Response files are committed to the same branch Codex was working on. The branch is left open for Claude review.
+
+Response files are not created for successful batches. PR description is the artefact in that case.
+
+---
+
+## 14. Codex PR Template
+
+Every product repository that uses Codex execution must include `.github/PULL_REQUEST_TEMPLATE/codex.md`. The template:
+
+```markdown
+## Summary
+[One paragraph: what changed and why, in business terms]
+
+## Files Changed
+- path/to/file1.ts (new | modified | renamed | deleted) — brief reason
+- path/to/file2.ts — brief reason
+
+## Verification
+- npm run lint: [exit code, summary of warnings]
+- npm run test:run: [exit code, N tests pass]
+- npm run build: [exit code]
+- Additional checks: [task-specific commands and results]
+
+## Visual Notes
+[For UI/VFX tasks: screenshot or description of visible result. For non-visual tasks: N/A.]
+
+## Deviations / Questions
+[Any deviation from the original prompt scope, any open questions for Claude review. If none — "None".]
+
+## Context Confirmation
+- CLAUDE.md: read
+- AGENTS.md: read
+- knowledge/Context.md: read
+- knowledge/[task-specific files]: read
+- [affected source files]: read
+```
+
+This template is product-repo-specific because each product has its own command set (`npm` vs `uv` vs `cargo`) and its own knowledge structure. Reference implementation lives in `t9242540001/magic-defender/.github/PULL_REQUEST_TEMPLATE/codex.md`.
+
+---
+
 ## Changelog
 
-- 2026-05-15 - v1.0. Initial Codex-specific batch execution standard. Defines interactive manual execution, isolated runner autonomy, approval policy, safe corridor, stop conditions, per-prompt loop, reporting requirements, and separation from Claude Routine infrastructure.
+- 2026-05-15 — v1.0. Initial Codex-specific batch execution standard. Defines interactive manual execution, isolated runner autonomy, approval policy, safe corridor, stop conditions, per-prompt loop, reporting requirements, and separation from Claude Routine infrastructure.
+- 2026-05-21 — v1.1. Added Sections 11 (manifest executor field), 12 (per-prompt file naming), 13 (Codex response files for blocked/partial), 14 (Codex PR template requirement). Section 2 trusted-checkpoint paragraph (added between versions) preserved unchanged. No other changes to Sections 1-10.
