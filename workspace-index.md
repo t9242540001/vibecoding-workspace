@@ -4,7 +4,7 @@
   @file:        workspace-index.md
   @description: Root navigation file for the Vibe Coding workspace infrastructure
   @updated:     2026-05-22
-  @version:     0.4.6
+  @version:     0.4.7
 -->
 
 ## Purpose
@@ -23,6 +23,7 @@ Vasily
 → ChatGPT project / AI orchestrator
 → Code Agent
 → GitHub repositories
+→ local Obsidian vault
 → VDS / production server
 → project knowledge
 → shared skills
@@ -163,6 +164,18 @@ Active skill sync infrastructure (used by all product repositories via SessionSt
 - `scripts/sync-skills.sh` — canonical SessionStart hook script that pulls `skills/` into a product repo's `.claude/skills/` on every session start
 - `docs/new-project-onboarding.md` § 6.5 — Skill Sync Setup procedure for new product repositories
 
+### Local Obsidian vault
+
+Role: local long-term knowledge base for WipeCoder/Vibe Coding context.
+
+Status:
+
+- Active vault path: `D:\WipeCoder\Obsidian\Vibe Knowledge`.
+- Obsidian sees and opens the vault.
+- Starter skeleton is created.
+- Git history is initialized for the vault.
+- Next step: add real context packs and working routes, such as `project-audit` and `website-audit`, without breaking the existing skeleton.
+
 ### Product repositories
 
 Role: concrete applications, bots, websites, services, and other build targets.
@@ -185,6 +198,14 @@ Shared standards and skills are not duplicated inside product repositories unles
 ## Current Setup Stage
 
 Current stage: real public browser summary MVP documented and passed.
+
+Current Obsidian status:
+
+- Active vault path: `D:\WipeCoder\Obsidian\Vibe Knowledge`.
+- Obsidian sees and opens the vault.
+- Starter skeleton is created.
+- Git history is initialized for the vault.
+- Next step: add real context packs and working routes, such as `project-audit` and `website-audit`, without breaking the existing skeleton.
 
 Current Browser/E2E MVP status:
 
@@ -256,6 +277,7 @@ Current trigger map:
 - No secrets, tokens, passwords, `.env` files, or private credentials are committed to GitHub.
 - Existing documents and skills are edited only inside explicitly approved change scope.
 - No style cleanup, simplification, restructuring, or meaning changes without explicit approval.
+- The local Obsidian vault already exists and must not be recreated, reorganized, or structurally rewritten without explicit approval.
 
 ## Open Decisions
 
