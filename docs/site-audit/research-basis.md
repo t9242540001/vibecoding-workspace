@@ -226,7 +226,7 @@ Use severity to communicate user impact and risk, not personal taste.
 | High | Strongly damages task completion, accessibility, trust, SEO discoverability, or safe decision-making. | Primary CTA missing, keyboard trap, mobile layout unusable, misleading claim, structured data contradicts visible content. |
 | Medium | Creates meaningful friction, confusion, quality loss, or ranking/measurement weakness without blocking the path. | Weak headings, inconsistent labels, missing loading state, several broken secondary links. |
 | Low | Local polish issue or minor inconsistency with limited user impact. | Minor spacing inconsistency, one typo in non-critical copy, secondary icon alignment issue. |
-| Info | Observation useful for future work but not a defect. | Instrumentation not visible from public audit scope, optional schema type opportunity. |
+| Observation | Observation useful for future work but not a defect. | Instrumentation not visible from public audit scope, optional schema type opportunity. |
 
 Escalate severity when an issue affects vulnerable users, mobile users, new users, legal/financial/medical decisions, data submission, or a high-traffic conversion path.
 
