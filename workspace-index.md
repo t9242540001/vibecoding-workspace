@@ -47,7 +47,7 @@ Planned contents:
 | `rules/` | Shared rules that are not product-specific | Active: root rules note present |
 | `tools/` | External tools and MCP-related notes | Active: plugin registry present |
 | `configs/` | Shared machine-readable configuration for runners and model profiles | Active: model profiles present |
-| `prompts/` | Reusable prompt templates for workspace and product workflows | Active: project audit and knowledge repair prompts present |
+| `prompts/` | Reusable prompt templates for workspace and product workflows | Active: project audit, knowledge repair, and site-audit pilot prompts present |
 | `scripts/` | Utility scripts for workspace operations | Active: batch-trigger primitive and per-project launcher present |
 | `docs/` | Supporting documentation | Active: repository and Codex workflow docs present |
 | `.codex/` | Codex-specific repository instructions | Active |
@@ -141,6 +141,10 @@ Active prompt templates:
 
 - `prompts/project-inventory-audit.md`
 - `prompts/knowledge-repair.md`
+- `prompts/series/site-audit-skill/series-plan.md`
+- `prompts/series/site-audit-skill/pilot-public-site-audit-prompt.md`
+- `prompts/series/site-audit-skill/pilot-scope-example.md`
+- `prompts/series/site-audit-skill/README.md`
 
 Active batch execution infrastructure (Claude Routine-specific unless explicitly generalized later):
 
