@@ -14,6 +14,11 @@ It stores universal working procedures and templates. Product repositories remai
 
 Initial setup is in progress.
 
+Active local Obsidian vault:
+
+- `D:\WipeCoder\Obsidian\Vibe Knowledge` — Obsidian sees the vault, the starter skeleton is created, and Git history is initialized.
+- Next knowledge-building step: add real context packs and working routes such as `project-audit` and `website-audit` without breaking the existing skeleton.
+
 Active navigation file:
 
 - `workspace-index.md`
