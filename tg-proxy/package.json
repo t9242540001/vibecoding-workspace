@@ -1,0 +1,19 @@
+{
+  "name": "tg-proxy",
+  "version": "1.0.0",
+  "description": "Transparent reverse proxy for Telegram Bot API (self-hosted replacement for Cloudflare Worker tg-proxy)",
+  "main": "server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "4.21.2",
+    "http-proxy-middleware": "3.0.5",
+    "express-rate-limit": "7.5.0"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}
