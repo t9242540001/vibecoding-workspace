@@ -1,0 +1,20 @@
+{
+  "batch_id": "batch-2026-05-22-site-audit-skill-02-skill-templates",
+  "executor": "codex",
+  "title": "Site audit skill and reusable templates",
+  "created_by": "ChatGPT orchestrator",
+  "created_at": "2026-05-22T00:00:00+00:00",
+  "completed_at": null,
+  "stop_on_failure": true,
+  "telegram_notify": false,
+  "inter_prompt_wait_minutes": 0,
+  "prompts": [
+    {
+      "id": "01",
+      "title": "Create site-audit skill and reusable templates",
+      "file": "codex-prompt.md",
+      "status": "pending",
+      "failure_reason": null
+    }
+  ]
+}
