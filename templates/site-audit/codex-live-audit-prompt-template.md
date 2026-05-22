@@ -33,7 +33,17 @@ Relevant references:
 
 ## TASK
 
-Create or update `[REPORT_PATH]` with a structured site audit report.
+Create or update `[REPORT_PATH]` with a structured bilingual site audit report in Markdown.
+
+The report must use this top-level structure:
+
+1. `# [Project] Site Audit Report`
+2. `## 1. Краткий отчёт для руководителя` in Russian
+3. `## 2. Все найденные замечания` in Russian, with the complete finding list
+4. `## 3. Метод и ограничения проверки` in Russian
+5. `## 4. English Technical Section` in English
+6. `## 5. Safety / Boundary Notes`
+7. `## 6. Next Fix Batches`
 
 Audit these pages/routes:
 
@@ -59,7 +69,7 @@ Cover these dimensions where relevant to scope:
 - analytics/conversion
 - public UI security/privacy
 
-For every finding, include location, evidence, impact, severity, and recommendation. Separate observed facts from inferred risk.
+For every finding, include location, evidence, impact, severity, recommendation, and status. Separate observed facts from inferred risk. The Russian findings section must be simple enough for a non-developer decision-maker; the English technical section must include precise evidence, file paths or routes, inferred risks, recommended fix direction, acceptance criteria, and follow-up prompt suggestions.
 
 ## ALLOWED ACTIONS
 
@@ -107,8 +117,9 @@ Do not run browser automation unless this prompt explicitly approves it and name
 ## ACCEPTANCE CRITERIA
 
 - [ ] `[REPORT_PATH]` exists or is updated.
-- [ ] Report includes summary, scope, method, evidence inventory, findings table, severity definitions, prioritized recommendations, out-of-scope items, stop conditions, and next fix prompts.
-- [ ] Every finding has location, evidence, impact, severity, and recommendation.
+- [ ] Report is a Markdown file with Russian decision-maker sections and a separate English technical section.
+- [ ] Report includes `## 1. Краткий отчёт для руководителя`, `## 2. Все найденные замечания`, `## 3. Метод и ограничения проверки`, `## 4. English Technical Section`, `## 5. Safety / Boundary Notes`, and `## 6. Next Fix Batches`.
+- [ ] Every finding has location, evidence, impact, severity, recommendation, and status.
 - [ ] Observed facts are separated from inferred risks and unknowns.
 - [ ] No fabricated browser evidence is included.
 - [ ] No forbidden actions were performed.
@@ -123,4 +134,3 @@ Print:
 - checks run
 - stop conditions encountered, or confirmation that none occurred
 - whether follow-up fix prompts can proceed
-

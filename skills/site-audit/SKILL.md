@@ -129,7 +129,7 @@ Collect only approved evidence. Keep findings tied to locations. Do not change c
 
 ### Phase 5 - Report
 
-Use `templates/site-audit/report-template.md`. Include summary, scope, method, evidence, findings table, severity definitions, prioritized recommendations, out-of-scope items, stop conditions, and next fix prompts.
+Use `templates/site-audit/report-template.md`. The report must be a `.md` file with Russian decision-maker sections and a separate English technical section. Include a Russian executive summary, a Russian complete list of all findings, Russian method and limitations, English technical evidence and finding details, safety/boundary notes, stop conditions, and prioritized next fix batches.
 
 ### Phase 6 - Fix Prompt Planning
 
@@ -191,7 +191,6 @@ If a secret, credential, private user data, auth/session material, or payment da
 | Context read | Project/source/live-summary context actually inspected |
 | Plan | Dimensions, evidence sources, automated vs human/browser judgment, out-of-scope items |
 | Execute | Approved evidence only, no code changes, no fabricated browser proof |
-| Report | Findings with location, evidence, impact, severity, recommendation |
+| Report | Bilingual Markdown report with Russian decision-maker sections and English technical findings with location, evidence, impact, severity, recommendation, and status |
 | Fix planning | Separate scoped prompts with regression shield and approval gates |
 | Regression | Finding-by-finding retest with evidence and stop conditions |
-

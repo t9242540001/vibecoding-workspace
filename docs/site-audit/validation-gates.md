@@ -89,18 +89,15 @@ Escalate when the issue blocks keyboard users, screen-reader users, mobile users
 
 A completed report must include the required sections from `templates/site-audit/report-template.md`:
 
-- summary;
-- scope;
-- method;
-- evidence inventory;
-- findings;
-- severity definitions;
-- prioritized recommendations;
-- safe-boundary notes;
-- stop conditions;
-- next fix prompts.
+- `# [Project] Site Audit Report`;
+- `## 1. Краткий отчёт для руководителя` in Russian, with audit result, highest risk, what was checked, what was not checked, and top priorities;
+- `## 2. Все найденные замечания` in Russian, with the complete finding list and each finding's ID, severity, short problem, location, impact, and next action;
+- `## 3. Метод и ограничения проверки` in Russian, with audit mode, checked pages/files, skipped scope, unavailable evidence, and stop conditions;
+- `## 4. English Technical Section` in English, with evidence inventory, technical finding table, file paths/lines/routes, observed evidence, inferred risks, recommended fix direction, acceptance criteria, and follow-up prompt suggestions;
+- `## 5. Safety / Boundary Notes`, with explicit confirmation that forbidden actions were not performed;
+- `## 6. Next Fix Batches`, with recommended next fix batches in priority order.
 
-Stop conditions must be reported even when none occurred. Next fix prompts must be scoped to finding IDs, affected files or routes, regression shield, checks, and approval needs.
+Stop conditions must be reported even when none occurred. Next fix batches must be scoped to finding IDs, affected files or routes, regression shield, checks, and approval needs.
 
 ## Gate 8 - Regression Quality
 
@@ -127,6 +124,7 @@ Regression reports must preserve original finding IDs, add new evidence IDs, and
 - [ ] SEO/AEO/GEO quality gate passed where relevant.
 - [ ] Accessibility quality gate passed where relevant.
 - [ ] Report completeness gate passed.
+- [ ] Report includes Russian decision-maker sections and the English technical section.
 - [ ] Regression quality gate passed for post-fix audits.
 - [ ] JSON configs referenced by the audit validate if changed.
 - [ ] `git diff --check` passes for repository changes.

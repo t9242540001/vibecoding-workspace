@@ -1,4 +1,4 @@
-# Site Audit Report: Example Orchard Tools
+# Example Orchard Tools Site Audit Report
 <!--
   @file:        examples/site-audit/sanitized-audit-report-example.md
   @description: Synthetic sanitized site-audit report example using fake data only
@@ -10,30 +10,46 @@
 
 This file is synthetic only. Project name, URL, routes, evidence IDs, findings, and prompts are fake. It contains no real client data, credentials, secrets, private URLs, production artifacts, or product-specific content.
 
-## Summary
+## 1. Краткий отчёт для руководителя
 
-- Audit date: 2026-05-22
-- Auditor: Code Agent
-- Audit mode: read-only live public audit from supplied sanitized summaries
-- Target URL/repository: `https://example.invalid/orchard-tools`
-- Overall result: issues found in CTA clarity, accessibility labels, structured data alignment, and mobile text density
-- Highest severity: High
-- Stop conditions encountered: none
+- Дата проверки: 2026-05-22
+- Аудитор: Code Agent
+- Режим проверки: чтение публичных страниц по готовым очищенным сводкам
+- Цель: `https://example.invalid/orchard-tools`
+- Итог: найдены замечания по понятности CTA, подписи поля email, согласованности schema-разметки и плотности текста на мобильном экране.
+- Самый высокий риск: High. Пользователь может не понять следующий шаг на главной странице, а поле email может быть неудобным для пользователей вспомогательных технологий.
+- Что проверено: главная, страница цен, страница поддержки, мобильная сводка `mobile_390`, форма подписки без отправки.
+- Что не проверено: отправка форм, личный кабинет, оплата, админка, скриншоты, сырые HAR/логи, реальные браузерные действия за пределами очищенных сводок.
+- Главные приоритеты: добавить понятный CTA; проверить и исправить подпись поля email; согласовать schema-разметку с видимым текстом.
+- Стоп-условия: не возникли.
 
-## Scope
+## 2. Все найденные замечания
 
-### In Scope
+| ID | Severity | Коротко | Где найдено | Почему важно | Что делать дальше |
+|---|---|---|---|---|---|
+| F-001 | High | На главной странице в первом текстовом блоке нет понятного следующего шага. | `example-home`, первый экран по текстовой сводке | Новые посетители могут не понять, как начать оценку продукта. | Добавить понятный основной CTA рядом с начальным описанием и перепроверить approved CTA-profile. |
+| F-002 | High | У поля email виден placeholder, но не видна постоянная подпись. | `example-support`, форма подписки | Пользователям с ассистивными технологиями может быть сложно понять поле. | Проверить разметку формы и добавить видимую или программную подпись, если её нет. |
+| F-003 | Medium | Schema-разметка говорит про "free setup", а видимый текст допускает setup fee. | `example-pricing`, structured data signal | Поисковые и AI-сигналы могут стать вводящими в заблуждение. | Согласовать schema-разметку с видимыми условиями цены или удалить неподтверждённое свойство. |
+| F-004 | Medium | В мобильной текстовой сводке есть длинный непрерывный абзац. | `example-home`, `mobile_390` | Мобильным пользователям может быть сложнее быстро просканировать страницу. | Провести approved mobile visual/browser check; если проблема подтвердится, сократить или разбить текст. |
+| F-005 | Low | Формулировка "best results guaranteed" не показывает условия гарантии. | `example-pricing` | Без условий обещание может снижать доверие. | Добавить краткие условия рядом с гарантией или смягчить формулировку. |
+| F-006 | Observation | Публичная аналитика не проверялась. | Все страницы в scope | Дефект не доказан; это возможная отдельная проверка. | Добавить approved static или sanitized browser check, если проверка аналитики станет нужна. |
 
-- Routes/pages:
+## 3. Метод и ограничения проверки
+
+### Проверенный scope
+
+#### В scope
+
+- Маршруты/страницы:
   - `example-home` -> `https://example.invalid/orchard-tools/`
   - `example-pricing` -> `https://example.invalid/orchard-tools/pricing`
   - `example-support` -> `https://example.invalid/orchard-tools/support`
-- Devices/viewports:
+- Устройства/viewport:
   - `desktop_default`
   - `mobile_390`
-- Forms/tools:
+- Формы/инструменты:
   - newsletter signup form: inspect labels and visible validation hints only; submit not allowed
-- Audit dimensions:
+- Измерения проверки:
   - technical frontend health
   - UX/usability
   - accessibility
@@ -44,47 +60,49 @@ This file is synthetic only. Project name, URL, routes, evidence IDs, findings, 
   - copy/trust/legal-risk wording
   - analytics/conversion
   - public UI security/privacy
-- Approved artifacts:
+- Разрешённые артефакты:
   - sanitized summary JSON
   - validation report JSON
   - markdown audit report
   - source line references from fake example fixtures
 
-### Out Of Scope
+#### Вне scope
 
-- Routes/pages:
+- Маршруты/страницы:
   - account, billing, admin, upload, and checkout paths
-- Devices/viewports:
+- Устройства/viewport:
   - screenshots and visual regression captures
-- Forms/tools:
+- Формы/инструменты:
   - production submit, file upload, payment, login, account creation
-- Actions:
+- Действия:
   - clicks that send data, auth, payment, admin, destructive actions
-- Artifacts:
+- Артефакты:
   - screenshots, videos, traces, raw HAR, cookies, storage, auth headers, raw request bodies, raw response bodies
 
-## Method
+### Метод и ограничения
 
-- Source/context read:
+- Прочитанный контекст:
   - supplied fake audit scope
   - supplied fake sanitized summaries
   - `templates/site-audit/report-template.md`
   - `templates/site-audit/finding-taxonomy.md`
-- Automated checks run:
+- Запущенные автоматические проверки:
   - fake summary schema validation: passed
   - fake forbidden-pattern scan: passed
-- Manual/browser observations:
+- Ручные/browser observations:
   - none beyond supplied sanitized summaries
-- Sanitized summaries reviewed:
+- Проверенные очищенные summaries:
   - `E-001`
   - `E-002`
   - `E-003`
-- Limits of evidence:
+- Ограничения доказательств:
   - no screenshots or raw browser artifacts were captured
   - mobile layout findings are based on sanitized text and viewport labels only
   - form behavior was not submitted or tested past visible non-submit hints
 
-## Evidence Inventory
+## 4. English Technical Section
+
+### Evidence Inventory
 
 | Evidence ID | Type | Location | Captured by | Notes |
 |---|---|---|---|---|
@@ -93,7 +111,7 @@ This file is synthetic only. Project name, URL, routes, evidence IDs, findings, 
 | E-003 | sanitized_browser_summary | `example-support`, `desktop_default` | fake browser summary fixture | Newsletter field appears as "Email" placeholder only; no visible label in summary. |
 | E-004 | validation_report_json | fake summary bundle | fake validator | Required fields present and forbidden-pattern scan passed. |
 
-## Findings
+### Technical Finding Table
 
 | ID | Severity | Category | Location | Evidence | Impact | Recommendation | Status |
 |---|---|---|---|---|---|---|---|
@@ -104,7 +122,7 @@ This file is synthetic only. Project name, URL, routes, evidence IDs, findings, 
 | F-005 | Low | Copy/trust/legal-risk wording | `example-pricing` | Observed: `E-002` includes "best results guaranteed" without visible conditions in the captured text. | Claim may reduce trust if users cannot see limits or conditions. | Add concise conditions near the guarantee or soften the claim to match actual policy. | open |
 | F-006 | Observation | Analytics/conversion | all in-scope routes | Unknown: public instrumentation was not inspected in the supplied sanitized summaries. | No defect proven; conversion measurement may need separate review. | Add an approved static or sanitized browser check if instrumentation verification becomes necessary. | open |
 
-## Severity Definitions
+### Severity Definitions
 
 | Severity | Definition |
 |---|---|
@@ -114,14 +132,23 @@ This file is synthetic only. Project name, URL, routes, evidence IDs, findings, 
 | Low | Local polish issue or minor inconsistency with limited user impact. |
 | Observation | Useful non-defect signal, opportunity, unknown, or future check that does not currently justify a fix by itself. |
 
-## Prioritized Recommendations
+### Prioritized Recommendations
 
 1. F-001 - Add a visible primary CTA and retest with an approved route/profile pair - strongest conversion and user-path risk.
 2. F-002 - Verify and fix the newsletter field label - likely accessibility and form-completion risk.
 3. F-003 - Align structured data with visible pricing terms - prevents misleading SEO/AEO signals.
 4. F-004 - Retest mobile visual layout with approved evidence before making design changes - current evidence is text-only.
 
-## Safe-Boundary Notes
+### Acceptance Criteria And Follow-Up Prompt Suggestions
+
+| Finding ID | Acceptance criteria | Follow-up prompt suggestion |
+|---|---|---|
+| F-001 | Primary CTA is visible in the first captured home-page segment and approved CTA-presence retest passes. | Create a scoped copy/UI prompt for the fake homepage hero CTA. |
+| F-002 | Newsletter input has a persistent visible or programmatic label and non-submit accessibility check passes. | Create a scoped form-markup prompt for the fake support newsletter field. |
+| F-003 | Product schema no longer contradicts visible pricing copy. | Create a scoped metadata/schema prompt for fake pricing terms. |
+| F-004 | Approved mobile visual/browser evidence confirms whether text density remains a defect. | Create a mobile evidence collection prompt before layout changes. |
+
+## 5. Safety / Boundary Notes
 
 - Production form submit: not performed.
 - Auth/admin/payment/account flows: not accessed.
@@ -130,7 +157,7 @@ This file is synthetic only. Project name, URL, routes, evidence IDs, findings, 
 - Screenshots/videos/traces/raw HAR/cookies/storage/auth headers: not collected.
 - Code changes during audit: none.
 
-## Stop Conditions
+### Stop Conditions
 
 | Condition | Encountered? | Evidence / Decision |
 |---|---:|---|
@@ -141,9 +168,9 @@ This file is synthetic only. Project name, URL, routes, evidence IDs, findings, 
 | Deploy/server/database/secrets action needed | No | Audit report only. |
 | Required evidence outside artifact policy | No | Browser-only visual questions were marked unknown. |
 
-## Next Fix Prompts
+## 6. Next Fix Batches
 
-| Prompt | Findings addressed | Scope | Approval needed? |
+| Batch | Findings addressed | Scope | Approval needed? |
 |---|---|---|---|
 | Add homepage CTA clarity | F-001 | Edit fake homepage hero copy and CTA component; run static checks and approved CTA-presence retest. | Browser retest requires approved route/profile. |
 | Verify and fix newsletter label | F-002 | Inspect fake form markup; add visible or programmatic label if missing; run accessibility checks. | No submit approval needed if non-submit only. |

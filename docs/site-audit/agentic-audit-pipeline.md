@@ -86,7 +86,7 @@ Do not fabricate browser evidence. If a page, viewport, screenshot, trace, Light
 
 ### 5. Report Generation
 
-Use `templates/site-audit/report-template.md`. Every finding must include finding ID, severity, category, location, evidence, impact, recommendation, and status.
+Use `templates/site-audit/report-template.md`. The report must be a `.md` file with Russian decision-maker sections and a separate English technical section. Every finding must include finding ID, severity, category, location, evidence, impact, recommendation, and status.
 
 Evidence IDs use `E-001`, `E-002`, and so on. Finding IDs use `F-001`, `F-002`, and so on. Findings must separate observed facts from inferred risks and unknowns.
 
@@ -95,6 +95,7 @@ Evidence IDs use `E-001`, `E-002`, and so on. Finding IDs use `F-001`, `F-002`, 
 Before completion, verify:
 
 - report has the required sections;
+- report includes Russian executive, complete findings, and method/limits sections plus an English technical section;
 - every finding has evidence or is explicitly marked as human judgment or unknown;
 - severity values match `configs/site-audit-severity-taxonomy.json`;
 - categories align with `templates/site-audit/finding-taxonomy.md`;

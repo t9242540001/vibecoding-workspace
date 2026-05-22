@@ -6,57 +6,83 @@
   @version:     1.0
 -->
 
-# Site Audit Report: [Project / Site]
+# [Project] Site Audit Report
 
-## Summary
+## 1. Краткий отчёт для руководителя
 
-- Audit date:
-- Auditor:
-- Audit mode:
-- Target URL/repository:
-- Overall result:
-- Highest severity:
-- Stop conditions encountered:
+Use Russian. Keep wording short and simple for a non-developer decision-maker.
 
-## Scope
+- Дата проверки:
+- Аудитор:
+- Режим проверки:
+- Целевой URL/репозиторий:
+- Общий результат:
+- Самый высокий риск:
+- Что проверено:
+- Что не проверено:
+- Главные приоритеты:
+- Стоп-условия:
 
-### In Scope
+## 2. Все найденные замечания
 
-- Routes/pages:
-- Devices/viewports:
-- Forms/tools:
-- Audit dimensions:
-- Approved artifacts:
+Use Russian. Include every finding, not only the highest-priority items.
 
-### Out Of Scope
+Each item must include:
 
-- Routes/pages:
-- Devices/viewports:
-- Forms/tools:
-- Actions:
-- Artifacts:
+- ID:
+- Severity: `Critical`, `High`, `Medium`, `Low`, or `Observation` with a Russian explanation where helpful.
+- Short problem:
+- Where found:
+- Why it matters:
+- What to do next:
 
-## Method
+## 3. Метод и ограничения проверки
 
-- Source/context read:
-- Automated checks run:
-- Manual/browser observations:
-- Sanitized summaries reviewed:
-- Limits of evidence:
+Use Russian. State the audit mode, checked pages/files, skipped scope, unavailable evidence, and stop conditions.
 
-## Evidence Inventory
+### Проверенный scope
+
+#### В scope
+
+- Маршруты/страницы:
+- Устройства/viewport:
+- Формы/инструменты:
+- Измерения проверки:
+- Разрешённые артефакты:
+
+#### Вне scope
+
+- Маршруты/страницы:
+- Устройства/viewport:
+- Формы/инструменты:
+- Действия:
+- Артефакты:
+
+### Метод и ограничения
+
+- Прочитанный контекст:
+- Запущенные автоматические проверки:
+- Ручные/browser observations:
+- Проверенные очищенные summaries:
+- Ограничения доказательств:
+
+## 4. English Technical Section
+
+Use English. This section is for Code Agent and developer execution. Keep precise technical details, file paths, routes, evidence, inferred risks, recommended fix direction, acceptance criteria, and follow-up prompt suggestions.
+
+### Evidence Inventory
 
 | Evidence ID | Type | Location | Captured by | Notes |
 |---|---|---|---|---|
 | E-001 |  |  |  |  |
 
-## Findings
+### Technical Finding Table
 
 | ID | Severity | Category | Location | Evidence | Impact | Recommendation | Status |
 |---|---|---|---|---|---|---|---|
 | F-001 |  |  |  |  |  |  | open |
 
-## Severity Definitions
+### Severity Definitions
 
 | Severity | Definition |
 |---|---|
@@ -66,13 +92,19 @@
 | Low | Local polish issue or minor inconsistency with limited user impact. |
 | Observation | Useful non-defect signal, opportunity, unknown, or future check that does not currently justify a fix by itself. |
 
-## Prioritized Recommendations
+### Prioritized Recommendations
 
 1. [Finding ID] - [Action] - [Reason]
 2. [Finding ID] - [Action] - [Reason]
 3. [Finding ID] - [Action] - [Reason]
 
-## Safe-Boundary Notes
+### Acceptance Criteria And Follow-Up Prompts
+
+| Finding ID | Acceptance criteria | Follow-up prompt suggestion |
+|---|---|---|
+| F-001 |  |  |
+
+## 5. Safety / Boundary Notes
 
 - Production form submit:
 - Auth/admin/payment/account flows:
@@ -81,7 +113,7 @@
 - Screenshots/videos/traces/raw HAR/cookies/storage/auth headers:
 - Code changes during audit:
 
-## Stop Conditions
+### Stop Conditions
 
 | Condition | Encountered? | Evidence / Decision |
 |---|---:|---|
@@ -92,9 +124,10 @@
 | Deploy/server/database/secrets action needed |  |  |
 | Required evidence outside artifact policy |  |  |
 
-## Next Fix Prompts
+## 6. Next Fix Batches
 
-| Prompt | Findings addressed | Scope | Approval needed? |
+List recommended next fix batches in priority order.
+
+| Batch | Findings addressed | Scope | Approval needed? |
 |---|---|---|---|
 |  |  |  |  |
-

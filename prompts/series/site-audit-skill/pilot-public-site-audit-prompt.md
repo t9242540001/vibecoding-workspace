@@ -47,7 +47,7 @@ Read before collecting evidence or writing the report:
 
 ## Task
 
-Create `[REPORT_PATH]` using `templates/site-audit/report-template.md`.
+Create `[REPORT_PATH]` using `templates/site-audit/report-template.md`. The report must be a Markdown bilingual report: Russian decision-maker sections first, then a separate English technical section for Code Agent/developer execution.
 
 Audit only the approved public no-auth pages/routes:
 
@@ -169,18 +169,15 @@ Do not run browser automation unless this prompt explicitly approves the runner,
 
 ## Report Requirements
 
-The report must include:
+The report must include these top-level sections:
 
-- summary;
-- scope;
-- method;
-- evidence inventory;
-- findings table;
-- severity definitions;
-- prioritized recommendations;
-- safe-boundary notes;
-- stop conditions;
-- next fix prompts.
+1. `# [Project] Site Audit Report`
+2. `## 1. Краткий отчёт для руководителя` in Russian, with audit result, highest risk, what was checked, what was not checked, and top priorities.
+3. `## 2. Все найденные замечания` in Russian, with the complete finding list, not only top findings.
+4. `## 3. Метод и ограничения проверки` in Russian, with audit mode, checked pages/files, skipped scope, unavailable evidence, and stop conditions.
+5. `## 4. English Technical Section` in English, with evidence inventory, technical finding table, file paths/lines/routes, observed evidence, inferred risks, recommended fix direction, acceptance criteria, and follow-up prompt suggestions.
+6. `## 5. Safety / Boundary Notes`, with explicit confirmation that forbidden actions were not performed.
+7. `## 6. Next Fix Batches`, with recommended next fix batches in priority order.
 
 Every finding must include:
 
@@ -197,6 +194,7 @@ Separate `Observed:`, `Inferred risk:`, and `Unknown:` when a finding combines d
 
 - [ ] `[REPORT_PATH]` is created.
 - [ ] The report follows `templates/site-audit/report-template.md`.
+- [ ] The report includes Russian decision-maker sections and a separate English technical section.
 - [ ] Every finding has location, evidence, impact, severity, recommendation, and status.
 - [ ] Findings use categories aligned with `templates/site-audit/finding-taxonomy.md`.
 - [ ] Severity values align with `configs/site-audit-severity-taxonomy.json`.
