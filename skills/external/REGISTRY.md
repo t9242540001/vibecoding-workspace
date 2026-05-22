@@ -3,8 +3,8 @@
 <!--
   @file:        skills/external/REGISTRY.md
   @description: Catalog of 9 external skills surveyed from the May 2026 video review; entry point for selective integration
-  @updated:     2026-05-19
-  @version:     1.0
+  @updated:     2026-05-22
+  @version:     1.1
 -->
 
 ## Why this file exists
@@ -13,7 +13,7 @@ A walkthrough video (May 2026) surveyed 9 production-grade skills from Anthropic
 
 **Scope:** survey + analysis only. No skill is installed by this file. Installation happens per-skill, by explicit decision, into `skills/external/<name>/` (see *Integration model* below).
 
-**Cross-reference to our pain map (see `standards/VIBECODER_STANDARDS.md` and the project chat for the A–H map):**
+**Cross-reference to our pain map (full A–H map at `docs/pain-map.md`, also referenced from `standards/VIBECODER_STANDARDS.md`):**
 - **G** — universality / module reuse default
 - **H** — visual / design quality
 
@@ -25,7 +25,7 @@ External skills that close G or H are top priority. Others are noted with their 
 
 Each external skill, when adopted, lives at `skills/external/<name>/` inside this workspace. They sync to product repos via the existing `scripts/sync-skills.sh` mechanism (the script copies the whole `skills/` tree, which automatically includes `external/`).
 
-Our own 6 skills (`prompt-writing-standard`, `knowledge-structure`, `code-markup-standard`, `bug-hunting`, `research-protocol`, `skill-writing-standard`) stay at the top level of `skills/` and remain editable by us. External skills under `skills/external/` are treated as upstream — we do not edit their bodies, only update by re-pulling from source. If we need to adjust behavior, we wrap them with our own skill that references them.
+Our own 11 skills (`prompt-writing-standard`, `knowledge-structure`, `code-markup-standard`, `bug-hunting`, `research-protocol`, `skill-writing-standard`, `universality-discipline`, `anti-hedging-language`, `real-path-verification`, `forward-thinking-discipline`, `series-design-discipline`) stay at the top level of `skills/` and remain editable by us. External skills under `skills/external/` are treated as upstream — we do not edit their bodies, only update by re-pulling from source. If we need to adjust behavior, we wrap them with our own skill that references them.
 
 The `external/` separation prevents the failure mode where a workspace update accidentally overwrites our edits to a third-party skill, or a third-party update overwrites our customizations.
 
