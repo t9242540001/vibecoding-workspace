@@ -86,12 +86,24 @@ Expected outputs:
 
 ### Batch 05 — Pilot Prompt Preparation
 
-Prepare, but do not execute, the first product audit prompt for YurAssistent using the universal skill.
+Prepare, but do not execute, the first safe public no-auth product audit prompt package using the universal skill.
 
 Expected outputs:
 
-- `prompts/site-audit/yurassistent-readonly-public-ui-audit.md`
+- `prompts/series/site-audit-skill/README.md`
+- `prompts/series/site-audit-skill/pilot-public-site-audit-prompt.md`
+- `prompts/series/site-audit-skill/pilot-scope-example.md`
 - no product code changes
+
+### Batch 06 — System Consistency Review
+
+Review the completed site-audit system before the first real product pilot.
+
+Expected outputs:
+
+- `docs/site-audit/system-consistency-review.md`
+- small in-scope documentation fixes only when needed to resolve concrete contradictions
+- no real audit, browser automation, product repository changes, deploy, server, or secrets actions
 
 ## Invariants
 

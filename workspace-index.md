@@ -129,6 +129,7 @@ Active tools, rules, and docs:
 - `docs/site-audit/agentic-audit-pipeline.md`
 - `docs/site-audit/validation-gates.md`
 - `docs/site-audit/integration-with-browser-e2e.md`
+- `docs/site-audit/system-consistency-review.md`
 - `configs/site-audit-default-scope.json`
 - `configs/site-audit-severity-taxonomy.json`
 
