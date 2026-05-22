@@ -14,6 +14,8 @@
 - Edit only affected files.
 - Keep changes inside the explicit task scope.
 - `_local/` is local-only. Ignore it by default. Use it only when the prompt explicitly names a file inside `_local/`.
+- Treat D as the working disk. Keep active Codex/Vibe Coding work in WSL under `/home/redmi/codex-runners`, backed by `D:\Vibecoding\WSL\Ubuntu`; do not create new heavy working files, clones, generated artifacts, caches, exports, or batch outputs on C.
+- Existing Codex Desktop support folders and tiny launcher scripts on C are allowed to remain unless the user explicitly requests and approves a separate storage migration.
 
 ## After Work
 

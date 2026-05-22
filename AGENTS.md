@@ -22,6 +22,13 @@ This repository is the shared infrastructure workspace for Vibe Coding. It is no
 
 Do not read, modify, stage, commit, summarize, or use files under `_local/` unless the task explicitly names a file inside `_local/`.
 
+## Local Storage Rule
+
+- The working disk for Codex/Vibe Coding work is D.
+- Active WSL workspaces live under `/home/redmi/codex-runners`; the Ubuntu WSL virtual disk is physically stored at `D:\Vibecoding\WSL\Ubuntu`.
+- Do not create new heavy working files, clones, generated artifacts, caches, exports, or batch outputs on C.
+- Existing small Windows launchers and Codex Desktop support folders on C may remain in place unless the user explicitly approves a separate storage migration.
+
 ## Scope Rule
 
 - No style cleanup.
