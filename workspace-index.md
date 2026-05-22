@@ -40,9 +40,9 @@ Planned contents:
 | Path | Role | Status |
 |---|---|---|
 | `standards/` | Shared development standards | Active: core standards present |
-| `skills/` | Reusable working procedures | Active: eleven universal skills migrated |
+| `skills/` | Reusable working procedures | Active: twelve universal skills migrated |
 | `skills/external/` | Third-party skills surveyed/adopted from the ecosystem | Active: REGISTRY.md catalogs surveyed skills |
-| `templates/` | Starter templates for product repositories | Active: strengthened product repository template present |
+| `templates/` | Starter templates for product repositories and reusable workflows | Active: product and site-audit templates present |
 | `examples/` | Sample artifacts for validating workspace templates | Active: sample product repository template test present |
 | `rules/` | Shared rules that are not product-specific | Active: root rules note present |
 | `tools/` | External tools and MCP-related notes | Active: plugin registry present |
@@ -65,6 +65,7 @@ Active templates:
 
 - `templates/product-repo/` — includes Codex instructions and knowledge-structure-compliant starter files.
 - `templates/batch-execution/` — Claude Routine-specific infrastructure for prompt batch execution via Routines unless explicitly generalized later (see folder's AGENTS.md).
+- `templates/site-audit/` — reusable scope, report, taxonomy, and Codex live-audit prompt templates for safe website audits.
 
 Active examples:
 
@@ -208,6 +209,7 @@ Skills migration immediate next steps:
 | `real-path-verification` | 9 | New skill, born universal (closes pain map D; partially A, B, C) | `skills/real-path-verification/SKILL.md` |
 | `forward-thinking-discipline` | 10 | New skill, born universal (closes pain map C; partially A, B, D) — design-time counterpart of `real-path-verification` | `skills/forward-thinking-discipline/SKILL.md` |
 | `series-design-discipline` | 11 | New skill, born universal (closes pain map E; partially A, C, G) — Series Charter as cross-prompt namespace for 3+ prompt series; wired into `prompt-writing-standard` v3.9 (§7 Checkpoint, §9 check, CONTEXT field, AC checkboxes, §4 block), `batch-execution-standard` v1.5 (parade-as-Charter-projection in §4), and `research-protocol` v1.3 (§4 Phase 4 conditional handoff, §8 connection) | `skills/series-design-discipline/SKILL.md` |
+| `site-audit` | 12 | New skill, born universal — evidence-based website audit workflow, safe audit modes, severity taxonomy, and reusable audit templates | `skills/site-audit/SKILL.md` |
 
 ## Skill Triggering Logic
 
@@ -228,6 +230,7 @@ Current trigger map:
 | Writing or reviewing any prompt that creates or modifies runtime behavior (feature, fix, refactor, schema migration, API change, integration, calculation, validation, parsing) | `real-path-verification` |
 | Writing any plan, brief, or prompt for a T2-tier task (or for a micro-decision inside a research-protocol T3 session) — design-time forward thinking before the TASK block is formed | `forward-thinking-discipline` |
 | Decomposing a task into a series of 3+ sequential Code Agent prompts forming one project increment — composes Series Charter before the first prompt | `series-design-discipline` |
+| Auditing, reviewing, inspecting, testing, improving, reporting on, or preparing live audit prompts for websites, landing pages, frontend UI, public flows, SEO/AEO/GEO, accessibility, performance, forms, conversion, or public UI security/privacy | `site-audit` |
 | Composing or running multi-prompt batches via Claude Code Routines | `standards/batch-execution-standard.md` + `docs/batch-execution-guide.md` |
 | Composing or running Codex prompt batches via Codex | `standards/codex-batch-execution-standard.md` + `docs/codex-isolated-runner-setup.md` |
 | First-time setup of the per-project batch launcher on a developer machine | `docs/routine-launcher-setup.md` |
