@@ -3,8 +3,8 @@
 <!--
   @file:        workspace-index.md
   @description: Root navigation file for the Vibe Coding workspace infrastructure
-  @updated:     2026-05-19
-  @version:     0.4.5
+  @updated:     2026-05-22
+  @version:     0.4.6
 -->
 
 ## Purpose
@@ -40,7 +40,7 @@ Planned contents:
 | Path | Role | Status |
 |---|---|---|
 | `standards/` | Shared development standards | Active: core standards present |
-| `skills/` | Reusable working procedures | Active: nine universal skills migrated |
+| `skills/` | Reusable working procedures | Active: eleven universal skills migrated |
 | `skills/external/` | Third-party skills surveyed/adopted from the ecosystem | Active: REGISTRY.md catalogs surveyed skills |
 | `templates/` | Starter templates for product repositories | Active: strengthened product repository template present |
 | `examples/` | Sample artifacts for validating workspace templates | Active: sample product repository template test present |
@@ -206,6 +206,8 @@ Skills migration immediate next steps:
 | `universality-discipline` | 7 | New skill, born universal (closes pain map G; partially A, B, E) | `skills/universality-discipline/SKILL.md` |
 | `anti-hedging-language` | 8 | New skill, born universal (closes pain map F; partially A, C, D) | `skills/anti-hedging-language/SKILL.md` |
 | `real-path-verification` | 9 | New skill, born universal (closes pain map D; partially A, B, C) | `skills/real-path-verification/SKILL.md` |
+| `forward-thinking-discipline` | 10 | New skill, born universal (closes pain map C; partially A, B, D) — design-time counterpart of `real-path-verification` | `skills/forward-thinking-discipline/SKILL.md` |
+| `series-design-discipline` | 11 | New skill, born universal (closes pain map E; partially A, C, G) — Series Charter as cross-prompt namespace for 3+ prompt series; wired into `prompt-writing-standard` v3.9 (§7 Checkpoint, §9 check, CONTEXT field, AC checkboxes, §4 block), `batch-execution-standard` v1.5 (parade-as-Charter-projection in §4), and `research-protocol` v1.3 (§4 Phase 4 conditional handoff, §8 connection) | `skills/series-design-discipline/SKILL.md` |
 
 ## Skill Triggering Logic
 
@@ -224,6 +226,8 @@ Current trigger map:
 | Planning or prompting any technical or design unit (components, modules, engines, tokens, forms) | `universality-discipline` |
 | Writing any plan, brief, prompt, ADR, knowledge entry, or review summary containing hedging language ("possibly", "later", "should work", "not critical") | `anti-hedging-language` |
 | Writing or reviewing any prompt that creates or modifies runtime behavior (feature, fix, refactor, schema migration, API change, integration, calculation, validation, parsing) | `real-path-verification` |
+| Writing any plan, brief, or prompt for a T2-tier task (or for a micro-decision inside a research-protocol T3 session) — design-time forward thinking before the TASK block is formed | `forward-thinking-discipline` |
+| Decomposing a task into a series of 3+ sequential Code Agent prompts forming one project increment — composes Series Charter before the first prompt | `series-design-discipline` |
 | Composing or running multi-prompt batches via Claude Code Routines | `standards/batch-execution-standard.md` + `docs/batch-execution-guide.md` |
 | Composing or running Codex prompt batches via Codex | `standards/codex-batch-execution-standard.md` + `docs/codex-isolated-runner-setup.md` |
 | First-time setup of the per-project batch launcher on a developer machine | `docs/routine-launcher-setup.md` |
