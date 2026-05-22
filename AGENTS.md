@@ -26,6 +26,7 @@ Do not read, modify, stage, commit, summarize, or use files under `_local/` unle
 
 - The working disk for Codex/Vibe Coding work is D.
 - Active WSL workspaces live under `/home/redmi/codex-runners`; the Ubuntu WSL virtual disk is physically stored at `D:\Vibecoding\WSL\Ubuntu`.
+- Local Obsidian vault is active at `D:\WipeCoder\Obsidian\Vibe Knowledge`; do not recreate or reorganize it unless Vasily explicitly asks.
 - Do not create new heavy working files, clones, generated artifacts, caches, exports, or batch outputs on C.
 - Existing small Windows launchers and Codex Desktop support folders on C may remain in place unless the user explicitly approves a separate storage migration.
 
@@ -54,3 +55,4 @@ Never commit secrets, `.env` files, tokens, credentials, or passwords.
 - Shared skills live in `skills/`.
 - Shared standards live in `standards/`.
 - Product-specific knowledge lives in product repositories.
+- Local Obsidian long-term knowledge lives at `D:\WipeCoder\Obsidian\Vibe Knowledge`.
