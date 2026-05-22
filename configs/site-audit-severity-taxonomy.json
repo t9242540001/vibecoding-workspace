@@ -1,0 +1,143 @@
+{
+  "version": "1.0",
+  "updated": "2026-05-22",
+  "purpose": "Universal severity and finding taxonomy for Vibe Coding site audit reports.",
+  "severity_levels": [
+    {
+      "level": "Critical",
+      "rank": 5,
+      "definition": "Blocks a primary user path, exposes secrets or PII, creates auth/payment/admin risk, causes legal/compliance risk, or makes the site unusable.",
+      "typical_response": "Stop unsafe work if relevant, report immediately, and plan a separate high-priority fix with explicit approval gates."
+    },
+    {
+      "level": "High",
+      "rank": 4,
+      "definition": "Strongly damages task completion, accessibility, trust, SEO discoverability, conversion, or safe decision-making.",
+      "typical_response": "Prioritize for the next fix prompt when within safe repository scope, or request approval if higher-risk action is needed."
+    },
+    {
+      "level": "Medium",
+      "rank": 3,
+      "definition": "Creates meaningful friction, confusion, quality loss, or ranking/measurement weakness without blocking the path.",
+      "typical_response": "Batch with related fixes when scope and ownership are clear."
+    },
+    {
+      "level": "Low",
+      "rank": 2,
+      "definition": "Local polish issue or minor inconsistency with limited user impact.",
+      "typical_response": "Fix opportunistically only when it fits the approved scope; do not expand the task for style cleanup."
+    },
+    {
+      "level": "Observation",
+      "rank": 1,
+      "definition": "Useful non-defect signal, opportunity, unknown, or future check that does not currently justify a fix by itself.",
+      "typical_response": "Record as context or a future check; do not treat as a defect without stronger evidence."
+    }
+  ],
+  "escalation_factors": [
+    "affects_vulnerable_users",
+    "affects_mobile_users",
+    "affects_new_users",
+    "affects_legal_financial_medical_or_safety_decisions",
+    "affects_data_submission",
+    "affects_high_traffic_conversion_path",
+    "affects_primary_cta_or_primary_task",
+    "involves_personal_data_or_privacy_risk",
+    "involves_auth_payment_admin_or_account_boundary",
+    "contradicts_visible_content_with_structured_data_or_claims",
+    "is_repeated_across_multiple_primary_routes"
+  ],
+  "evidence_requirements": {
+    "required_fields": [
+      "finding_id",
+      "category",
+      "severity",
+      "location",
+      "evidence",
+      "impact",
+      "recommendation",
+      "status"
+    ],
+    "allowed_evidence_types": [
+      "source_line_reference",
+      "observed_public_page_fact",
+      "command_output_excerpt",
+      "sanitized_browser_summary",
+      "high_level_console_summary",
+      "high_level_network_summary",
+      "approved_screenshot_reference",
+      "lighthouse_or_similar_signal",
+      "human_visual_judgment",
+      "explicit_unknown"
+    ],
+    "rules": [
+      "separate observed facts from inferred risks",
+      "label missing evidence as Unknown with a next approved step",
+      "do not cite screenshots, logs, HAR, Lighthouse, console output, or network summaries unless actually captured or supplied under the approved artifact policy",
+      "do not quote secret values, private data, credentials, cookies, tokens, auth headers, or payment data"
+    ]
+  },
+  "categories": [
+    {
+      "id": "technical_frontend_health",
+      "label": "Technical frontend health",
+      "use_when": "Console/runtime errors, failed public requests, broken assets, hydration issues, broken routes/links, mixed content, compatibility signals."
+    },
+    {
+      "id": "ux_usability",
+      "label": "UX/usability",
+      "use_when": "Navigation, user path clarity, state visibility, control/freedom, consistency, error prevention, primary task completion."
+    },
+    {
+      "id": "accessibility",
+      "label": "Accessibility",
+      "use_when": "Headings, landmarks, labels, alt text, keyboard/focus, contrast, reflow, status messages, control semantics."
+    },
+    {
+      "id": "responsive_mobile",
+      "label": "Responsive/mobile",
+      "use_when": "Mobile widths, touch targets, sticky overlays, reflow, mobile menus, modals, viewport-specific layout failures."
+    },
+    {
+      "id": "forms_tools",
+      "label": "Forms/tools",
+      "use_when": "Labels, hints, validation, states, consent/privacy, non-submit behavior, submit safety boundaries."
+    },
+    {
+      "id": "seo",
+      "label": "SEO",
+      "use_when": "Titles, descriptions, headings, canonicals, crawlability, links, structured data, useful people-first public content."
+    },
+    {
+      "id": "aeo_geo_ai_friendly_content",
+      "label": "AEO/GEO/AI-friendly content",
+      "use_when": "Answerable sections, entity clarity, reliable sourcing, visible-content/schema alignment, useful summaries/FAQs."
+    },
+    {
+      "id": "copy_trust_legal_risk_wording",
+      "label": "Copy/trust/legal-risk wording",
+      "use_when": "Grammar, clarity, claims, guarantees, pricing/risk wording, disclaimers, company/contact/support signals."
+    },
+    {
+      "id": "design_visual_consistency",
+      "label": "Design/visual consistency",
+      "use_when": "Typography, spacing, alignment, state colors, component consistency, visual hierarchy, overlap, clipping, broken media."
+    },
+    {
+      "id": "analytics_conversion",
+      "label": "Analytics/conversion",
+      "use_when": "CTA visibility, funnel clarity, public instrumentation signals, friction, dead ends, trust blockers."
+    },
+    {
+      "id": "public_ui_security_privacy",
+      "label": "Public UI security/privacy",
+      "use_when": "Exposed secrets, PII, debug output, private endpoints, auth/payment/admin boundaries, mixed content, unsafe errors."
+    }
+  ],
+  "duplicate_handling": [
+    "group repeated instances when root cause and recommendation are the same",
+    "split findings when severity, user path, route, root cause, or fix owner differs",
+    "link related findings instead of copying the same evidence into multiple rows",
+    "keep regression findings tied to the original finding ID"
+  ]
+}
