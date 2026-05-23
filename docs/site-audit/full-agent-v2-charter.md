@@ -93,7 +93,7 @@ Creates or updates:
 
 - `docs/site-audit/live-browser-interactive-audit-contract.md`
 - `templates/site-audit/full-audit-scope-template.md`
-- `templates/site-audit/test-data-and-credentials-template.md`
+- `templates/site-audit/test-data-and-access-template.md`
 
 Purpose:
 

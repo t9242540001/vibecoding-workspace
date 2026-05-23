@@ -32,7 +32,7 @@ Read before editing:
 8. `docs/site-audit/live-browser-interactive-audit-contract.md`
 9. `docs/site-audit/marketing-ai-agentic-readiness-standard.md`
 10. `templates/site-audit/full-audit-scope-template.md`
-11. `templates/site-audit/test-data-and-credentials-template.md`
+11. `templates/site-audit/test-data-and-access-template.md`
 12. `templates/site-audit/marketing-ai-agentic-checklist.md`
 13. `templates/site-audit/report-template.md`
 14. `templates/site-audit/codex-live-audit-prompt-template.md`
