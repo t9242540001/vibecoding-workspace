@@ -1,0 +1,12 @@
+{
+  "batch_id": "batch-2026-05-22-site-audit-full-agent-v2-02-skill-modes",
+  "executor": "codex",
+  "title": "Site audit full agent v2 skill modes and safety model",
+  "created_by": "ChatGPT orchestrator",
+  "created_at": "2026-05-22T00:00:00+00:00",
+  "completed_at": null,
+  "stop_on_failure": true,
+  "telegram_notify": false,
+  "inter_prompt_wait_minutes": 0,
+  "prompts": [{"id":"01","title":"Update site audit skill modes and safety model","file":"codex-prompt.md","status":"pending","failure_reason":null}]
+}
