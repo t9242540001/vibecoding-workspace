@@ -3,7 +3,7 @@
   @file:        prompts/series/site-audit-full-agent-v2/README.md
   @description: Orchestrator note for running the full-agent v2 site-audit batch series
   @updated:     2026-05-24
-  @version:     1.0
+  @version:     1.1
 -->
 
 ## Goal
@@ -20,7 +20,7 @@ The hard boundary is unchanged: audit execution observes and reports. Product mo
 |---|---|---|
 | 01 | Research basis and v2 charter | `docs/site-audit/full-agent-v2-research-basis.md`, `docs/site-audit/full-agent-v2-charter.md` |
 | 02 | Skill safety model and audit modes | `skills/site-audit/SKILL.md`, `docs/site-audit/agentic-audit-pipeline.md`, `configs/site-audit-default-scope.json` |
-| 03 | Browser, interactive, auth, payment, admin evidence contract | `docs/site-audit/live-browser-interactive-audit-contract.md`, full audit scope and test-data/access templates |
+| 03b | Browser, interactive, auth, payment, admin evidence contract | `docs/site-audit/live-browser-interactive-audit-contract.md`, full audit scope and test-data/access templates |
 | 04 | Marketing, target-audience, AI, and agentic-commerce readiness | Marketing/AI standard, checklist, taxonomy, severity config |
 | 05 | Report, validation, and prompt package | Report template, live audit prompt template, pilot prompt, validation gates, sanitized example |
 | 06 | Consistency review and orchestrator | `docs/site-audit/full-agent-v2-consistency-review.md`, this README |
@@ -33,7 +33,7 @@ Run from the shared workspace on the intended branch.
 vcw pull
 vcw batch batch-2026-05-22-site-audit-full-agent-v2-01-research-charter
 vcw batch batch-2026-05-22-site-audit-full-agent-v2-02-skill-modes
-vcw batch batch-2026-05-22-site-audit-full-agent-v2-03-interactive-contract
+vcw batch batch-2026-05-22-site-audit-full-agent-v2-03b-interactive-contract-safe-path
 vcw batch batch-2026-05-22-site-audit-full-agent-v2-04-marketing-ai-agentic
 vcw batch batch-2026-05-22-site-audit-full-agent-v2-05-report-validation
 vcw batch batch-2026-05-22-site-audit-full-agent-v2-06-consistency
