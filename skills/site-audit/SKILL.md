@@ -7,8 +7,8 @@ description: Evidence-based workflow for full website audits, including static r
 <!--
   @file:        skills/site-audit/SKILL.md
   @description: Evidence-based full website audit workflow and safety boundaries
-  @version:     1.1
-  @updated:     2026-05-23
+  @version:     1.2
+  @updated:     2026-05-24
 -->
 
 ---
@@ -179,6 +179,7 @@ If a secret, credential, personal data, private user data, auth/session material
 ## 8. Connections To Other Skills
 
 - `research-protocol` Section 4 supplies external-source verification and critical review for strategic audit methodology or high-reversal-cost recommendations.
+- `docs/site-audit/marketing-ai-agentic-readiness-standard.md` and `templates/site-audit/marketing-ai-agentic-checklist.md` define the reusable audit standard and checklist for marketing/sales effectiveness, target-audience usefulness, SEO/AEO/GEO, AI readability, and AI/agentic-commerce readiness.
 - `prompt-writing-standard` Section 2 governs follow-up Code Agent prompts created from audit findings.
 - `series-design-discipline` Section 3 keeps multi-batch audit-system work aligned through a Charter.
 - `knowledge-structure` Sections 3-5 govern where audit knowledge, reports, and reusable records belong in product repositories.

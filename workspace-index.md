@@ -66,8 +66,8 @@ Active templates:
 
 - `templates/product-repo/` — includes Codex instructions and knowledge-structure-compliant starter files.
 - `templates/batch-execution/` — Claude Routine-specific infrastructure for prompt batch execution via Routines unless explicitly generalized later (see folder's AGENTS.md).
-- `templates/site-audit/` — reusable scope, full-audit scope, test-data/access, report, taxonomy, and Codex live-audit prompt templates for safe website audits.
-- `docs/site-audit/` — reusable site-audit research basis, full-agent v2 research/charter, live browser interactive audit contract, agentic audit pipeline, validation gates, and browser/E2E integration review.
+- `templates/site-audit/` — reusable scope, full-audit scope, test-data/access, marketing/AI/agentic checklist, report, taxonomy, and Codex live-audit prompt templates for safe website audits.
+- `docs/site-audit/` — reusable site-audit research basis, full-agent v2 research/charter, live browser interactive audit contract, marketing/AI/agentic readiness standard, agentic audit pipeline, validation gates, and browser/E2E integration review.
 - `configs/site-audit-default-scope.json` and `configs/site-audit-severity-taxonomy.json` — universal default audit policy and severity taxonomy for site-audit reports.
 
 Active examples:
@@ -134,8 +134,10 @@ Active tools, rules, and docs:
 - `docs/site-audit/full-agent-v2-research-basis.md`
 - `docs/site-audit/full-agent-v2-charter.md`
 - `docs/site-audit/live-browser-interactive-audit-contract.md`
+- `docs/site-audit/marketing-ai-agentic-readiness-standard.md`
 - `templates/site-audit/full-audit-scope-template.md`
 - `templates/site-audit/test-data-and-access-template.md`
+- `templates/site-audit/marketing-ai-agentic-checklist.md`
 - `configs/site-audit-default-scope.json`
 - `configs/site-audit-severity-taxonomy.json`
 

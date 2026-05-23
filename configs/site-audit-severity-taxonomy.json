@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated": "2026-05-22",
+  "updated": "2026-05-24",
   "purpose": "Universal severity and finding taxonomy for Vibe Coding site audit reports.",
   "severity_levels": [
     {
@@ -42,6 +42,8 @@
     "affects_data_submission",
     "affects_high_traffic_conversion_path",
     "affects_primary_cta_or_primary_task",
+    "affects_target_audience_decision_quality",
+    "affects_ai_assistant_or_agentic_recommendation_safety",
     "involves_personal_data_or_privacy_risk",
     "involves_auth_payment_admin_or_account_boundary",
     "contradicts_visible_content_with_structured_data_or_claims",
@@ -104,6 +106,16 @@
       "use_when": "Labels, hints, validation, states, consent/privacy, non-submit behavior, submit safety boundaries."
     },
     {
+      "id": "marketing_sales_effectiveness",
+      "label": "Marketing/sales effectiveness",
+      "use_when": "Value proposition, offer clarity, differentiation, pricing/tariff clarity, sales path, CTA relevance, objection handling, proof, credibility, and conversion trust."
+    },
+    {
+      "id": "target_audience_usefulness",
+      "label": "Target-audience usefulness",
+      "use_when": "Audience clarity, user pain/job-to-be-done fit, service/tool usefulness, decision support, examples, and mismatch between claimed value and actual page/tool behavior."
+    },
+    {
       "id": "seo",
       "label": "SEO",
       "use_when": "Titles, descriptions, headings, canonicals, crawlability, links, structured data, useful people-first public content."
@@ -112,6 +124,11 @@
       "id": "aeo_geo_ai_friendly_content",
       "label": "AEO/GEO/AI-friendly content",
       "use_when": "Answerable sections, entity clarity, reliable sourcing, visible-content/schema alignment, useful summaries/FAQs."
+    },
+    {
+      "id": "ai_agentic_commerce_readiness",
+      "label": "AI/agentic-commerce readiness",
+      "use_when": "Assistant readability, service/action clarity, stable deep links, structured offers, pricing/limitations/policy parseability, recommendation safety, and user confirmation points."
     },
     {
       "id": "copy_trust_legal_risk_wording",
