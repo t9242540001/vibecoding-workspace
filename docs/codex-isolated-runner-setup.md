@@ -3,13 +3,15 @@
 <!--
   @file:        docs/codex-isolated-runner-setup.md
   @description: Practical setup guide for running Codex batches in an isolated repo-scoped environment
-  @updated:     2026-05-15
-  @version:     1.0
+  @updated:     2026-05-24
+  @version:     1.1
 -->
 
 This guide explains how to run Codex batches with fewer or no approval prompts without giving Codex broad access to the host machine.
 
 For the operating standard, see `standards/codex-batch-execution-standard.md`.
+
+For the approval boundary and Desktop-to-runner handoff policy, see `docs/codex-autonomous-runner-policy.md`.
 
 ---
 
@@ -85,6 +87,8 @@ Low-risk checkpoint wrapper example after Codex completes a prompt or batch:
 scripts/codex-trusted-checkpoint.sh <batch_id> "<commit message>"
 ```
 
+For normal operator use, prefer the project router commands documented in `docs/codex-runner-operator-guide.md`, such as `vcw batch <batch_id>` or `yura batch <batch_id>`.
+
 ---
 
 ## 5. Process-Local WSL Mount Namespace Hardening
@@ -152,4 +156,5 @@ For files:
 
 ## Changelog
 
+- 2026-05-24 - v1.1. Linked the autonomous runner policy and operator guide so long-running batch work uses project routers instead of repeated Desktop approvals.
 - 2026-05-15 - v1.0. Initial setup guide for safe Codex isolated runner usage, launch patterns, safety requirements, pre-run checklist, and rollback/cleanup guidance.

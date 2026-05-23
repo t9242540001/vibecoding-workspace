@@ -248,6 +248,35 @@ If both succeed, the sync is working. If the hook does not fire, check `.claude/
 
 No per-project action needed. The next time any session starts in the project, the hook pulls the latest `vibecoding-workspace/skills/` and rebuilds `.claude/skills/`. The `CLAUDE.md` block only needs updating if a skill is added, removed, or its description changes substantially.
 
+## 6.6. Codex Runner Setup
+
+Set up a repo-scoped Codex runner before the first long-running batch or autonomous Codex task.
+
+Reference policy:
+
+- `docs/codex-autonomous-runner-policy.md`
+- `docs/codex-runner-operator-guide.md`
+- `docs/codex-isolated-runner-setup.md`
+
+Each product repository should define:
+
+- a project command router, such as `<project> status`, `<project> pull`, `<project> batch <batch_id>`, and `<project> checkpoint <batch_id> "<commit message>"`;
+- a hardened Codex runner launcher that runs inside the repo-scoped workspace;
+- a batch auto-checkpoint launcher;
+- a trusted checkpoint wrapper that validates changed files, blocks high-risk paths, rejects deletes by default, commits, and pushes through the normal branch policy.
+
+The runner may use:
+
+```text
+codex --sandbox workspace-write --ask-for-approval never
+```
+
+only when the external runner boundary limits access to the target repository and required tooling.
+
+Do not use broad host-level approval bypass on the main Windows desktop environment.
+
+The product `AGENTS.md` should include the Autonomous Runner Rule from `templates/product-repo/AGENTS.md`.
+
 ## 7. First Task Cycle
 
 Run one small safe task after the repository is connected and knowledge files are initialized.

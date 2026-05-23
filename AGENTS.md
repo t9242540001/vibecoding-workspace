@@ -46,6 +46,16 @@ For this repository, an explicit user prompt is pre-approval for low-risk reposi
 
 Ask again only when an action is destructive, transmits sensitive data, changes secrets or credentials, touches production, exceeds the prompt scope, or is otherwise blocked by the runtime safety policy.
 
+## Autonomous Runner Rule
+
+For long-running Codex batches or autonomous repo-local work, use the repo-scoped project runner instead of decomposing the work into repeated Codex Desktop approval prompts.
+
+- Policy: `docs/codex-autonomous-runner-policy.md`
+- Operator commands: `docs/codex-runner-operator-guide.md`
+- Current routers: `vcw` for this workspace and `yura` for YurAssistent.
+
+Ask again before deletes, destructive Git operations, outside-repo access, secrets/credentials, production/deploy/server/database/auth/payment/PII actions, or force push/history rewrite.
+
 ## Secrets Rule
 
 Never commit secrets, `.env` files, tokens, credentials, or passwords.

@@ -3,7 +3,7 @@
 <!--
   @file:        docs/codex-workflow.md
   @description: Working loop for Codex-based repository changes and Codex batch execution
-  @updated:     2026-05-15
+  @updated:     2026-05-24
 -->
 
 The working loop is:
@@ -15,6 +15,8 @@ Vasily provides the task and reviews outcomes. ChatGPT orchestrates scope and pr
 Vasily should not manually edit repository files unless explicitly needed.
 
 Git add, commit, and push may be performed by a trusted wrapper or human after Codex reports a verified scoped diff. This is the normal Codex runner architecture when the Codex sandbox keeps Git metadata or network access outside the agent.
+
+For long-running autonomous work, Codex Desktop is the orchestration and review surface. Execution should run through a repo-scoped project runner according to `docs/codex-autonomous-runner-policy.md` and `docs/codex-runner-operator-guide.md`.
 
 ## Single-Prompt Workflow
 
@@ -30,6 +32,15 @@ For normal work, Codex handles one task at a time:
 ## Codex Batch Execution
 
 A Codex batch is a manifest plus ordered prompt files under `prompts/queue/{batch_id}/`.
+
+Default batch execution should use the project router, such as:
+
+```text
+vcw batch <batch_id>
+yura batch <batch_id>
+```
+
+Do not split runner-suitable batches into many ad hoc Codex Desktop commands when a project runner exists.
 
 For batch execution, Codex:
 
@@ -60,6 +71,8 @@ Unattended execution without approval prompts belongs only inside an isolated re
 Do not use full host access or approval bypass on the host OS.
 
 Isolated runner setup is documented in `docs/codex-isolated-runner-setup.md`.
+
+Autonomous runner approval boundaries and router requirements are documented in `docs/codex-autonomous-runner-policy.md`.
 
 - 2026-05-15: hardened WSL runner smoke test completed for a documentation-only Codex batch.
 - 2026-05-21: external auto-checkpoint runner smoke test completed for a documentation-only Codex batch.

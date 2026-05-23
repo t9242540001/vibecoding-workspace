@@ -34,6 +34,19 @@ This repository is a product repository for `<project-name>`. It contains projec
 - If verification cannot run, report why.
 - Check `git status --short` before finishing.
 
+## Autonomous Runner Rule
+
+For long-running Codex batches or autonomous repo-local work, use this product's repo-scoped project runner instead of decomposing the work into repeated Codex Desktop approval prompts.
+
+The project should provide:
+
+- a project command router;
+- a hardened Codex runner launcher;
+- a batch auto-checkpoint launcher;
+- a trusted checkpoint wrapper.
+
+Normal runner work may proceed without repeated approvals only inside the repo-scoped runner. Ask again before deletes, destructive Git operations, outside-repo access, secrets/credentials, production/deploy/server/database/auth/payment/PII actions, or force push/history rewrite.
+
 ## Risk Areas
 
 - `<risk area 1>`

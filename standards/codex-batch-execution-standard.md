@@ -4,13 +4,15 @@
   @file:        standards/codex-batch-execution-standard.md
   @description: Standard for running prompt batches manually through Codex or inside an isolated Codex runner
   @owner:       Vibe Coding
-  @updated:     2026-05-21
-  @version:     1.1
+  @updated:     2026-05-24
+  @version:     1.2
 -->
 
 This standard supplements `standards/VIBECODER_STANDARDS.md`. It defines the Codex-native batch execution model: a Codex session reads a manifest and ordered prompt queue, executes prompts sequentially, makes repo-local file changes, stops on critical failure, and reports the result. Git add/commit/push may be performed by a trusted wrapper or human after verification.
 
 It does not replace or modify `standards/batch-execution-standard.md`, which remains the Claude Code Routine-specific batch standard.
+
+Autonomous runner approval boundaries are defined in `docs/codex-autonomous-runner-policy.md`.
 
 ---
 
@@ -31,6 +33,8 @@ Vasily -> AI orchestrator -> Codex -> prompt queue -> verified file changes -> t
 Codex owns scoped repo-local file execution inside the current repository. A trusted wrapper or human owns git metadata and push when the active Codex sandbox does not safely support commit/push. GitHub remains the source of truth after commits are pushed.
 
 For low-risk repo-local batches, the default trusted checkpoint wrapper is `scripts/codex-trusted-checkpoint.sh`. It validates the diff, blocks high-risk paths and deletes by default, commits with `[batch:<batch_id>]`, and pushes the current branch. Human review remains the fallback and is required for high-risk tasks.
+
+Project routers such as `vcw batch <batch_id>` and `yura batch <batch_id>` are the preferred operator entrypoints for long-running Codex batches. Codex Desktop should orchestrate and review those runs, not replace them with many approval-gated host commands.
 
 ---
 
@@ -307,5 +311,6 @@ This template is product-repo-specific because each product has its own command 
 
 ## Changelog
 
+- 2026-05-24 - v1.2. Added autonomous runner policy reference and made project routers the preferred entrypoint for long-running Codex batches.
 - 2026-05-15 — v1.0. Initial Codex-specific batch execution standard. Defines interactive manual execution, isolated runner autonomy, approval policy, safe corridor, stop conditions, per-prompt loop, reporting requirements, and separation from Claude Routine infrastructure.
 - 2026-05-21 — v1.1. Added Sections 11 (manifest executor field), 12 (per-prompt file naming), 13 (Codex response files for blocked/partial), 14 (Codex PR template requirement). Section 2 trusted-checkpoint paragraph (added between versions) preserved unchanged. No other changes to Sections 1-10.

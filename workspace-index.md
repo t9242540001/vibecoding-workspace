@@ -3,8 +3,8 @@
 <!--
   @file:        workspace-index.md
   @description: Root navigation file for the Vibe Coding workspace infrastructure
-  @updated:     2026-05-23
-  @version:     0.4.8
+  @updated:     2026-05-24
+  @version:     0.4.9
 -->
 
 ## Purpose
@@ -91,6 +91,8 @@ Active tools, rules, and docs:
 - `docs/new-project-onboarding.md`
 - `docs/repository-structure.md`
 - `docs/codex-workflow.md`
+- `docs/codex-autonomous-runner-policy.md`
+- `docs/codex-runner-operator-guide.md`
 - `docs/codex-isolated-runner-setup.md`
 - `docs/git-workflow.md`
 - `docs/branch-protection-plan.md`
@@ -273,7 +275,7 @@ Current trigger map:
 | Decomposing a task into a series of 3+ sequential Code Agent prompts forming one project increment — composes Series Charter before the first prompt | `series-design-discipline` |
 | Auditing, reviewing, inspecting, testing, improving, reporting on, or preparing live audit prompts for websites, landing pages, frontend UI, public flows, SEO/AEO/GEO, accessibility, performance, forms, conversion, or public UI security/privacy | `site-audit` |
 | Composing or running multi-prompt batches via Claude Code Routines | `standards/batch-execution-standard.md` + `docs/batch-execution-guide.md` |
-| Composing or running Codex prompt batches via Codex | `standards/codex-batch-execution-standard.md` + `docs/codex-isolated-runner-setup.md` |
+| Composing or running Codex prompt batches via Codex | `standards/codex-batch-execution-standard.md` + `docs/codex-autonomous-runner-policy.md` + `docs/codex-runner-operator-guide.md` + `docs/codex-isolated-runner-setup.md` |
 | First-time setup of the per-project batch launcher on a developer machine | `docs/routine-launcher-setup.md` |
 
 ## Non-Negotiable Rules
