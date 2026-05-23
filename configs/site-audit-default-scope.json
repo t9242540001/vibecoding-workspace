@@ -1,69 +1,152 @@
 {
-  "version": "1.0",
-  "updated": "2026-05-22",
-  "purpose": "Universal default scope policy for safe Vibe Coding site audits.",
-  "audit_modes": [
+  "version": "1.1",
+  "updated": "2026-05-23",
+  "purpose": "Universal default scope policy for full Vibe Coding site audits.",
+  "scope_contract_required_fields": [
+    "target",
+    "enabled_audit_layers",
+    "allowed_actions",
+    "forbidden_actions",
+    "routes_pages",
+    "devices_viewports",
+    "test_data_and_accounts",
+    "artifact_policy",
+    "stop_conditions",
+    "report_path"
+  ],
+  "enabled_audit_layers": [
     {
-      "mode": "static_repository_audit",
-      "description": "Inspect approved repository files, public configuration, source, tests, content, and metadata without live browser evidence.",
-      "requires_separate_approval": false
+      "layer": "static_repository_audit",
+      "description": "Inspect approved source, routes, content, metadata, tests, docs, and public configuration.",
+      "enabled_by_default": true,
+      "scope_requirements": [
+        "approved_source_paths",
+        "no_product_code_edits_during_audit"
+      ]
     },
     {
-      "mode": "read_only_live_public_audit",
-      "description": "Observe approved public no-auth pages and supplied sanitized browser summaries without submitting data or changing state.",
-      "requires_separate_approval": true
+      "layer": "live_http_audit",
+      "description": "Check approved public status, redirects, headers, assets, robots/sitemap, public links, and route availability.",
+      "enabled_by_default": false,
+      "scope_requirements": [
+        "approved_routes_or_urls",
+        "rate_limit_boundary",
+        "artifact_policy"
+      ]
     },
     {
-      "mode": "non_submit_form_tool_audit",
-      "description": "Inspect fields, labels, hints, states, and client-side validation without submitting data.",
-      "requires_separate_approval": true
+      "layer": "browser_visual_audit",
+      "description": "Inspect rendered pages, viewports, layout, media, visual states, console/network summaries, and approved screenshots when captured.",
+      "enabled_by_default": false,
+      "scope_requirements": [
+        "approved_route_profile_pairs",
+        "approved_viewports",
+        "artifact_policy",
+        "redaction_rules"
+      ]
     },
     {
-      "mode": "approved_submit_auth_payment_admin_audit",
-      "description": "Perform a specifically approved submit, auth, payment, admin, account, upload, or state-changing flow.",
-      "requires_separate_approval": true
+      "layer": "interactive_user_flow_audit",
+      "description": "Exercise approved flows with clicks, typing, synthetic data, reversible submissions, and documented stop-before points.",
+      "enabled_by_default": false,
+      "scope_requirements": [
+        "allowed_interactions",
+        "synthetic_test_data",
+        "stop_before_points",
+        "state_change_boundary"
+      ]
     },
     {
-      "mode": "post_fix_regression_audit",
-      "description": "Retest prior finding IDs and acceptance criteria after approved fixes.",
-      "requires_separate_approval": false
+      "layer": "auth_account_audit",
+      "description": "Test login, registration, account states, recovery, profile, roles, and permissions using approved test accounts.",
+      "enabled_by_default": false,
+      "scope_requirements": [
+        "approved_test_accounts",
+        "approved_test_roles",
+        "credential_handling_rule"
+      ]
+    },
+    {
+      "layer": "payment_path_audit",
+      "description": "Test pricing, checkout, payment states, error handling, receipts, and cancellation in sandbox/test mode or explicit stop-before-charge mode.",
+      "enabled_by_default": false,
+      "scope_requirements": [
+        "sandbox_or_test_mode",
+        "provider_test_instruments_or_stop_before_charge",
+        "no_real_charge_boundary"
+      ]
+    },
+    {
+      "layer": "admin_access_boundary_audit",
+      "description": "Check permissions, blocked states, role boundaries, restricted UI/API exposure, and server-side denial non-destructively.",
+      "enabled_by_default": false,
+      "scope_requirements": [
+        "approved_test_roles",
+        "non_destructive_checks_only",
+        "forbidden_admin_mutations"
+      ]
+    },
+    {
+      "layer": "api_server_route_sse_audit",
+      "description": "Verify approved route connectivity, safe response-shape summaries, stream behavior, errors, timeouts, and client integration evidence.",
+      "enabled_by_default": false,
+      "scope_requirements": [
+        "approved_endpoints_or_routes",
+        "safe_response_summary_only",
+        "no_raw_sensitive_payloads"
+      ]
+    },
+    {
+      "layer": "marketing_sales_target_audience_usefulness_audit",
+      "description": "Evaluate value proposition, target-audience fit, offer clarity, objections, trust, CTA path, and decision usefulness.",
+      "enabled_by_default": true,
+      "scope_requirements": [
+        "target_audience_or_unknown_marker",
+        "approved_pages_or_sections"
+      ]
+    },
+    {
+      "layer": "seo_aeo_geo_audit",
+      "description": "Evaluate crawlability, metadata, structured data, answerability, entity clarity, and people-first content.",
+      "enabled_by_default": true,
+      "scope_requirements": [
+        "approved_routes_or_files",
+        "no_manipulative_ranking_tactics"
+      ]
+    },
+    {
+      "layer": "ai_agentic_commerce_readiness_audit",
+      "description": "Evaluate assistant recommendation accuracy, service/action clarity, stable deep links, structured offers, pricing, availability, policies, and agentic selection/shopping readiness where relevant.",
+      "enabled_by_default": true,
+      "scope_requirements": [
+        "relevant_product_or_service_scope",
+        "emerging_practice_labeling"
+      ]
+    },
+    {
+      "layer": "security_privacy_sensitive_data_exposure_audit",
+      "description": "Detect exposed secrets, PII, private endpoints, unsafe errors, and artifact leakage.",
+      "enabled_by_default": true,
+      "scope_requirements": [
+        "stop_on_sensitive_data",
+        "anonymized_reporting_only"
+      ]
+    },
+    {
+      "layer": "post_fix_regression_audit",
+      "description": "Retest prior finding IDs and acceptance criteria after separately approved fixes.",
+      "enabled_by_default": false,
+      "scope_requirements": [
+        "prior_report",
+        "finding_ids",
+        "allowed_retest_checks"
+      ]
     }
   ],
-  "default_forbidden_actions": [
-    "arbitrary_urls",
-    "arbitrary_browser_commands",
-    "broad_crawling",
-    "scraping",
-    "rate_heavy_checks",
-    "production_form_submit",
-    "contact_message_sending",
-    "login",
-    "logout",
-    "auth_flow",
-    "admin_flow",
-    "billing_flow",
-    "payment_flow",
-    "account_creation",
-    "account_settings_change",
-    "file_upload",
-    "destructive_action",
-    "real_personal_data_use",
-    "real_client_data_use",
-    "payment_data_use",
-    "credential_use",
-    "deploy_action",
-    "server_action",
-    "database_action",
-    "secrets_action",
-    "ssh",
-    "scp",
-    "dependency_installation",
-    "product_code_change_during_audit"
-  ],
-  "default_allowed_read_only_actions": [
+  "default_allowed_audit_actions": [
     "read_approved_repository_files",
     "read_project_instructions_and_knowledge",
-    "inspect_public_no_auth_pages_in_scope",
+    "inspect_public_pages_in_scope",
     "inspect_visible_text",
     "inspect_public_metadata",
     "inspect_public_page_source_when_in_scope",
@@ -71,21 +154,165 @@
     "review_high_level_console_error_summaries",
     "review_high_level_network_error_summaries",
     "classify_public_links_without_opening_private_or_action_links",
+    "use_synthetic_test_data_inside_scope",
+    "click_approved_controls_inside_scope",
+    "type_approved_synthetic_data_inside_scope",
+    "submit_reversible_synthetic_test_data_when_scope_approves",
+    "authenticate_with_approved_test_accounts_when_scope_approves",
+    "inspect_payment_path_in_sandbox_test_or_stop_before_charge_mode",
+    "check_admin_access_boundaries_non_destructively_with_approved_roles",
+    "check_api_server_route_sse_behavior_with_safe_summaries",
     "run_repo_local_validation_commands_in_scope",
     "run_report_validation_checks"
   ],
+  "default_forbidden_product_modifications": [
+    "product_code_change_during_audit",
+    "product_content_change_during_audit",
+    "dependency_installation",
+    "deploy_action",
+    "server_action",
+    "server_config_change",
+    "database_action_except_reversible_synthetic_test_data_created_for_audit",
+    "secrets_action",
+    "environment_variable_change",
+    "feature_flag_change",
+    "dns_change",
+    "ci_cd_change",
+    "ssh",
+    "scp",
+    "real_account_mutation",
+    "real_payment",
+    "refund",
+    "saved_payment_method_mutation",
+    "billing_change",
+    "destructive_admin_action",
+    "production_settings_change",
+    "production_data_export",
+    "irreversible_state_change"
+  ],
+  "default_forbidden_actions_without_scope": [
+    "arbitrary_urls",
+    "arbitrary_browser_commands",
+    "broad_crawling",
+    "scraping",
+    "rate_heavy_checks",
+    "private_url_access",
+    "private_endpoint_access",
+    "real_personal_data_use",
+    "real_client_data_use",
+    "payment_data_use",
+    "credential_value_use",
+    "contact_message_sending",
+    "file_upload",
+    "logout",
+    "destructive_action"
+  ],
+  "sensitive_data_redaction_rules": {
+    "never_report_raw_values": [
+      "secrets",
+      "credentials",
+      "passwords",
+      "api_keys",
+      "tokens",
+      "cookies",
+      "auth_headers",
+      "session_material",
+      "personal_data",
+      "private_client_data",
+      "payment_data",
+      "billing_data",
+      "medical_data",
+      "legal_case_data",
+      "raw_private_urls",
+      "raw_request_bodies",
+      "raw_response_bodies"
+    ],
+    "report_only": [
+      "exposure_type",
+      "safe_location_class",
+      "impact",
+      "recommended_remediation_path"
+    ],
+    "required_behavior": "stop risky evidence collection, omit raw sensitive value, and report anonymized exposure facts only"
+  },
+  "artifact_policy_categories": {
+    "allowed_by_default": [
+      "audit_report_markdown",
+      "sanitized_summary_json",
+      "validation_report_json",
+      "short_markdown_summary",
+      "source_line_references",
+      "command_output_excerpts_without_secrets",
+      "high_level_console_error_summaries",
+      "high_level_network_error_summaries",
+      "synthetic_interaction_notes",
+      "safe_api_status_and_shape_summaries",
+      "anonymized_sensitive_exposure_notes"
+    ],
+    "requires_explicit_scope": [
+      "screenshots",
+      "videos",
+      "traces",
+      "raw_har",
+      "test_account_use",
+      "sandbox_payment_artifacts",
+      "approved_upload_test_artifacts",
+      "approved_private_route_labels"
+    ],
+    "forbidden_in_reports": [
+      "cookies",
+      "local_storage",
+      "session_storage",
+      "storage_state",
+      "auth_headers",
+      "bearer_tokens",
+      "api_keys",
+      "passwords",
+      "session_dumps",
+      "raw_request_bodies",
+      "raw_response_bodies",
+      "real_personal_data",
+      "private_client_data",
+      "billing_payment_data",
+      "full_private_urls",
+      "server_ips",
+      "private_endpoints",
+      "local_file_paths"
+    ],
+    "default_retention_days": 3,
+    "screenshots_videos_traces_raw_har_policy": "requires_separate_explicit_approval_and_sanitization"
+  },
+  "test_data_and_account_placeholders": {
+    "synthetic_person_name": "Audit Test User",
+    "synthetic_email_pattern": "audit-test+{case_id}@example.invalid",
+    "synthetic_phone": "+10000000000",
+    "synthetic_address": "Synthetic audit address, not a real delivery location",
+    "approved_test_accounts": [],
+    "approved_test_roles": [],
+    "credential_handling_rule": "credentials are supplied out of band and never copied into prompts, logs, reports, commits, or artifacts",
+    "payment_test_mode": "sandbox_or_stop_before_charge_required",
+    "payment_test_instruments": [],
+    "admin_boundary_rule": "non_destructive_role_and_access_checks_only"
+  },
   "default_audit_dimensions": [
     "technical_frontend_health",
     "ux_usability",
     "accessibility",
     "responsive_mobile",
     "forms_tools",
+    "interactive_user_flows",
+    "auth_account",
+    "payment_path",
+    "admin_access_boundary",
+    "api_server_route_sse",
     "seo",
     "aeo_geo_ai_friendly_content",
+    "ai_agentic_commerce_readiness",
     "copy_grammar_trust_legal_risk_wording",
+    "marketing_sales_target_audience_usefulness",
     "design_visual_consistency",
     "analytics_conversion",
-    "public_ui_security_privacy"
+    "security_privacy_sensitive_data_exposure"
   ],
   "default_viewports": [
     {
@@ -130,69 +357,39 @@
     "token_cookie_auth_header_or_session_material_seen",
     "real_personal_client_or_payment_data_seen",
     "unapproved_submit_auth_payment_admin_account_upload_or_destructive_action_required",
-    "private_url_private_endpoint_or_account_boundary_encountered",
+    "real_charge_refund_saved_payment_mutation_or_billing_change_required",
+    "destructive_admin_or_irreversible_account_action_required",
+    "private_url_private_endpoint_or_account_boundary_encountered_outside_scope",
     "server_deploy_database_secrets_ssh_scp_or_production_config_action_needed",
+    "product_modification_needed_during_audit",
     "evidence_source_outside_approved_artifact_policy",
     "broad_crawling_scraping_rate_heavy_or_anti_abuse_risk",
     "raw_browser_session_artifact_required_without_approval",
     "validation_failure_outside_current_scope",
     "ambiguous_scope_with_material_safety_or_semantic_risk"
   ],
-  "default_artifact_policy": {
-    "allowed_by_default": [
-      "audit_report_markdown",
-      "sanitized_summary_json",
-      "validation_report_json",
-      "short_markdown_summary",
-      "source_line_references",
-      "command_output_excerpts_without_secrets",
-      "high_level_console_error_summaries",
-      "high_level_network_error_summaries"
-    ],
-    "forbidden_by_default": [
-      "screenshots",
-      "videos",
-      "traces",
-      "raw_har",
-      "cookies",
-      "local_storage",
-      "session_storage",
-      "storage_state",
-      "auth_headers",
-      "bearer_tokens",
-      "api_keys",
-      "passwords",
-      "session_dumps",
-      "raw_request_bodies",
-      "raw_response_bodies",
-      "real_personal_data",
-      "private_client_data",
-      "billing_payment_data",
-      "full_private_urls",
-      "server_ips",
-      "private_endpoints",
-      "local_file_paths"
-    ],
-    "default_retention_days": 3,
-    "screenshots_videos_traces_raw_har_policy": "requires_separate_explicit_approval"
-  },
   "report_required_sections": [
     "summary",
     "scope",
     "method",
+    "enabled_audit_layers",
     "evidence_inventory",
     "findings",
     "severity_definitions",
     "prioritized_recommendations",
     "safe_boundary_notes",
+    "sensitive_data_redaction_notes",
     "stop_conditions",
     "next_fix_prompts"
   ],
   "rules": [
     "defaults are universal and must be narrowed by product-specific scope",
     "do not include product-specific URLs in this config",
-    "read-only audit, non-submit inspection, and submit/action flows are separate modes",
+    "full audits may combine multiple enabled layers",
+    "interactive, auth, payment-path, admin/access-boundary, browser, and server-route checks are allowed when scoped safely",
+    "missing tooling, test accounts, or sandbox mode is reported as an audit limitation",
     "model analysis may receive only sanitized summaries, acceptance criteria, and report schema unless separately approved",
-    "audit work observes and reports; fixes require separate scoped approval"
+    "audit work observes and reports; product modification requires separate scoped approval",
+    "sensitive data is never disclosed and must be reported only in anonymized form"
   ]
 }
