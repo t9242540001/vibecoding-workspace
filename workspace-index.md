@@ -67,7 +67,7 @@ Active templates:
 - `templates/product-repo/` — includes Codex instructions and knowledge-structure-compliant starter files.
 - `templates/batch-execution/` — Claude Routine-specific infrastructure for prompt batch execution via Routines unless explicitly generalized later (see folder's AGENTS.md).
 - `templates/site-audit/` — reusable scope, report, taxonomy, and Codex live-audit prompt templates for safe website audits.
-- `docs/site-audit/` — reusable site-audit research basis, series charter, agentic audit pipeline, validation gates, and browser/E2E integration review.
+- `docs/site-audit/` — reusable site-audit research basis, full-agent v2 research/charter, agentic audit pipeline, validation gates, and browser/E2E integration review.
 - `configs/site-audit-default-scope.json` and `configs/site-audit-severity-taxonomy.json` — universal default audit policy and severity taxonomy for site-audit reports.
 
 Active examples:
@@ -131,6 +131,8 @@ Active tools, rules, and docs:
 - `docs/site-audit/validation-gates.md`
 - `docs/site-audit/integration-with-browser-e2e.md`
 - `docs/site-audit/system-consistency-review.md`
+- `docs/site-audit/full-agent-v2-research-basis.md`
+- `docs/site-audit/full-agent-v2-charter.md`
 - `configs/site-audit-default-scope.json`
 - `configs/site-audit-severity-taxonomy.json`
 
