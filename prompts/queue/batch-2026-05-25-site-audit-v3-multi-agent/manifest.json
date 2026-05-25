@@ -1,0 +1,112 @@
+{
+  "batch_id": "batch-2026-05-25-site-audit-v3-multi-agent",
+  "title": "Site Audit V3 Multi-Agent Implementation",
+  "executor": "claude-code",
+  "created_by": "ChatGPT planning chat",
+  "created_at": "2026-05-25T00:00:00Z",
+  "completed_at": null,
+  "stop_on_failure": true,
+  "telegram_notify": true,
+  "inter_prompt_wait_minutes": 10,
+  "health_url_override": null,
+  "prompts": [
+    {
+      "id": "01",
+      "title": "Create Series Charter",
+      "file": "01-create-series-charter.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "02",
+      "title": "V3 Architecture Contract",
+      "file": "02-v3-architecture-contract.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "03",
+      "title": "Outcome Status Registry",
+      "file": "03-outcome-status-registry.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "04",
+      "title": "Evidence Registry",
+      "file": "04-evidence-registry.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "05",
+      "title": "Agent Registry",
+      "file": "05-agent-registry.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "06",
+      "title": "Core Agent Pack",
+      "file": "06-core-agent-pack.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "07",
+      "title": "Human Product Pack",
+      "file": "07-human-product-agent-pack.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "08",
+      "title": "Risk Agent Pack",
+      "file": "08-risk-agent-pack.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "09",
+      "title": "Growth AI Pack",
+      "file": "09-growth-ai-agent-pack.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "10",
+      "title": "Aggregator Risk Board",
+      "file": "10-aggregator-risk-board.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "11",
+      "title": "Obsidian Output Contract",
+      "file": "11-obsidian-output-contract.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "12",
+      "title": "Validation Gates",
+      "file": "12-validation-gates.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "13",
+      "title": "YurAssistent Pilot Prompt",
+      "file": "13-yurassistent-v3-pilot-prompt.md",
+      "status": "pending",
+      "failure_reason": null
+    },
+    {
+      "id": "14",
+      "title": "Workspace Navigation Update",
+      "file": "14-workspace-navigation-update.md",
+      "status": "pending",
+      "failure_reason": null
+    }
+  ]
+}
