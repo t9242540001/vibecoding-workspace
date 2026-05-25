@@ -1,0 +1,79 @@
+{
+  "version": "1.0",
+  "updated": "2026-05-25",
+  "statuses": [
+    {
+      "id": "blocked_at_preflight",
+      "label": "Blocked at preflight",
+      "meaning": "The audit cannot start safely or usefully because required scope, access, tooling, or safety prerequisites are missing.",
+      "allowed_when": ["critical scope fields are missing", "approved URL or routes are unavailable", "required credentials or sandbox boundaries are unavailable", "execution would require forbidden actions"],
+      "required_evidence": ["preflight notes", "unavailable_layer entries"],
+      "forbidden_claims": ["audit completed", "full live/browser audit completed", "all requested layers checked"],
+      "report_label_ru": "Заблокировано на preflight",
+      "report_label_en": "Blocked at preflight",
+      "next_action": "Provide missing scope, access, tooling, or approval, then rerun preflight.",
+      "blocks_full_audit_boolean": true
+    },
+    {
+      "id": "partial_static_audit",
+      "label": "Partial static audit",
+      "meaning": "Only repository/static/source or supplied static evidence was inspected.",
+      "allowed_when": ["live URL unavailable", "browser tooling unavailable", "interactive/auth/payment/admin prerequisites unavailable", "scope approves static-only fallback"],
+      "required_evidence": ["static_source or repository_config evidence", "unavailable_layer entries for skipped live/browser/flow layers"],
+      "forbidden_claims": ["live route verified", "browser rendering verified", "interactive flow completed", "full live/browser audit completed"],
+      "report_label_ru": "Частичный статический аудит",
+      "report_label_en": "Partial static audit",
+      "next_action": "Approve and provide live/browser prerequisites for a fuller audit.",
+      "blocks_full_audit_boolean": true
+    },
+    {
+      "id": "partial_audit_with_unavailable_layers",
+      "label": "Partial audit with unavailable layers",
+      "meaning": "Some approved layers were completed, but one or more requested layers were unavailable or unsafe.",
+      "allowed_when": ["preflight permits supported layers", "at least one requested layer is unavailable", "all unavailable layers are recorded"],
+      "required_evidence": ["completed layer evidence", "unavailable_layer entries", "scope and limitation notes"],
+      "forbidden_claims": ["all layers checked", "full live/browser audit completed when browser/live/flow scope was missing"],
+      "report_label_ru": "Частичный аудит с недоступными слоями",
+      "report_label_en": "Partial audit with unavailable layers",
+      "next_action": "Resolve unavailable layers or accept the partial report limitations.",
+      "blocks_full_audit_boolean": true
+    },
+    {
+      "id": "full_live_browser_audit_completed",
+      "label": "Full live/browser audit completed",
+      "meaning": "The declared full scope passed preflight and all required live, browser, and flow evidence was collected for approved layers.",
+      "allowed_when": ["preflight passes full live/browser gate", "approved routes and flows were checked", "required browser_rendered and flow evidence exists", "no requested layer needed for full scope remains unavailable"],
+      "required_evidence": ["http_public", "browser_rendered", "console_summary or network_summary where relevant", "flow_transcript_synthetic for flows in scope", "evidence summary tied to all declared full-scope layers"],
+      "forbidden_claims": ["coverage beyond approved scope", "auth/payment/admin completion without matching approved evidence", "absence of defects as proof of absence outside scope"],
+      "report_label_ru": "Полный live/browser аудит завершён",
+      "report_label_en": "Full live/browser audit completed",
+      "next_action": "Prioritize fix batches and plan post-fix regression.",
+      "blocks_full_audit_boolean": false
+    },
+    {
+      "id": "post_fix_regression_completed",
+      "label": "Post-fix regression completed",
+      "meaning": "Previously reported findings were retested against the approved regression scope with required evidence.",
+      "allowed_when": ["original finding IDs exist", "fixes are available for review", "approved retest evidence was collected", "all targeted findings received a retest status"],
+      "required_evidence": ["prior finding IDs", "changed files or fix references", "retest evidence", "finding status table"],
+      "forbidden_claims": ["new full audit completed unless separately scoped", "untested findings fixed"],
+      "report_label_ru": "Post-fix регрессия завершена",
+      "report_label_en": "Post-fix regression completed",
+      "next_action": "Close fixed findings or create follow-up batches for remaining issues.",
+      "blocks_full_audit_boolean": false
+    },
+    {
+      "id": "post_fix_regression_partial",
+      "label": "Post-fix regression partial",
+      "meaning": "Regression retest was run for some findings or layers, but evidence or prerequisites were missing for others.",
+      "allowed_when": ["some retest evidence exists", "one or more original findings could not be retested", "limitations are recorded"],
+      "required_evidence": ["partial retest evidence", "not_retested reasons", "unavailable_layer entries when applicable"],
+      "forbidden_claims": ["all findings fixed", "complete regression completed"],
+      "report_label_ru": "Частичная post-fix регрессия",
+      "report_label_en": "Post-fix regression partial",
+      "next_action": "Provide missing retest prerequisites or accept the partial regression limits.",
+      "blocks_full_audit_boolean": true
+    }
+  ]
+}
+
