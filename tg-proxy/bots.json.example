@@ -1,0 +1,3 @@
+{
+  "jck": { "secret_token": "REPLACE_WITH_RANDOM_HEX_32", "target_url": "https://test.jckauto.ru/bot-webhook/" }
+}
