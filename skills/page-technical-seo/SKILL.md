@@ -9,7 +9,7 @@ description: Technology-agnostic, prioritized (P0→P2) checklist for the techni
   @description: Technology-agnostic, prioritized (P0→P2) checklist for the technical
                 SEO/GEO wrapper of a web page. Outcome requirements + technology forks
                 + verification-with-evidence. Part of the "SEO + GEO optimization" skill series.
-  @version:     1.0
+  @version:     1.1
   @updated:     2026-06-12
 -->
 
@@ -49,7 +49,7 @@ If unsure: "Is this about the shell the crawler fetches, or the meaning inside i
 
 1. **A new page of any type is being created** — product/listing/article/news/service/landing/static. The wrapper is set before publish.
 2. **An existing page is being revised or audited** — any change to a live page, or a "why isn't this page ranking / cited?" question.
-3. **Migration / relaunch / URL change** — the highest-risk moment for canonical, redirects, indexability.
+3. **Migration / relaunch / URL change** — the highest-risk moment for canonical, redirects, indexability, **and inbound internal links (D4)**.
 4. **Indexability is in question** — page missing from search, "crawled — currently not indexed", traffic drop.
 5. **The orchestrator delegates the technical layer** — `page-optimization-orchestrator` routes the wrapper checks here.
 
@@ -130,12 +130,18 @@ Requirement: URL is human-readable, lowercase, hyphenated, describes the page, a
 Verify: read the URL; crawler → no duplicate/parameter explosions for this content. Evidence: the URL + crawler duplicate note.
 
 **D2. No broken links or redirect chains from/to the page.** — **P1**
-Requirement: internal links resolve to 200s; redirects are single-hop 301 (no chains/loops); the page is not orphaned (at least one internal link points to it). AI crawlers waste disproportionate budget on 404s/redirects and crawl far more often than Googlebot — clean status hygiene matters more, not less.
-Verify: crawler → status of outbound/inbound links, redirect-hop count; confirm ≥1 internal inbound link. Evidence: redirect-hop counts + inbound-link count.
+Requirement: internal links resolve to 200s **directly — each internal link points to the final destination URL, not to a URL that 301-redirects to it, and never to a technical/internal/staging URL**; redirects are single-hop 301 (no chains/loops); the page is not orphaned (at least one internal link points to it). A link that lands via a redirect hop still "works" for the user but wastes crawl budget, dilutes link equity, and slows crawling — so a 200-reached-through-a-redirect is a defect, not a pass. AI crawlers waste disproportionate budget on 404s/redirects and crawl far more often than Googlebot — clean status hygiene matters more, not less.
+Verify: crawler → status of outbound/inbound links **and whether any resolve via a redirect (not just final 200)**, redirect-hop count; confirm ≥1 internal inbound link. Evidence: redirect-hop counts (including links that reach 200 via a redirect) + inbound-link count.
 
 **D3. Page is included in the sitemap correctly (if indexable).** — **P2**
 Requirement: indexable page appears in an XML sitemap; the sitemap contains **only** canonical, 200, indexable URLs (no 404/redirected/noindexed/canonicalized-away/parameter URLs); `<lastmod>` reflects real last modification (AI and search bots use it as a freshness signal).
 Verify: open sitemap → URL present; spot-check that listed URLs are 200/canonical. Evidence: sitemap entry + a couple of status checks.
+
+**D4. On a URL change, every inbound internal link is repointed to the new URL.** — **P1**
+Requirement: when a page's URL changes, a 301 from old→new is necessary **but not sufficient**. Every internal reference to the old URL — catalog/listing links, related/cross-link blocks, navigation, breadcrumbs, in-content links, the sitemap entry, the canonical, and hreflang — is updated to point **directly** to the new URL. The redirect is a safety net for external links and bookmarks, not a substitute for fixing internal references. Repoint every occurrence that is safe to change (i.e. without breaking other logic); leave only references that cannot be changed without collateral risk, and flag those explicitly rather than leaving them silently.
+Fork: **if internal links are generated from a single source** (a route/URL helper, catalog data, a CMS field) → fix the source so every rendered link updates at once. **if links are hard-coded across templates/content** → locate every occurrence (catalog, cross-link blocks, content/MDX, nav) and update each.
+Verify: after the change, crawl/grep for any live internal link still pointing at the old URL → zero; the old URL is reachable only via its 301, not referenced by any live internal link. Evidence: count of internal references to the old URL before (>0) and after (0).
+Why P1: this is the exact gap a bare redirect leaves — the page "opens" via the redirect, but catalog and cross-link blocks still hop through the old URL, costing crawl budget and link equity on every link.
 
 ### Block E — International (apply only if the page has language/region variants)
 
@@ -201,4 +207,5 @@ If any P0 fails → page not ready, full stop. If only P2 items remain → page 
 
 ## 9. Changelog
 
+- **2026-06-12 — v1.1.** Block D hardening for URL changes: D2 extended to require internal links to resolve to the final URL **directly** (a 200 reached through a redirect hop is now a defect, not a pass); new **D4** — on a URL change, every inbound internal link (catalog, cross-link blocks, nav, breadcrumbs, sitemap, canonical, hreflang) must be repointed directly to the new URL, a 301 being necessary but not sufficient, with a single-source-vs-hard-coded fork and a before/after zero-reference verification; migration trigger now references D4. No other blocks changed.
 - **2026-06-12 — v1.0.** Initial skill. Technology-agnostic, prioritized (P0→P2) technical-wrapper checklist across 8 blocks (meta core, indexability for AI bots, headings, URL/crawl-budget, international, social, CWV floor, images), each item as outcome-requirement + optional technology fork + verification-with-evidence; final gate with P0-first rule; project-context anti-"Schema F" rule; boundary cases; series cross-references. Built from a 5×7 research pass (35 queries across 7 languages).
