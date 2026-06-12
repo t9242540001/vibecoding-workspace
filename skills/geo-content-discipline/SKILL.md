@@ -9,8 +9,8 @@ description: GEO/AEO content discipline — Princeton-rules applied at content a
   @description: Trigger-based content rules для AEO/GEO citation readiness:
                 Princeton 7-rule set, Yandex Neuro 5-of-30, schema coverage,
                 conversational long-tail. Reference fact-base — standards/ai-discovery-disciplines-standard.md.
-  @version:     1.0
-  @updated:     2026-05-24
+  @version:     1.1
+  @updated:     2026-06-12
 -->
 
 ---
@@ -194,6 +194,8 @@ Princeton lift: **+41%** visibility за добавление quotations. При
 
 Для JCK AUTO как catalog-сайта (не блог-сайта). Полная карта — Стандарт §6.
 
+> **Честная рамка про schema.** Структурированные данные — это **connective tissue для RAG-grounding и entity-понимания**, а не «магия цитирования». Schema не покупает цитату и не поднимает ранжирование напрямую; она помогает машине надёжно считать факты страницы и связать сущности. Из этого следуют два правила, которые важнее «навесить побольше типов»: (1) **parity** — размечаем только то, что реально видно на странице (расхождение markup↔видимый контент трактуется как spammy structured data; механика и валидация — в `structured-data-discipline`); (2) валидный и честный markup ценнее обширного. Ниже — что покрывать; *как* это валидировать и держать parity — в `structured-data-discipline`.
+
 ### 6.1 Обязательный минимум на странице товара (`/catalog/cars/{id}`)
 
 - **Vehicle** ✅ есть (после Wave A)
@@ -209,8 +211,8 @@ Princeton lift: **+41%** visibility за добавление quotations. При
 ### 6.3 Для статей-инструкций (`/blog/*`)
 
 - **Article** ✅ обычно есть
-- **HowTo** на инструкциях типа «как растаможить» — ❌ нет, нужно добавить
-- **FAQPage** в конце статьи для вопросов-ответов — ✅ паттерн установлен Wave A
+- **HowTo** на инструкциях типа «как растаможить» — **больше НЕ добавляем как новый markup**. Google ретайрнул HowTo rich result (раньше FAQ), и как поисковый rich-result он мёртв. Если HowTo уже стоит — не самоцель удалять, но новые статьи в нём не размечаем; пошаговость лучше передать обычной структурой (нумерованные H3 / списки в Article) — это и людям, и LLM-extraction даёт то же, без ставки на исчезнувший rich-result.
+- **FAQPage** в конце статьи для вопросов-ответов — ✅ паттерн Wave A сохраняем, но с правильным ожиданием: **FAQ rich result в выдаче Google ретайрнут (2026-05-07; удаление FAQ-данных из Search Console API — август 2026).** FAQPage теперь работает не на SERP-«звёздочки», а как **entity/RAG-grounding и voice/AI-источник** — структурированная Q&A помогает LLM вытащить готовый ответ. Размечаем только реально видимые на странице Q&A (parity — см. `structured-data-discipline`), не ради rich-result, а ради extractability.
 
 ### 6.4 Organization deep schema (global, в layout)
 
@@ -266,7 +268,7 @@ Princeton lift: **+41%** visibility за добавление quotations. При
 6. ✅ **≤1 H2 как вопрос**: проверить, что не все H2 — вопросы.
 7. ✅ **Date schema**: `datePublished` + `dateModified` в frontmatter / в JSON-LD.
 8. ✅ **Named author**: `author` поле заполнено, не anonymous.
-9. ✅ **Schema coverage**: Article + (HowTo / FAQPage где уместно) + BreadcrumbList.
+9. ✅ **Schema coverage**: Article + (FAQPage где есть реальные видимые Q&A) + BreadcrumbList. HowTo как rich-result больше не цель (§6.3); пошаговость — обычной структурой.
 
 Если хоть один пункт ❌ — статья не публикуется до исправления.
 
@@ -316,6 +318,10 @@ Tone choice over GEO. Skill отступает, но **отмечает** в о�
 
 ## 11. Connections to other skills
 
+- **`page-optimization-orchestrator`** — входная дверь серии SEO+GEO. Когда оптимизируется страница, оркестратор классифицирует её и делегирует **текстовый слой** сюда; этот skill возвращает свой gate-результат. Если работа пришла через оркестратор — он решает, какие ещё слои нужны.
+- **`page-technical-seo`** — технический слой-сосед (title/meta/canonical/индексируемость/CWV). Контент не цитируется, если страница не индексируется: «нет индексации → нет извлечения → нет цитаты». Этот skill отвечает за текст, тот — за обёртку.
+- **`structured-data-discipline`** — владеет **механикой и валидностью schema** (JSON-LD shape, parity, entity-глубина, freshness, llms.txt). Этот skill говорит, какой контент должен быть размечен и почему (§6), но *как* размечать/валидировать и держать parity — там. FAQ/HowTo-статус (§6.3) синхронизирован с тем скиллом.
+- **`agentic-commerce-readiness`** — для карточек товара (Case 2): consumer-readable нарратив (этот skill) должен согласовываться с agent-readable атрибутами (тот skill); двухслойность товара требует, чтобы текст и computable-атрибуты не противоречили.
 - **`prompt-writing-standard`** — Step 9 multi-perspective review: при ревью промпта, который пишет контент-генератор (seoArticleGenerator updates), Content Editor reviewer прогоняет 9-пункт checklist из §8.
 - **`ai-visibility-measurement-ritual`** — пара. Этот skill оптимизирует контент **на write-side**, тот — измеряет результат **на read-side**.
 - **`knowledge-structure`** — не пересекается. Knowledge файлы (`knowledge/*.md`) — internal, не surface, скилл там не применяется.
@@ -338,4 +344,5 @@ Tone choice over GEO. Skill отступает, но **отмечает** в о�
 
 ## 13. Changelog
 
+- **2026-06-12 — v1.1.** Surgical update (4 согласованных правки, 3 применены). (а) §6.3/§8: фикс устаревшего HowTo/FAQ-rich-result — HowTo и FAQ rich results ретайрнуты Google (FAQ 2026-05-07, API-removal авг 2026); FAQPage переориентирован на entity/RAG-grounding и voice/AI, не на SERP-«звёздочки»; новые статьи HowTo-markup не используют. (б) §6: добавлена честная рамка «schema = connective tissue для RAG-grounding, не магия цитирования» с акцентом на parity и валидность. (г) §11: добавлены связи с 4 скиллами серии (page-optimization-orchestrator, page-technical-seo, structured-data-discipline, agentic-commerce-readiness). Правка (в) [car-card contradiction] снята как неактуальная — в v1.0 противоречия нет, description и тело согласованы. Princeton-правила, Yandex Neuro 5-of-30, anti-patterns, checklist — без изменений.
 - **2026-05-24 — v1.0.** Initial skill. Seven Princeton-tier rules, Yandex Neuro 5-of-30 application, schema coverage для catalog inventory, 7 anti-patterns, 9-пункт checklist для новых статей, boundary cases, self-check questions.
