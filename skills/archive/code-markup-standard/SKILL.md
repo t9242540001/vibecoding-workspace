@@ -7,8 +7,8 @@ description: Standard for marking up code files and knowledge files — file hea
 <!--
   @file:        skills/code-markup-standard/SKILL.md
   @description: Standard for code and knowledge file markup
-  @version:     1.3
-  @updated:     2026-05-19
+  @version:     1.4
+  @updated:     2026-08-27
 -->
 
 ---
@@ -41,12 +41,12 @@ A 15-line utility and a 200-line module deserve different treatment. Full markup
 - RULE comments where regression-prone code exists
 - Inline tags optional, add where genuinely useful
 
-### Level 3 — Large files (100–200 lines)
+### Level 3 — Large files (100+ lines)
 - All of the above
 - Region comments to divide the file into logical sections (Section 6)
 - Inline operational tags (`@section`, `@todo`, `@bug`, `@cost`, etc.) as needed
 
-**Hard limit:** 200 lines maximum per file (from `knowledge-structure` Section 6 for knowledge files, and from `prompt-writing-standard` Section 4 for code files). Beyond 200 — split the file, don't shrink the markup.
+**Size:** 200 lines is a signal to look for a logical seam, not a ceiling — see `prompt-writing-standard` Section 4 (`File size — a signal, not a ceiling`) and `knowledge-structure` Section 6, which states the same for knowledge files. Markup is never what gets cut to fit: shrinking documentation to reach a line count defeats the purpose of having it.
 
 ---
 
@@ -331,7 +331,7 @@ Every `knowledge/*.md` file starts with:
 
 **Why `@updated` is retained here but not in code:** knowledge files are not always tied to git commits as cleanly as code — they may be updated from multiple directions (Claude Code, direct edits, migration scripts). The `@updated` date in the header is the explicit signal of freshness for future sessions reading `INDEX.md`.
 
-`@lines` is retained because `knowledge-structure` Section 6 enforces the 200-line limit explicitly — the count is part of the file's self-description.
+`@lines` is retained because the count is part of the file's self-description — it makes the 200-line signal visible to a reader without opening an editor.
 
 ---
 

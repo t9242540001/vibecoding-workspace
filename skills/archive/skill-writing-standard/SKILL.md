@@ -7,8 +7,8 @@ description: Standard workflow and template for creating new skills and updating
 <!--
   @file:        skills/skill-writing-standard/SKILL.md
   @description: Standard workflow and template for creating skills in Vasily's system
-  @version:     1.2.1
-  @updated:     2026-04-23
+  @version:     1.2.2
+  @updated:     2026-08-27
 -->
 
 ---
@@ -256,7 +256,7 @@ This is the most important design choice in the skill. It governs how every sect
 **Use rigid rules for:**
 - Invariant safety boundaries (`@rule` comments, never expose secrets)
 - Format requirements (YAML frontmatter is mandatory, file headers are mandatory)
-- Hard technical limits (200 lines per knowledge file, copyright limits)
+- Hard technical limits (copyright limits, platform-imposed maximums)
 - Things that are wrong in all contexts (no commented-out dead code)
 
 **Use self-directing questions for:**

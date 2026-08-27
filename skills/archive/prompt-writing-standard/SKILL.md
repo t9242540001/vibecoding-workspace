@@ -7,8 +7,8 @@ description: Complete workflow and template for writing Claude Code prompts. Use
 <!--
   @file:        skills/prompt-writing-standard/SKILL.md
   @description: Complete workflow for writing Claude Code prompts
-  @version:     3.9
-  @updated:     2026-05-21
+  @version:     3.10
+  @updated:     2026-08-27
 -->
 
 ---
@@ -395,8 +395,10 @@ After execution: ask Claude Code to confirm critical rules in affected files wer
 
 If the same error recurs after a fix — anchor the rule in code. Add a RULE comment directly next to the vulnerable code so Claude Code sees it on every future edit.
 
-### File size limit — universal
-All files — code, knowledge, CLAUDE.md — maximum 200 lines. If a file grows beyond 200 lines: split it. One file = one responsibility.
+### File size — a signal, not a ceiling
+200 lines is where a file earns a question, not where it becomes illegal: is there a logical seam in this file? A seam exists → split along it, each half with its own responsibility. No seam → the file stays as it is.
+
+**Never shrink content to reach the number.** Trimming documentation, deleting a test, or compressing markup to land under 200 makes the file worse in exchange for a metric — the opposite of what the rule is for.
 
 ### CLAUDE.md content rule
 CLAUDE.md is a project constitution, not a technical reference. It contains only:
@@ -537,20 +539,21 @@ Before every Claude Code session: verify correct repository, branch main, correc
 
 ## 6. Large Tasks & Prompt Splitting
 
-### Prompt size rule — mandatory
-**One prompt = maximum 1 file created or modified.**
-Exception: 2 files allowed only when both conditions are true:
-- Both files are small (well under 200 lines each)
-- Both files are tightly coupled by logic (e.g. a component and its types file)
+### Prompt size — one logical element
+**One prompt = one task, plus the files that task creates as one logical element.**
+
+It is not a file count. The test: if two files can be accepted and reverted independently, and each has its own reason to exist — they are two prompts. If reverting one without the other leaves the repository broken or half-meaningful — they are one element and belong in one prompt.
+
+A module and its test file are one element. A module and the knowledge that records it — an INDEX row, a `universals/*.md` entry, a Series Charter status line — are one element. Two modules that merely serve the same feature are two elements.
 
 **Knowledge files exception:** updating `knowledge/*.md` (including `decisions.md`, `INDEX.md`, and `universals/*.md`) alongside the primary code file is always allowed within a single prompt. Knowledge updates are metadata about the change, not a separate functional unit. See Section 4 (Knowledge update rule) for details.
 
 If a task touches more files → split into multiple prompts. Each prompt:
-1. Covers one file (or two if exception applies), plus any knowledge updates
+1. Covers one logical element, plus any knowledge updates
 2. Ends with a commit
 3. Next prompt starts only after user confirms the previous result
 
-There are no other exceptions. A prompt that creates 8 code files is always wrong — split it into 8 prompts (each may include its own knowledge updates).
+A prompt that creates 8 modules is still wrong — not because eight exceeds one, but because eight modules are eight elements with eight reasons to exist.
 
 ### Large tasks
 Assess scope → propose breakdown listing each prompt separately → user approves breakdown → execute one prompt at a time → mini-report after each → confirmation before next.
@@ -558,7 +561,7 @@ Assess scope → propose breakdown listing each prompt separately → user appro
 After each prompt — a committable state that can be verified independently.
 
 ### Architectural changes
-Request a written plan from Claude Code first (no implementation) → review → confirm → implement one file per prompt.
+Request a written plan from Claude Code first (no implementation) → review → confirm → implement one logical element per prompt.
 
 ### Commits
 Claude Code commits after each completed prompt, not at the end. Meaningful messages. Creates rollback points.
