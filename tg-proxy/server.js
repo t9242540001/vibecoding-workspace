@@ -6,12 +6,14 @@
  * @runs        EU VDS (157.22.178.181) via PM2; nginx proxy_pass on 127.0.0.1:8788
  * @rule        Transparent reverse only — never parse, modify, or interpret Telegram API.
  * @rule        Mandatory X-Proxy-Secret on every non-/health request. Timing-safe comparison.
+ *              PROXY_SECRET may hold several secrets separated by commas — one per client
+ *              product (JCK AUTO, 38 samuraev, …) so a client can be rotated or revoked alone.
  * @rule        No PII in logs. Method/status/ms/auth-result/IP only — never path/body/headers/secret.
  * @rule        Bind 127.0.0.1 only. Nginx is the public face.
  * @rule        Bidirectional: outbound transparent proxy (above) is untouched; inbound webhook
  *              tract POST /tg-in/:botId receives Telegram webhooks and forwards them to per-bot
  *              backends from a registry. Inbound auth = X-Telegram-Bot-Api-Secret-Token, timing-safe.
- * @lastModified 2026-06-02
+ * @lastModified 2026-09-05
  */
 
 const express = require('express');
@@ -29,7 +31,22 @@ if (!PROXY_SECRET) {
   process.exit(1);
 }
 
-const SECRET_BUF = Buffer.from(PROXY_SECRET);
+// One proxy, many clients: "secretA,secretB". Index of the matched secret is logged
+// as `client` so per-product traffic can be told apart without logging the secret itself.
+const SECRET_BUFS = String(PROXY_SECRET).split(',').map((s) => s.trim()).filter(Boolean).map((s) => Buffer.from(s));
+if (SECRET_BUFS.length === 0) {
+  process.stderr.write('FATAL: PROXY_SECRET holds no usable value\n');
+  process.exit(1);
+}
+
+function matchSecret(received) {
+  const recvBuf = Buffer.from(received);
+  for (let i = 0; i < SECRET_BUFS.length; i++) {
+    if (recvBuf.length !== SECRET_BUFS[i].length) continue;
+    try { if (crypto.timingSafeEqual(recvBuf, SECRET_BUFS[i])) return i; } catch { /* fallthrough */ }
+  }
+  return -1;
+}
 
 // --- Inbound tract: bot registry ------------------------------------------
 // Registry maps botId -> { secret_token, target_url }. Read once at startup.
@@ -150,14 +167,8 @@ app.use(limiter);
 app.use((req, res, next) => {
   req._startTime = Date.now();
   const received = req.header('X-Proxy-Secret');
-  let ok = false;
-  if (received) {
-    const recvBuf = Buffer.from(received);
-    if (recvBuf.length === SECRET_BUF.length) {
-      try { ok = crypto.timingSafeEqual(recvBuf, SECRET_BUF); } catch { ok = false; }
-    }
-  }
-  if (!ok) {
+  const client = received ? matchSecret(received) : -1;
+  if (client < 0) {
     process.stdout.write(JSON.stringify({
       ts: new Date().toISOString(),
       method: req.method,
@@ -179,6 +190,7 @@ app.use((req, res, next) => {
       status: res.statusCode,
       ms: Date.now() - req._startTime,
       auth: 'ok',
+      client,
       ip: req.ip,
     }) + '\n');
   });
@@ -202,5 +214,5 @@ app.use(createProxyMiddleware({
 }));
 
 app.listen(PORT, '127.0.0.1', () => {
-  console.log(`tg-proxy listening on 127.0.0.1:${PORT}, PROXY_SECRET length: ${PROXY_SECRET.length}`);
+  console.log(`tg-proxy listening on 127.0.0.1:${PORT}, client secrets: ${SECRET_BUFS.length}`);
 });

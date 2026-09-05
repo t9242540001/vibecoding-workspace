@@ -196,6 +196,22 @@ Notes: `access_log off` prevents bot-token leakage via `$request_uri` (INV-3).
   `-H 'X-Telegram-Bot-Api-Secret-Token: <secret_token>'` → `200` (forwarded to
   the bot backend) or `502` (backend unreachable).
 
+## Several client products (outbound)
+
+`PROXY_SECRET` may hold several secrets separated by commas — one per client
+product, e.g. `PROXY_SECRET=<jck-hex32>,<samuraev-hex32>`. Each client keeps only
+its own value; the log line carries `client: <index>` (0 = first secret) so
+traffic can be told apart. Adding a client:
+
+```bash
+cd /opt/tg-proxy && S=$(openssl rand -hex 32) && sed -i "s/^PROXY_SECRET=.*/&,$S/" .env \
+  && pm2 restart ecosystem.config.js --update-env >/dev/null && echo "$S"
+```
+
+(`pm2 restart tg-proxy` alone keeps the OLD env — the ecosystem file must be
+re-read, hence `restart ecosystem.config.js --update-env`.) Revoking a client =
+removing its value from the list and the same restart.
+
 ## Secret rotation SOP
 
 Two-step coordinated process; ~30 seconds of downtime acceptable for a
